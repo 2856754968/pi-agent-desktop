@@ -41,6 +41,8 @@ import {
 import { sessionVisibleCounts } from "@/lib/scroll-memory";
 import { isImeComposing } from "@/lib/ime";
 import { useChatAccess } from "@/hooks/useChatAccess";
+import { openPathNative } from "@/lib/desktop-native";
+import { isTauriDesktop } from "@/lib/desktop-updater";
 import { ChatShellPrompt } from "./ChatShellPrompt";
 import { lastTurnHitChatShellBlock } from "@/lib/chat-shell-block";
 import { assignMessageKeys, createMessageKeyTracker } from "@/lib/message-keys";
@@ -997,6 +999,20 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
 
   const hasStreamingContent = Boolean(streamState.streamingMessage?.content.length);
   const messageCwd = chatOnly ? undefined : session?.cwd ?? newSessionCwd ?? undefined;
+  // A chat's files live in its own folder: relative paths in write/edit calls start there, and
+  // a row of the written-files card opens the file (desktop) or shows the folder (browser).
+  const chatFolder = chatOnly ? chatAccess?.state.folder ?? undefined : undefined;
+  const writtenFilesCwd = chatOnly ? chatFolder : messageCwd;
+  const chatRevealFolder = chatAccess?.reveal;
+  const openChatFile = useCallback((filePath: string) => {
+    if (isTauriDesktop()) {
+      void openPathNative(filePath).catch((e: unknown) => {
+        addNotice({ type: "error", message: e instanceof Error ? e.message : String(e) });
+      });
+    } else {
+      void chatRevealFolder?.();
+    }
+  }, [addNotice, chatRevealFolder]);
   // Keys that do not change when a sent or streamed message gets its entry id
   // on the post-run reload; keying by the id remounted the sent bubble.
   const messageKeyTrackerRef = useRef<{ sessionId: string | null; tracker: ReturnType<typeof createMessageKeyTracker> } | null>(null);
@@ -1420,6 +1436,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
                     prevTimestamp={idx > 0 ? (messages[idx - 1] as AgentMessage & { timestamp?: number }).timestamp : undefined}
                     sessionId={session?.id ?? sessionIdRef.current ?? undefined}
                     writtenFiles={options.writtenFiles}
+                    onOpenWrittenFile={chatFolder ? openChatFile : undefined}
                     onCompact={options.recoverTruncation ? handleCompact : undefined}
                     isCompacting={options.recoverTruncation ? isCompacting : undefined}
                     compactError={options.recoverTruncation ? compactError : undefined}
@@ -1529,7 +1546,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
                   // final answer alone carries no record of what the turn wrote.
                   // Gather the turn's assistant blocks and derive the file list
                   // from the write/edit calls among them.
-                  const writtenFiles = getTurnWrittenFiles(finalAssistant, messages.slice(userIdx + 1, finalAssistantIdx + 1), toolResultsMap, messageCwd);
+                  const writtenFiles = getTurnWrittenFiles(finalAssistant, messages.slice(userIdx + 1, finalAssistantIdx + 1), toolResultsMap, writtenFilesCwd);
                   rendered.push(renderMessage(finalAssistantIdx, {
                     messageOverride: finalAnswerMessage,
                     writtenFiles,

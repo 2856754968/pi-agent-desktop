@@ -170,7 +170,11 @@ off (and the prompt says so) when `PI_WEB_HOSTNAME` is a non-loopback address
 - **The chat's folder.** Everything a chat creates lives in its folder; the user finds it
   from the composer's run menu ("Show chat folder", `POST /api/chat-folder/reveal`, which
   looks the folder up from the session, loopback only; the desktop shell uses
-  `revealItemInDirNative`). There is no in-app file panel for chats yet: the right panel,
+  `revealItemInDirNative`). Under a reply that wrote files, the usual written-files card
+  (`TurnWrittenFiles`) is shown too, with paths resolved against the folder (the one
+  `GET .../chat-access` returns, never the provisional session's cwd); a row opens the file
+  with the default app on the desktop and shows the folder in a browser (`onOpenWrittenFile`,
+  the only file handler a chat gets). There is no in-app file panel for chats yet: the right panel,
   file tree and terminals stay project-only (`AppShell.chat-workspace.test.mjs`).
 - **Reading a named path.** `ChatFileGrants` collects the paths in the user's own messages
   (`extractUserNamedPaths`: absolute, `~/`, `file://`, Windows drive paths; bare, or quoted
