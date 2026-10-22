@@ -8905,3 +8905,51 @@ html.native-desktop :is(
   border-color: var(--danger);
   color: #fff;
 }
+
+/* Above the composer: the model asked for a shell this chat does not have. */
+.chat-shell-prompt-wrap {
+  width: 100%;
+  max-width: var(--chat-content-max-width, 820px);
+  margin: 0 auto 8px;
+  padding: 0 16px;
+}
+
+.chat-shell-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 12px;
+  border: var(--hairline) solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-panel);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.chat-shell-prompt-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-shell-prompt-button {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-shell-prompt-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.chat-shell-prompt-error {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--danger);
+}
