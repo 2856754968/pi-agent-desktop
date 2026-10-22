@@ -183,9 +183,8 @@ off (and the prompt says so) when `PI_WEB_HOSTNAME` is a non-loopback address
 - **Legacy chats only: `save_to_downloads`.** (`lib/chat-downloads-tool.ts`) a bare file name
   written into Downloads without replacing anything, up to 8 MB; its result renders as a
   `SavedFileCard` (kept so old transcripts still show the card) with "Show in folder"
-  (`POST /api/chat-downloads/reveal`). "Ask before an older chat saves a file" in
-  Settings › Chats (`chats.confirmSave`) still applies there. A chat with a folder does not
-  get this tool.
+  (`POST /api/chat-downloads/reveal`). It saves without asking (the old
+  `chats.confirmSave` switch was removed). A chat with a folder does not get this tool.
 
 ## Text attachments
 

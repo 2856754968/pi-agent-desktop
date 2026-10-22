@@ -2764,10 +2764,7 @@ export async function startRpcSession(
                 createArtifactGuideExtension(),
                 // A chat with a folder saves into it; only a legacy chat still saves to Downloads.
                 ...(chatGrants && !chatFolder
-                  ? [createChatDownloadsExtension({
-                      grants: chatGrants,
-                      confirmBeforeSaving: () => readChatSettings().confirmSave,
-                    })]
+                  ? [createChatDownloadsExtension({ grants: chatGrants })]
                   : []),
                 createChatWorkspaceExtension({
                   getSkills: () => chatSessionRef.current?.resourceLoader.getSkills().skills ?? [],
