@@ -46,8 +46,10 @@ test("streams running sessions and reconnects after visibility or network change
 
 test("re-adding a removed project clears only its sidebar marker", () => {
   assert.match(source, /const activateProject = useCallback\(\(cwd: string\) =>/);
-  assert.match(source, /if \(!previous\.has\(projectRoot\)\) return previous;/);
-  assert.match(source, /next\.delete\(projectRoot\);/);
+  assert.match(source, /restoreProject\(projectRoot\);/);
+  assert.match(source, /useArchivedProjects\(\)/);
+  // Initial render must never persist an empty local cache over the disk state.
+  assert.doesNotMatch(source, /setPrefJson\(APP_PREF_KEYS\.archivedProjects/);
   // The add-project dialog is the only picker left in the sidebar.
   assert.match(source, /onSelectCwd=\{\(cwd\) => \{\s+activateProject\(cwd\);/);
 });

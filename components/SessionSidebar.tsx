@@ -7,7 +7,7 @@ import { dispatchSessionRowContextMenu } from "@/lib/session-row-context-menu";
 import { skillExpansionToCommand } from "@/lib/slash-display";
 import { workspaceKeyOf } from "@/lib/workspace-memory";
 import { useI18n } from "@/hooks/useI18n";
-import { useProjectNames } from "@/hooks/useProjectNames";
+import { useProjectNames, useArchivedProjects } from "@/hooks/useProjectNames";
 import { formatCompactRelativeTime, formatRelativeTime } from "@/lib/i18n/format";
 import { createPortal } from "react-dom";
 import { ProjectPicker, selectProjectDirectoryNative } from "./ProjectPicker";
@@ -380,12 +380,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
       )),
     );
   });
-  const [archivedProjectRoots, setArchivedProjectRoots] = useState<Set<string>>(() => {
-    const stored = getPrefJson<unknown>(APP_PREF_KEYS.archivedProjects);
-    return Array.isArray(stored)
-      ? new Set(stored.filter((root): root is string => typeof root === "string"))
-      : new Set();
-  });
+  const { isArchived, archiveProject: persistArchiveProject, restoreProject } = useArchivedProjects();
   const [projectViewMode, setProjectViewMode] = useState<ProjectViewMode>(loadProjectViewMode);
   const [projectViewMenuOpen, setProjectViewMenuOpen] = useState(false);
   const [projectViewMenuPos, setProjectViewMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -575,10 +570,6 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   useEffect(() => {
     saveUnreadSessionIds(unreadSessionIds);
   }, [unreadSessionIds]);
-
-  useEffect(() => {
-    setPrefJson(APP_PREF_KEYS.archivedProjects, [...archivedProjectRoots]);
-  }, [archivedProjectRoots]);
 
   useEffect(() => {
     if (collapsedProjects.size === 0) removePref(APP_PREF_KEYS.collapsedProjects);
@@ -869,14 +860,9 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   // without touching any of the session files discovered for that directory.
   const activateProject = useCallback((cwd: string) => {
     const projectRoot = projectRootFor(cwd) ?? cwd;
-    setArchivedProjectRoots((previous) => {
-      if (!previous.has(projectRoot)) return previous;
-      const next = new Set(previous);
-      next.delete(projectRoot);
-      return next;
-    });
+    restoreProject(projectRoot);
     setSelectedCwd(cwd);
-  }, [projectRootFor]);
+  }, [projectRootFor, restoreProject]);
 
   // Notify parent only when the effective cwd actually changes (not when
   // projectRootFor identity changes due to session/worktree refreshes).
@@ -1156,13 +1142,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     // project. This keeps the archive list useful without a second step.
     if (workspaceKind === "project") {
       const projectRoot = projectRootFor(cwd) ?? cwd;
-      if (archivedProjectRoots.has(projectRoot)) {
-        setArchivedProjectRoots((prev) => {
-          const next = new Set(prev);
-          next.delete(projectRoot);
-          return next;
-        });
-      }
+      if (isArchived(projectRoot)) restoreProject(projectRoot);
     }
     if (cwd !== selectedCwd) setSelectedCwd(cwd);
     // Generate a temporary UUID client-side — no backend call needed.
@@ -1171,7 +1151,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
       ? crypto.randomUUID()
       : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
     onNewSession?.(tempId, cwd, workspaceKind);
-  }, [selectedCwd, chatWorkspaceCwd, archivedProjectRoots, onNewSession, projectRootFor, isChatCwd]);
+  }, [selectedCwd, chatWorkspaceCwd, isArchived, restoreProject, onNewSession, projectRootFor, isChatCwd]);
 
   const handleAddProject = useCallback(async () => {
     if (!isTauriDesktop()) {
@@ -1188,13 +1168,9 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   }, [selectedCwd, homeDir, activateProject]);
 
   const archiveProject = useCallback((projectRoot: string) => {
-    setArchivedProjectRoots((prev) => {
-      const next = new Set(prev);
-      next.add(projectRoot);
-      return next;
-    });
+    persistArchiveProject(projectRoot);
     closeProjectMenu();
-  }, [closeProjectMenu]);
+  }, [closeProjectMenu, persistArchiveProject]);
 
   // Desktop shell: native popup versions of the project menu and its branch
   // and worktree lists. `projectMenu` stays set while one is up (it keeps the
@@ -1309,14 +1285,14 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     : orderedChatFamilies.filter((family) => archivedChats.has(family.root.id));
   const sessionFamilies = listSessionFamilies(projectSessions);
   const allProjects = groupByProject(projectSessions, { runningIds: runningSessionIds, unreadIds: unreadSessionIds });
-  const activeProjects = allProjects.filter((group) => !archivedProjectRoots.has(group.projectRoot));
+  const activeProjects = allProjects.filter((group) => !isArchived(group.projectRoot));
   const activeProjectRoots = activeProjects.map((group) => group.projectRoot);
   const projectDisplayNames = getProjectDisplayNames(activeProjectRoots, projectNames);
   const canCollapseAllProjects = activeProjects.some((group) => !collapsedProjects.has(group.projectRoot));
   const canExpandAllProjects = activeProjects.some((group) => collapsedProjects.has(group.projectRoot));
   const timelineFamilies = projectViewMode === "timeline"
     ? sessionFamilies.filter((family) => (
-        !archivedProjectRoots.has(family.root.projectRoot ?? family.root.cwd)
+        !isArchived(family.root.projectRoot ?? family.root.cwd)
       )).sort((a, b) => b.root.modified.localeCompare(a.root.modified))
     : [];
   const timelineRootNodes = new Map<string, SessionTreeNode>();

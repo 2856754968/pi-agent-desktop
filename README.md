@@ -20,7 +20,7 @@ This is a personal fork of [abcwyc/pi-agent-desktop](https://github.com/abcwyc/p
 
 The home dashboard and companion are on by default and can be disabled in Settings; previously saved opt-out preferences remain respected. Statistics are derived from local session history without uploading session content for analytics.
 
-Renaming changes the display name only. Folder, Git repository, session and worktree paths stay the same. Names persist in the current browser or desktop WebView across reloads; save an empty name to restore the default. They do not automatically sync across devices.
+Renaming changes the display name only. Folder, Git repository, session and worktree paths stay the same. Names and removed-project markers are saved in `~/.pi/agent/pi-web/projects.json`, so desktop restarts and local server port changes preserve them. Save an empty name to restore the default. Existing browser preferences migrate on first use when available; these settings do not automatically sync across devices.
 
 The visuals and animations draw on [Nwflower/dsh-claude-style](https://github.com/Nwflower/dsh-claude-style), adapted to Pi Agent's existing components and usage data. See [third-party notices](./public/THIRD_PARTY_NOTICES.txt).
 

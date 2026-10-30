@@ -42,6 +42,7 @@ import { useChatAppearance } from "@/hooks/useChatAppearance";
 import type { ToolPreset } from "@/lib/tool-presets";
 import { SelectorRow } from "./SelectorRow";
 import { ModelSelector } from "./ModelSelector";
+import { ThinkingLevelSlider } from "./ThinkingLevelSlider";
 import {
   composeMessageWithAttachedFiles,
   extractDocxText,
@@ -2987,17 +2988,19 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                           if (lvl === "auto") return true;
                           return availableThinkingLevels.includes(lvl);
                         });
-                        const sliderValue = Math.max(0, sliderLevels.indexOf(isAutoThinkingSelection ? "auto" : (resolvedThinkingLevel ?? "auto")));
-                        return <div className="thinking-level-slider" aria-label={t("chat.reasoningHeading")}>
-                          <div className="thinking-level-slider-labels"><span>{t("chat.thinkingOff")}</span><strong>{isAutoThinkingSelection ? "auto" : (resolvedThinkingLevel ?? "auto")}</strong><span>{t("chat.thinkingMax")}</span></div>
-                          <input type="range" min={0} max={Math.max(0, sliderLevels.length - 1)} step={1} value={sliderValue}
-                            aria-label={t("chat.changeReasoningLabel")}
-                            onChange={(event) => {
-                              const next = sliderLevels[Number(event.target.value)] ?? "auto";
-                              onThinkingLevelChange(next);
-                            }} />
-                          <div className="thinking-level-slider-ticks" aria-hidden="true">{sliderLevels.map((level) => <span key={level} />)}</div>
-                        </div>;
+                        return <ThinkingLevelSlider
+                          key={`${model?.provider}/${model?.modelId}:${sliderLevels.join(",")}`}
+                          steps={sliderLevels.map(level => ({
+                            value: level,
+                            label: level === "off" ? t("chat.thinkingOff") : thinkingLevelMap?.[level] ?? level,
+                            description: t(THINKING_LEVEL_DESC_KEYS[level]),
+                          }))}
+                          value={isAutoThinkingSelection ? "auto" : resolvedThinkingLevel ?? "auto"}
+                          label={t("chat.changeReasoningLabel")}
+                          faster={t("chat.effortFaster")}
+                          deeper={t("chat.effortDeeper")}
+                          onChange={level => onThinkingLevelChange(level as typeof THINKING_LEVELS[number])}
+                        />;
                       })()}
                       {THINKING_LEVELS.filter((lvl) => {
                         if (!availableThinkingLevels) return true;
