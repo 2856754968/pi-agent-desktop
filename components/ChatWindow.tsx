@@ -14,6 +14,8 @@ import { MessageView } from "./MessageView";
 import { useReportDesktopReady } from "./desktop";
 import { MarkdownBody } from "./MarkdownBody";
 import { ChatInput, type ChatInputHandle } from "./ChatInput";
+import { ComposerCompanion } from "./ComposerCompanion";
+import { HomeUsageDashboard } from "./HomeUsageDashboard";
 import { ConversationNavigator, type ConversationTurnLocation } from "./ConversationNavigator";
 import { ExtensionWidgets } from "./ExtensionWidgets";
 import { ExtensionStatusLine, formatExtensionStatusLine } from "./ExtensionStatusLine";
@@ -1350,6 +1352,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
         {extensionCustomUi && (
           <ExtensionCustomPanel key={extensionCustomUi.id} request={extensionCustomUi} waitingCount={waitingExtensionCustomUiCount} onInput={sendExtensionCustomInput} />
         )}
+        {isEmptyNew && <HomeUsageDashboard />}
         {!isEmptyNew && <>
         <div
           ref={scrollContainerRef}
@@ -1748,6 +1751,9 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
             </div>
           </div>
         )}
+        <ComposerCompanion key={session?.id ?? newSessionDraftKey} state={extensionDialog || extensionCustomUi ? "attention"
+          : error ? "error" : bashRunning || agentPhase?.kind === "running_tools" || agentPhase?.kind === "running_command" ? "working"
+          : sessionBusy || isCompacting ? "thinking" : "idle"} />
         {chatInputElement}
         {chatUnlockDialog && chatAccess && (
           <ChatConfirmDialog

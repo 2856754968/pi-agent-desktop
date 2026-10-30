@@ -114,6 +114,30 @@ The Projects header's hover-only `…` menu switches between `grouped` (project 
 - Skill toggling edits only the `disable-model-invocation` frontmatter key on the target `SKILL.md`; keep that surgical so user formatting survives.
 - `/api/skills/install` shells through `npx skills add ... --agent pi`; project installs run with the selected cwd.
 
+## Optional home usage and pixel companion
+
+Settings › Appearance has independent, initially off switches for the local usage dashboard
+and an original geometric pixel crab (no Clawd/DSH artwork). Preferences use
+`APP_PREF_KEYS.homeDashboard` / `homeMascot`. ChatWindow mounts the dashboard only for
+an empty new conversation; the companion follows model/tool activity, blocking extension
+input, errors and a short run-ended animation. CSS respects reduced motion and uses the
+existing palette, including custom stylesheets.
+
+`GET /api/home-usage?range=all|30|7` reads only catalogue-owned local JSONL paths,
+projects away content, and caches each range for up to 60 seconds. Sessions means files
+created in the selected range; messages means user/assistant records across all branches,
+not tool results. Copies with the same entry identity and timestamp (fork ancestry) count
+once. Tokens sum recorded input, output, cache-read and cache-write buckets, including
+usage/compaction entries, and may be incomplete; missing usage is not fabricated as a
+known zero. Dates, ranges and peak hours use UTC. The activity grid shows the selected
+7/30 days, or the latest 91 days for All time. Model ranking shows the top ten recorded
+models. No provider query, pricing estimate, prompt content or local path is returned.
+Unreadable files are reported as partial data. No scan runs while the dashboard is off.
+
+Validation: `node --test lib/home-usage.test.mjs` and
+`node e2e/home-experience.mjs` (local mocked usage, real components, light/dark,
+320–1280px, opt-in, persistence, states, reduced motion and error/retry).
+
 ## Completion sound
 - `hooks/useAudio.ts` stores the toggle in `localStorage` as `pi-sound-enabled` and reuses one `AudioContext`. The switch is in Settings › General (`settings.completionSound`), not the composer row.
 - Browser autoplay policy means sound must be unlocked from a user gesture; `ChatInput` calls the unlock hook from interactive controls, and `ChatWindow` plays the tone from `onAgentEnd`.
