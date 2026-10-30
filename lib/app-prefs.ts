@@ -17,6 +17,7 @@ export const APP_PREF_KEYS = {
   rightPanelWidth: "pi-right-panel-width",
   unreadSessionIds: "pi-web:unread-session-ids",
   archivedProjects: "pi-web:archived-projects",
+  projectNames: "pi-web:project-names",
   /** Sidebar Projects pane layout: grouped project tree or chronological sessions. */
   projectViewMode: "pi-web:project-view-mode",
   /** Project roots whose session list is folded in the sidebar tree. */

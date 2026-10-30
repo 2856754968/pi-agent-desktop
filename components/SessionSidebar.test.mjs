@@ -77,14 +77,9 @@ test("subagent completion stays silent and never becomes unread", () => {
 });
 
 test("includes project activity counts in accessible labels", () => {
-  assert.match(
-    source,
-    /aria-label=\{`\$\{t\("sidebar\.agentRunning"\)\} \(\$\{activity\.running\}\)`\}/,
-  );
-  assert.match(
-    source,
-    /aria-label=\{`\$\{t\("sidebar\.newSessionActivity"\)\} \(\$\{activity\.unread\}\)`\}/,
-  );
+  // Check the rendered project chips; the old dropdown helper was unused.
+  assert.match(source, /aria-label=\{t\("sidebar\.runningCount", \{ count: runningCount \}\)\}/);
+  assert.match(source, /aria-label=\{t\("sidebar\.unreadCount", \{ count: unreadCount \}\)\}/);
 });
 
 test("formats session timestamps with the active locale", () => {

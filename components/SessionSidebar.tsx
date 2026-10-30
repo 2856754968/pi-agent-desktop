@@ -7,6 +7,7 @@ import { dispatchSessionRowContextMenu } from "@/lib/session-row-context-menu";
 import { skillExpansionToCommand } from "@/lib/slash-display";
 import { workspaceKeyOf } from "@/lib/workspace-memory";
 import { useI18n } from "@/hooks/useI18n";
+import { useProjectNames } from "@/hooks/useProjectNames";
 import { formatCompactRelativeTime, formatRelativeTime } from "@/lib/i18n/format";
 import { createPortal } from "react-dom";
 import { ProjectPicker, selectProjectDirectoryNative } from "./ProjectPicker";
@@ -391,6 +392,15 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   const [projectViewMenuAnchor, setProjectViewMenuAnchor] = useState<MenuAnchor | null>(null);
   const projectViewMenuRef = useRef<HTMLDivElement>(null);
   const projectViewMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const { names: projectNames, renameProject } = useProjectNames();
+  const [renamingProject, setRenamingProject] = useState<string | null>(null);
+  const [projectRenameValue, setProjectRenameValue] = useState("");
+  const projectRenameInputRef = useRef<HTMLInputElement>(null);
+  const startProjectRename = useCallback((root: string) => {
+    setProjectMenu(null);
+    setProjectRenameValue(getProjectDisplayName(root, [], projectNames));
+    setRenamingProject(root);
+  }, [projectNames]);
   const [projectMenu, setProjectMenu] = useState<{ root: string } | null>(null);
   const [projectMenuPos, setProjectMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [projectMenuAnchor, setProjectMenuAnchor] = useState<MenuAnchor | null>(null);
@@ -1234,6 +1244,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     setProjectBranchMenu(null);
     setProjectRevealError(null);
     const shown = await showNativeMenu([
+      { label: t("sidebar.renameProject"), onSelect: () => startProjectRename(projectRoot) },
       { label: `${t("sidebar.switchBranch")}…`, onSelect: () => void showNativeBranchMenu(projectRoot, at) },
       { label: t("sidebar.worktrees"), onSelect: () => void showNativeWorktreeMenu(projectRoot, at) },
       ...(onOpenTerminal
@@ -1245,7 +1256,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     ], at);
     setProjectMenu((current) => (current?.root === projectRoot ? null : current));
     return shown;
-  }, [archiveProject, onOpenTerminal, revealProjectInFileManager, revealProjectLabel, showNativeBranchMenu, showNativeWorktreeMenu, t]);
+  }, [archiveProject, onOpenTerminal, revealProjectInFileManager, revealProjectLabel, showNativeBranchMenu, showNativeWorktreeMenu, startProjectRename, t]);
 
   const openProjectMenu = useCallback((e: React.MouseEvent<HTMLButtonElement>, projectRoot: string) => {
     e.stopPropagation();
@@ -1300,7 +1311,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   const allProjects = groupByProject(projectSessions, { runningIds: runningSessionIds, unreadIds: unreadSessionIds });
   const activeProjects = allProjects.filter((group) => !archivedProjectRoots.has(group.projectRoot));
   const activeProjectRoots = activeProjects.map((group) => group.projectRoot);
-  const projectDisplayNames = getProjectDisplayNames(activeProjectRoots);
+  const projectDisplayNames = getProjectDisplayNames(activeProjectRoots, projectNames);
   const canCollapseAllProjects = activeProjects.some((group) => !collapsedProjects.has(group.projectRoot));
   const canExpandAllProjects = activeProjects.some((group) => collapsedProjects.has(group.projectRoot));
   const timelineFamilies = projectViewMode === "timeline"
@@ -1473,12 +1484,12 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
             {isCollapsed && (
               <span className="sidebar-project-tree-meta">
                 {runningCount > 0 && (
-                  <span className="sidebar-project-tree-chip is-running" title={t("sidebar.runningCount", { count: runningCount })}>
+                  <span className="sidebar-project-tree-chip is-running" title={t("sidebar.runningCount", { count: runningCount })} aria-label={t("sidebar.runningCount", { count: runningCount })}>
                     {runningCount}
                   </span>
                 )}
                 {unreadCount > 0 && (
-                  <span className="sidebar-project-tree-chip is-unread" title={t("sidebar.unreadCount", { count: unreadCount })}>
+                  <span className="sidebar-project-tree-chip is-unread" title={t("sidebar.unreadCount", { count: unreadCount })} aria-label={t("sidebar.unreadCount", { count: unreadCount })}>
                     {unreadCount}
                   </span>
                 )}
@@ -1567,7 +1578,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
         if (!node) return null;
         const projectRoot = family.root.projectRoot ?? family.root.cwd;
         const projectName = projectDisplayNames.get(projectRoot)
-          ?? getProjectDisplayName(projectRoot, activeProjectRoots);
+          ?? getProjectDisplayName(projectRoot, activeProjectRoots, projectNames);
         const familySessions = [family.root, ...family.subagents];
         return (
           <SessionFamilyItem
@@ -2086,6 +2097,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
             onOpenTerminal(cwd);
           } : undefined}
           onReveal={() => void revealProjectInFileManager(projectMenu.root)}
+          onRename={() => startProjectRename(projectMenu.root)}
           onArchive={() => archiveProject(projectMenu.root)}
           onSwitchBranch={(branch) => void handleSwitchProjectBranch(projectMenu.root, branch)}
           onFetch={() => void worktreeActions.fetchBranches(projectMenu.root)}
@@ -2099,6 +2111,38 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
           onNewBranchChange={worktreeActions.setNewBranch}
           onCreateWorktree={() => void worktreeActions.create(projectMenu.root)}
         />
+      )}
+      {renamingProject && createPortal(
+        <ChatConfirmDialog
+          title={t("sidebar.renameProject")}
+          initialFocusRef={projectRenameInputRef}
+          subject={renamingProject}
+          body={t("sidebar.renameProjectHint")}
+          confirmLabel={t("sidebar.saveProjectName")}
+          cancelLabel={t("sidebar.cancel")}
+          onCancel={() => setRenamingProject(null)}
+          onConfirm={() => {
+            renameProject(renamingProject, projectRenameValue);
+            setRenamingProject(null);
+          }}
+        >
+          <input
+            className="project-rename-input"
+            aria-label={t("sidebar.projectName")}
+            maxLength={100}
+            ref={projectRenameInputRef}
+            value={projectRenameValue}
+            onChange={(event) => setProjectRenameValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (isImeComposing(event)) return;
+              if (event.key === "Enter") {
+                event.preventDefault();
+                renameProject(renamingProject, projectRenameValue);
+                setRenamingProject(null);
+              }
+            }}
+          />
+        </ChatConfirmDialog>, document.body
       )}
       {continueChat && (
         <div className="project-picker-modal-overlay" role="dialog" aria-modal="true" aria-label={t("sidebar.continueInProject")} onClick={() => setContinueChat(null)}>
@@ -2280,49 +2324,6 @@ function UnreadSessionIndicator() {
           <animate attributeName="opacity" values="0.32;0;0.32" dur="1.6s" repeatCount="indefinite" />
         </circle>
       </svg>
-    </span>
-  );
-}
-
-/**
- * Compact per-project activity badges for the workspace selector dropdown items:
- * a spinning running icon + count and an unread dot + count. Renders nothing
- * when the project has no activity. Counts share the accent / unread colors of
- * the per-session indicators so the two stay visually consistent.
- */
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-function showProjectActivity(
-  activity: { running: number; unread: number } | undefined,
-  t: (key: string) => string,
-): ReactNode {
-  if (!activity || (activity.running === 0 && activity.unread === 0)) return null;
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0, marginLeft: 6 }}>
-      {activity.running > 0 && (
-        <span
-          title={t("sidebar.agentRunning")}
-          aria-label={`${t("sidebar.agentRunning")} (${activity.running})`}
-          style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--accent)", fontSize: 10, fontFamily: "var(--font-mono)" }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ display: "block" }}>
-            <g>
-              <path d="M21 12a9 9 0 1 1-3.8-7.4" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
-              <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.9s" repeatCount="indefinite" />
-            </g>
-          </svg>
-          {activity.running}
-        </span>
-      )}
-      {activity.unread > 0 && (
-        <span
-          title={t("sidebar.newSessionActivity")}
-          aria-label={`${t("sidebar.newSessionActivity")} (${activity.unread})`}
-          style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "#0891b2", fontSize: 10, fontFamily: "var(--font-mono)" }}
-        >
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
-          {activity.unread}
-        </span>
-      )}
     </span>
   );
 }
