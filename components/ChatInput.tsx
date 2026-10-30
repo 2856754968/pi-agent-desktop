@@ -2981,6 +2981,24 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                     {onThinkingLevelChange && (
                       <>
                       <div className="composer-menu-heading">{t("chat.reasoningHeading")}</div>
+                      {(() => {
+                        const sliderLevels = THINKING_LEVELS.filter((lvl) => {
+                          if (!availableThinkingLevels) return true;
+                          if (lvl === "auto") return true;
+                          return availableThinkingLevels.includes(lvl);
+                        });
+                        const sliderValue = Math.max(0, sliderLevels.indexOf(isAutoThinkingSelection ? "auto" : (resolvedThinkingLevel ?? "auto")));
+                        return <div className="thinking-level-slider" aria-label={t("chat.reasoningHeading")}>
+                          <div className="thinking-level-slider-labels"><span>{t("chat.thinkingOff")}</span><strong>{isAutoThinkingSelection ? "auto" : (resolvedThinkingLevel ?? "auto")}</strong><span>{t("chat.thinkingMax")}</span></div>
+                          <input type="range" min={0} max={Math.max(0, sliderLevels.length - 1)} step={1} value={sliderValue}
+                            aria-label={t("chat.changeReasoningLabel")}
+                            onChange={(event) => {
+                              const next = sliderLevels[Number(event.target.value)] ?? "auto";
+                              onThinkingLevelChange(next);
+                            }} />
+                          <div className="thinking-level-slider-ticks" aria-hidden="true">{sliderLevels.map((level) => <span key={level} />)}</div>
+                        </div>;
+                      })()}
                       {THINKING_LEVELS.filter((lvl) => {
                         if (!availableThinkingLevels) return true;
                         if (lvl === "auto") return true;

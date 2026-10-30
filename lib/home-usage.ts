@@ -14,7 +14,7 @@ export interface HomeUsage {
   activeDays: number;
   peakHour: number | null;
   favoriteModel: string | null;
-  days: { date: string; messages: number; tokens: number }[];
+  days: { date: string; messages: number; tokens: number; models?: Record<string, number> }[];
   models: { name: string; tokens: number }[];
   usageRecords: number;
   skippedFiles: number;
@@ -70,7 +70,7 @@ export function summarizeHomeUsage(
   const cutoff = range === "all" ? -Infinity : today.getTime() - (Number(range) - 1) * 86400000;
   const end = now.getTime();
   const inRange = (timestamp: string) => { const n = Date.parse(timestamp); return Number.isFinite(n) && n >= cutoff && n <= end; };
-  const days = new Map<string, { date: string; messages: number; tokens: number }>();
+  const days = new Map<string, { date: string; messages: number; tokens: number; models: Record<string, number> }>();
   const models = new Map<string, number>();
   const hours = Array<number>(24).fill(0);
   const seen = new Set<string>();
@@ -80,13 +80,16 @@ export function summarizeHomeUsage(
     seen.add(record.key);
     const date = new Date(record.timestamp);
     const key = date.toISOString().slice(0, 10);
-    const day = days.get(key) ?? { date: key, messages: 0, tokens: 0 };
+    const day = days.get(key) ?? { date: key, messages: 0, tokens: 0, models: Object.create(null) as Record<string, number> };
     if (record.message) { messages++; day.messages++; hours[date.getUTCHours()]++; }
     if (record.tokens !== undefined) {
       usageRecords++;
       tokens += record.tokens;
       day.tokens += record.tokens;
-      if (record.model) models.set(record.model, (models.get(record.model) ?? 0) + record.tokens);
+      if (record.model) {
+        models.set(record.model, (models.get(record.model) ?? 0) + record.tokens);
+        day.models[record.model] = (day.models[record.model] ?? 0) + record.tokens;
+      }
     }
     days.set(key, day);
   }

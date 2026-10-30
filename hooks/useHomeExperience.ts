@@ -10,8 +10,8 @@ function subscribe(callback: () => void) {
 }
 
 export function useHomeExperience() {
-  const mascot = useSyncExternalStore(subscribe, () => getPref(APP_PREF_KEYS.homeMascot) === "true", () => false);
-  const dashboard = useSyncExternalStore(subscribe, () => getPref(APP_PREF_KEYS.homeDashboard) === "true", () => false);
+  const mascot = useSyncExternalStore(subscribe, () => getPref(APP_PREF_KEYS.homeMascot) !== "false", () => true);
+  const dashboard = useSyncExternalStore(subscribe, () => getPref(APP_PREF_KEYS.homeDashboard) !== "false", () => true);
   const setOption = (key: "homeMascot" | "homeDashboard", value: boolean) => {
     setPref(APP_PREF_KEYS[key], String(value));
     window.dispatchEvent(new Event(eventName));
