@@ -72,3 +72,20 @@ test("a page thumbnail is an SVG image wrapping the document", async () => {
   assert.match(svg, new RegExp(`<foreignObject x="0" y="0" width="${PAGE_THUMBNAIL_WIDTH}"`));
   assert.match(svg, /<body>Hi<\/body><\/html><\/foreignObject><\/svg>$/);
 });
+
+test("files are keyed by path and filtered as created or edited", async () => {
+  const { artifactKey, filterArtifacts, fileThumbnailKind, TYPE_ALL_ARTIFACTS, TYPE_ALL_FILES, TYPE_CREATED_FILES, TYPE_EDITED_FILES } = await jiti.import("./artifacts-helpers.ts");
+  const page = item({ kind: "artifact", identifier: "page", type: "html" });
+  const created = item({ kind: "file", sessionId: "a", path: "/w/new.md", created: true });
+  const edited = item({ kind: "file", sessionId: "b", path: "/w/old.ts", created: false });
+  assert.equal(artifactKey(created), artifactKey({ ...created, sessionId: "other" }));
+  assert.notEqual(artifactKey(created), artifactKey(edited));
+  const names = (type) => filterArtifacts([page, created, edited], type, "").map((entry) => (entry.kind === "file" ? entry.path : entry.identifier));
+  assert.deepEqual(names(""), ["page", "/w/new.md", "/w/old.ts"]);
+  assert.deepEqual(names(TYPE_ALL_ARTIFACTS), ["page"]);
+  assert.deepEqual(names("html"), ["page"]);
+  assert.deepEqual(names(TYPE_ALL_FILES), ["/w/new.md", "/w/old.ts"]);
+  assert.deepEqual(names(TYPE_CREATED_FILES), ["/w/new.md"]);
+  assert.deepEqual(names(TYPE_EDITED_FILES), ["/w/old.ts"]);
+  assert.deepEqual(["a.PNG", "d.svg", "b.html", "c.md", "e.ts", "f.bin"].map(fileThumbnailKind), ["file-image", "file-image", "frame", "text", "code", "icon"]);
+});
