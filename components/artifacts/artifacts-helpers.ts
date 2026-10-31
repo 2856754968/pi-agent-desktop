@@ -44,7 +44,7 @@ export function filterArtifacts(items: readonly ArtifactSummary[], type: string,
 
 /**
  * How a list row previews an artifact without running its code: SVG and
- * Mermaid as images, HTML as a script-less static frame, text as an excerpt.
+ * Mermaid as images, HTML as a static image of the page, text as an excerpt.
  * React needs its runtime and scripts, so it keeps the type icon.
  */
 export type ThumbnailKind = "image" | "mermaid" | "frame" | "text" | "icon";
@@ -83,4 +83,20 @@ export function textExcerpt(content: string, type: ArtifactSummary["type"], maxL
 export function svgImageSource(svg: string): string {
   const withNamespace = /<svg\b[^>]*\bxmlns\s*=/.test(svg) ? svg : svg.replace(/<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(withNamespace)}`;
+}
+
+/** HTML thumbnails lay the page out at this size, then scale it down. */
+export const PAGE_THUMBNAIL_WIDTH = 800;
+export const PAGE_THUMBNAIL_HEIGHT = 600;
+
+/**
+ * Wraps a serialized XHTML document in an SVG image. Used as an `<img>`, the
+ * page cannot run scripts or load anything, so the thumbnail is inert.
+ */
+export function pageImageSvg(xhtml: string): string {
+  const width = PAGE_THUMBNAIL_WIDTH;
+  const height = PAGE_THUMBNAIL_HEIGHT;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`
+    + `<rect width="100%" height="100%" fill="#fff"/>`
+    + `<foreignObject x="0" y="0" width="${width}" height="${height}">${xhtml}</foreignObject></svg>`;
 }
