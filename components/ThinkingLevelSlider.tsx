@@ -5,9 +5,13 @@ import { useRef, useState, type CSSProperties } from "react";
 interface Step { value: string; label: string; description: string }
 
 /** Preview continuously while held; send one supported level on release. */
-export function ThinkingLevelSlider({ steps, value, label, faster, deeper, onChange }: {
+export function ThinkingLevelSlider({ steps, value, label, faster, deeper, onChange, defaultLevel, onSaveDefault, saveDefaultLabel, defaultLabel }: {
   steps: Step[]; value: string; label: string; faster: string; deeper: string;
   onChange: (value: string) => void;
+  defaultLevel?: string | null;
+  onSaveDefault?: (value: string) => void;
+  saveDefaultLabel?: string;
+  defaultLabel?: string;
 }) {
   const [draft, setDraft] = useState<number | null>(null);
   const held = useRef(false);
@@ -25,7 +29,21 @@ export function ThinkingLevelSlider({ steps, value, label, faster, deeper, onCha
   return (
     <div className="thinking-level-slider" data-apex={last > 0 && nearest === last || undefined}
       data-dragging={draft !== null || undefined}>
-      <div className="thinking-level-slider-head"><span>{label}</span><strong>{step.label}</strong></div>
+      <div className="thinking-level-slider-head">
+        <span>{label}</span><strong>{step.label}</strong>
+        {onSaveDefault && step.value !== "auto" && (
+          <button type="button" className={`app-default-star${defaultLevel === step.value ? " is-default" : ""}`}
+            aria-label={defaultLevel === step.value ? defaultLabel : saveDefaultLabel}
+            title={defaultLevel === step.value ? defaultLabel : saveDefaultLabel}
+            aria-disabled={defaultLevel === step.value}
+            onClick={() => { if (defaultLevel !== step.value) onSaveDefault(step.value); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={defaultLevel === step.value ? "currentColor" : "none"}
+              stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="12 2.5 14.9 8.6 21.5 9.4 16.6 13.9 17.9 20.5 12 17.2 6.1 20.5 7.4 13.9 2.5 9.4 9.1 8.6" />
+            </svg>
+          </button>
+        )}
+      </div>
       <div className="thinking-level-slider-description">{step.description}</div>
       <div className="thinking-level-slider-control" style={{ "--effort-progress": `${last ? position / last * 100 : 0}%` } as CSSProperties}>
         <input type="range" min={0} max={last || 1} step="any" value={position} disabled={last === 0}
@@ -50,7 +68,7 @@ export function ThinkingLevelSlider({ steps, value, label, faster, deeper, onCha
             const index = event.key === "Home" ? 0 : event.key === "End" ? last
               : ["ArrowRight", "ArrowUp"].includes(event.key) ? selected + 1
               : ["ArrowLeft", "ArrowDown"].includes(event.key) ? selected - 1 : null;
-            if (index !== null) { event.preventDefault(); commit(index); }
+            if (index !== null) { event.preventDefault(); event.stopPropagation(); commit(index); }
           }} />
         <div className="thinking-level-slider-ticks" aria-hidden="true">
           {steps.map((item, index) => <span key={item.value} data-passed={index <= nearest || undefined}
