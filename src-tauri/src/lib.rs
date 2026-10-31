@@ -1215,7 +1215,7 @@ pub fn run() {
     #[cfg(windows)]
     let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
         let value = app.clone();
-        let _ = app.run_on_main_thread(move || show_main_window(&value));
+        let _ = app.run_on_main_thread(move || shell::show_main_window(&value));
     }));
     let app = builder
         // Launch at login. The OS entry (LaunchAgent / registry Run key /
