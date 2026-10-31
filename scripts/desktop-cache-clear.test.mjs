@@ -33,3 +33,16 @@ test("macOS cache clear targets the app cache dir", () => {
   const body = functionBody("clear_webview_caches");
   assert.match(body, /target_os = "macos"[\s\S]*app_cache_dir\(\)/);
 });
+
+// Tauri puts the WebView2 profile (localStorage, cookies) in app_local_data_dir,
+// which on Windows is also app_cache_dir and holds app_log_dir. The Settings
+// clear must keep the profile and logs, and both clears must look for the
+// profile there rather than in the roaming app_data_dir.
+test("Windows cache clears keep the WebView2 profile and logs", () => {
+  const runtime = functionBody("clear_runtime_caches");
+  assert.match(runtime, /keeps_in_cache_dir\(/);
+  assert.match(source, /fn keeps_in_cache_dir[\s\S]*?"EBWebView"[\s\S]*?"logs"/);
+  for (const name of ["clear_runtime_caches", "clear_webview_caches"]) {
+    assert.match(functionBody(name), /target_os = "windows"[\s\S]*app_local_data_dir\(\)[\s\S]*EBWebView/);
+  }
+});
