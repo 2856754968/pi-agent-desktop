@@ -1,3 +1,5 @@
+import { estimateHomeUsageUsd, type HomeTokenUsage } from "./home-official-pricing.ts";
+
 /** Small, content-free projections of persisted usage. Dates and ranges use UTC. */
 export interface HomeUsageRecord {
   key: string;
@@ -5,17 +7,21 @@ export interface HomeUsageRecord {
   message: boolean;
   model?: string;
   tokens?: number;
+  usage?: HomeTokenUsage;
 }
 
 export interface HomeUsage {
   sessions: number;
   messages: number;
   tokens: number | null;
+  costUsd: number | null;
+  unpricedRecords: number;
+  unpricedTokens: number;
   activeDays: number;
   peakHour: number | null;
   favoriteModel: string | null;
   days: { date: string; messages: number; tokens: number; models?: Record<string, number> }[];
-  models: { name: string; tokens: number }[];
+  models: { name: string; tokens: number; costUsd: number | null; unpricedRecords: number }[];
   usageRecords: number;
   skippedFiles: number;
   generatedAt: string;
@@ -59,6 +65,10 @@ export function projectHomeUsage(value: unknown, fallbackKey: string): HomeUsage
     message: isMessage,
     model: model ? (provider ? provider + "/" + model : model) : undefined,
     tokens: sum !== undefined && Number.isFinite(sum) ? sum : undefined,
+    usage: validUsage && Number.isFinite(sum) ? {
+      input: (usage.input as number | undefined) ?? 0, output: (usage.output as number | undefined) ?? 0,
+      cacheRead: (usage.cacheRead as number | undefined) ?? 0, cacheWrite: (usage.cacheWrite as number | undefined) ?? 0,
+    } : undefined,
   };
 }
 
@@ -72,9 +82,11 @@ export function summarizeHomeUsage(
   const inRange = (timestamp: string) => { const n = Date.parse(timestamp); return Number.isFinite(n) && n >= cutoff && n <= end; };
   const days = new Map<string, { date: string; messages: number; tokens: number; models: Record<string, number> }>();
   const models = new Map<string, number>();
+  const costs = new Map<string, { total: number; priced: number; unpriced: number }>();
   const hours = Array<number>(24).fill(0);
   const seen = new Set<string>();
   let messages = 0, tokens = 0, usageRecords = 0;
+  let costUsd = 0, pricedRecords = 0, unpricedRecords = 0, unpricedTokens = 0;
   for (const record of records) {
     if (seen.has(record.key) || !inRange(record.timestamp)) continue;
     seen.add(record.key);
@@ -84,6 +96,15 @@ export function summarizeHomeUsage(
     if (record.message) { messages++; day.messages++; hours[date.getUTCHours()]++; }
     if (record.tokens !== undefined) {
       usageRecords++;
+      const usd = record.usage ? estimateHomeUsageUsd(record.model, record.usage) : null;
+      if (usd === null) { unpricedRecords++; unpricedTokens += record.tokens; }
+      else { costUsd += usd; pricedRecords++; }
+      if (record.model) {
+        const cost = costs.get(record.model) ?? { total: 0, priced: 0, unpriced: 0 };
+        if (usd === null) cost.unpriced++;
+        else { cost.total += usd; cost.priced++; }
+        costs.set(record.model, cost);
+      }
       tokens += record.tokens;
       day.tokens += record.tokens;
       if (record.model) {
@@ -93,10 +114,15 @@ export function summarizeHomeUsage(
     }
     days.set(key, day);
   }
-  const rankedModels = [...models].map(([name, tokens]) => ({ name, tokens })).sort((a, b) => b.tokens - a.tokens || a.name.localeCompare(b.name));
+  const rankedModels = [...models].map(([name, tokens]) => ({ name, tokens,
+    costUsd: costs.get(name)?.priced ? costs.get(name)?.total ?? null : null,
+    unpricedRecords: costs.get(name)?.unpriced ?? 0,
+  })).sort((a, b) => b.tokens - a.tokens || a.name.localeCompare(b.name));
   return {
     sessions: sessionDates.filter(inRange).length, messages,
     tokens: usageRecords > 0 || messages === 0 ? tokens : null,
+    costUsd: pricedRecords > 0 || (usageRecords === 0 && messages === 0) ? costUsd : null,
+    unpricedRecords, unpricedTokens,
     activeDays: [...days.values()].filter((day) => day.messages > 0 || day.tokens > 0).length,
     peakHour: messages > 0 ? hours.indexOf(Math.max(...hours)) : null,
     favoriteModel: rankedModels[0]?.name ?? null,

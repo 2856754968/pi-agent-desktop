@@ -39,6 +39,8 @@ import type { ReactNode } from "react";
 import type { ContextUsage, SessionStatsInfo } from "@/lib/pi-types";
 import { ContextUsageRing } from "./ContextUsageRing";
 import { useChatAppearance } from "@/hooks/useChatAppearance";
+import { useAnimatedCaret } from "@/hooks/useAnimatedCaret";
+import { captureMessageMotion } from "@/hooks/useMessageMotion";
 import type { ToolPreset } from "@/lib/tool-presets";
 import { SelectorRow } from "./SelectorRow";
 import { ModelSelector } from "./ModelSelector";
@@ -903,6 +905,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
     : {};
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useAnimatedCaret(textareaRef, value);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
   const toolDropdownRef = useRef<HTMLDivElement>(null);
   const thinkingDropdownRef = useRef<HTMLDivElement>(null);
@@ -1360,6 +1363,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
       await resolveSessionReferences(msg, sessionMentionTargetsRef.current),
       attachedFilesRef.current,
     );
+    captureMessageMotion(textareaRef.current, resolvedMessage);
     onSend(resolvedMessage, attachedImages.length ? attachedImages : undefined);
     clearInput();
   }, [value, attachedImages, workspaceUnavailable, isStreaming, runBuiltinCommand, onSend, clearInput, onAudioUnlock, sessionMentionTargetsRef]);

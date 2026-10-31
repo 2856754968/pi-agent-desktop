@@ -8,6 +8,7 @@ import { ThinkingIcon } from "./ThinkingIcon";
 import { copyText } from "@/lib/clipboard";
 import { useI18n } from "@/hooks/useI18n";
 import { useDiffViewMode } from "@/hooks/useDiffViewMode";
+import { useMessageMotion } from "@/hooks/useMessageMotion";
 import { parseCompactionSummary } from "@/lib/compaction-summary";
 import { getAssistantErrorMessage, getThinkingPreview, hasAssistantAnswer, isAssistantTruncated, isEmptyThinkingBlock } from "@/lib/message-display";
 import { parseUnifiedPatch, type SplitDiffCell, type SplitDiffFile } from "@/lib/patch";
@@ -361,6 +362,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
           .map((b) => b.text)
           .join("\n")
   ).replace(/\r\n?/g, "\n");
+  const bubbleRef = useMessageMotion(content, message.timestamp);
 
   const imageBlocks: ImageContent[] =
     typeof message.content === "string"
@@ -422,6 +424,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
     >
       <div style={{ display: "flex", alignItems: "flex-end", gap: 6, maxWidth: "min(78%, 660px)" }}>
         <div
+          ref={bubbleRef}
           className={`message-user-bubble${isEditing ? " is-editing" : ""}`}
           style={{
             flex: 1,

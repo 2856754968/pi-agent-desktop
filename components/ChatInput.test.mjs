@@ -692,6 +692,7 @@ test("handleSend lets a handled /mcp through while streaming and sends an unowne
   const run = async (value, { isStreaming, handled }) => {
     const calls = { builtin: [], sent: [] };
     const handleSend = chatInputCallback("handleSend", {
+      textareaRef: { current: null }, captureMessageMotion() {},
       value,
       attachedFilesRef: { current: [] }, composeMessageWithAttachedFiles,
       attachedImages: [],
@@ -938,6 +939,7 @@ test("handleSend sends exactly once and routes builtin commands through the pend
     let cleared = 0;
     let builtinCalls = 0;
     const handler = script.runInNewContext({
+      textareaRef: { current: null }, captureMessageMotion() {},
       value, attachedImages, isStreaming: false, workspaceUnavailable,
       attachedFilesRef: { current: [] }, composeMessageWithAttachedFiles,
       onAudioUnlock() {},
@@ -1023,7 +1025,9 @@ test("only the chat composer offers saving a default model or reasoning level", 
   const agentsConfigSource = readFileSync(new URL("./AgentsConfig.tsx", import.meta.url), "utf8");
   assert.match(chatInputSource, /<ModelSelector[\s\S]*?defaultValue=\{defaultModel\}[\s\S]*?onSetDefault=\{onSetDefaultModel\}/);
   // "auto" means "use the default", so it never gets a star of its own.
-  assert.match(chatInputSource, /star=\{onSetDefaultThinkingLevel && lvl !== "auto"/);
+  assert.match(chatInputSource, /<ThinkingLevelSlider[\s\S]*?onSaveDefault=\{onSetDefaultThinkingLevel/);
+  const sliderSource = readFileSync(new URL("./ThinkingLevelSlider.tsx", import.meta.url), "utf8");
+  assert.match(sliderSource, /onSaveDefault && step\.value !== "auto"/);
   // A subagent profile's model is not the default for new chats.
   assert.doesNotMatch(agentsConfigSource, /onSetDefault/);
 });

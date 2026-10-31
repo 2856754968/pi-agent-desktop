@@ -1,0 +1,471 @@
+[
+  {
+    "match": "deepseek.*flash",
+    "text": {
+      "zh": "非对称模型结构，小成本大智能。",
+      "en": "Asymmetric architecture: more intelligence, less cost."
+    }
+  },
+  {
+    "match": "deepseek.*pro",
+    "text": {
+      "zh": "性能比肩顶级闭源模型。",
+      "en": "Performance rivaling the world's top closed-source models."
+    }
+  },
+  {
+    "match": "deepseek",
+    "text": {
+      "zh": "更强、更快、更普惠。",
+      "en": "Smarter, faster, more affordable."
+    }
+  },
+  {
+    "match": "claude.*fable",
+    "text": {
+      "zh": "新一代智能，专为解决最艰深的知识工作和编程难题。",
+      "en": "Next generation of intelligence for the hardest knowledge work and coding problems."
+    }
+  },
+  {
+    "match": "claude.*mythos",
+    "text": {
+      "zh": "面向网络安全与生物学研究，仅向经过审核的机构开放。",
+      "en": "Built for cybersecurity and biology research, with access limited to vetted organizations."
+    }
+  },
+  {
+    "match": "claude.*opus",
+    "text": {
+      "zh": "面向复杂编程与 AI 智能体的混合推理模型。",
+      "en": "A hybrid reasoning model built for complex coding and AI agents."
+    }
+  },
+  {
+    "match": "claude.*sonnet",
+    "text": {
+      "zh": "面向实时智能体与高吞吐场景的混合推理模型。",
+      "en": "A hybrid reasoning model for real-time agents and high-volume work."
+    }
+  },
+  {
+    "match": "claude.*haiku",
+    "text": {
+      "zh": "面向速度敏感的高吞吐场景，响应快、成本低。",
+      "en": "For speed-sensitive, high-volume workloads at low cost."
+    }
+  },
+  {
+    "match": "claude",
+    "text": {
+      "zh": "擅长编程、写作与复杂分析。",
+      "en": "Strong at coding, writing and complex analysis."
+    }
+  },
+  {
+    "match": "codex",
+    "text": {
+      "zh": "为 Codex 智能体编程优化，可并行处理多项软件工程任务。",
+      "en": "Optimized for agentic coding in Codex, handling several software tasks in parallel."
+    }
+  },
+  {
+    "match": "gpt.*astra",
+    "text": {
+      "zh": "面向计算机操作、编程、网络安全与科学研究中最艰深的问题。",
+      "en": "For the hardest problems in computer use, coding, cybersecurity and science."
+    }
+  },
+  {
+    "match": "gpt.*sol",
+    "text": {
+      "zh": "面向日常工作，擅长写作、编程与分析。",
+      "en": "For everyday work: writing, coding and analysis."
+    }
+  },
+  {
+    "match": "gpt.*luna",
+    "text": {
+      "zh": "响应快、成本低，适合高频与可重复的任务。",
+      "en": "Optimized for fast responses and high-volume, repeatable work."
+    }
+  },
+  {
+    "match": "gpt[._-]?5[._-]?4(?!\\d)",
+    "text": {
+      "zh": "面向编程与专业工作，原生支持计算机操作。",
+      "en": "For coding and professional work, with native computer use."
+    }
+  },
+  {
+    "match": "gpt-?5",
+    "text": {
+      "zh": "内置思考、可配置推理强度，面向编程与智能体任务。",
+      "en": "Thinking built in with configurable reasoning effort, for coding and agentic tasks."
+    }
+  },
+  {
+    "match": "(^|[/-])o[1-9](-|$)",
+    "text": {
+      "zh": "作答前先深入思考，擅长多步推理。",
+      "en": "Trained to think before answering, strong at multi-step reasoning."
+    }
+  },
+  {
+    "match": "gpt-oss|oss-\\d",
+    "text": {
+      "zh": "OpenAI 的开放权重推理模型，Apache 2.0 许可，分 120B 与 20B 两种规模，可自托管。",
+      "en": "OpenAI's open-weight reasoning models under Apache 2.0, in 120B and 20B sizes, self-hostable."
+    }
+  },
+  {
+    "match": "gpt",
+    "text": {
+      "zh": "支持文本与图像输入，覆盖多种语言。",
+      "en": "Text and image input across many languages."
+    }
+  },
+  {
+    "match": "gemini.*argon",
+    "text": {
+      "zh": "面向真实软件工程、企业知识工作与网络安全防御的前沿模型，擅长长程复杂任务。",
+      "en": "A frontier model for real-world software engineering, enterprise knowledge work and cyber defense, built for long-horizon workflows."
+    }
+  },
+  {
+    "match": "gemini.*(pro|ultra)",
+    "text": {
+      "zh": "面向复杂任务、深度推理与多模态理解。",
+      "en": "For complex tasks, deep reasoning and multimodal understanding."
+    }
+  },
+  {
+    "match": "gemini.*flash",
+    "text": {
+      "zh": "速度与成本优先，面向规模化智能体任务与高频低延迟场景。",
+      "en": "Speed and cost first, for high-volume low-latency work and agentic tasks at scale."
+    }
+  },
+  {
+    "match": "gemini",
+    "text": {
+      "zh": "原生理解文本、图像、视频与音频。",
+      "en": "Native text, image, video and audio understanding."
+    }
+  },
+  {
+    "match": "gemma",
+    "text": {
+      "zh": "源自 Gemini 研究，从云端服务器到手机都能运行。",
+      "en": "Built from the same research as Gemini, running from cloud servers to phones."
+    }
+  },
+  {
+    "match": "nano-?banana",
+    "text": {
+      "zh": "Gemini 图像生成与编辑模型，支持自然语言对话式创建与修改。",
+      "en": "Gemini's image generation and editing model, with conversational creation and refinement."
+    }
+  },
+  {
+    "match": "glm.*flashx",
+    "text": {
+      "zh": "Flash 档的高吞吐版本，适合高频任务。",
+      "en": "The high-throughput variant of the Flash tier, for high-frequency work."
+    }
+  },
+  {
+    "match": "glm[._-]?5[._-]?3.*flash",
+    "text": {
+      "zh": "该系列首个原生多模态模型，320B 总参数，MIT 许可开放权重。",
+      "en": "The series' first natively multimodal model: 320B parameters, open weights under MIT."
+    }
+  },
+  {
+    "match": "glm[._-]?5[._-]?3(?!\\d)",
+    "text": {
+      "zh": "最强的开放权重编程模型之一，擅长长时间自主任务。",
+      "en": "One of the most capable open-weight coding models, built for long-horizon autonomy."
+    }
+  },
+  {
+    "match": "glm.*flash",
+    "text": {
+      "zh": "更快更省的多模态推理，兼顾日常编程。",
+      "en": "Fast, low-cost multimodal inference that handles everyday coding."
+    }
+  },
+  {
+    "match": "glm",
+    "text": {
+      "zh": "覆盖对话、编程与智能体，支持思考模式与函数调用。",
+      "en": "Covers chat, coding and agents, with thinking mode and function calling."
+    }
+  },
+  {
+    "match": "kimi.*k3[._-]?1(?!\\d)|(^|[^a-z0-9])k3[._-]?1(?!\\d)",
+    "text": {
+      "zh": "开放权重模型，以代码、金融研究与长程 Agent 任务见长。",
+      "en": "An open-weight model, strong at coding, financial research and long-horizon agent work."
+    }
+  },
+  {
+    "match": "kimi.*(k3|k-?3)|(^|[^a-z0-9])k-?3",
+    "text": {
+      "zh": "面向编程与知识工作的 2.8T 开放权重模型。",
+      "en": "An open-weight 2.8T model for coding and knowledge work."
+    }
+  },
+  {
+    "match": "kimi.*(cod(e|ing)|k2[._-]?7).*highspeed",
+    "text": {
+      "zh": "长程编程智能体模型的高速版本，开放权重。",
+      "en": "The high-speed tier of the open-weight agentic coding model, for long-horizon work."
+    }
+  },
+  {
+    "match": "kimi.*(cod(e|ing)|k2[._-]?7)",
+    "text": {
+      "zh": "面向长程编程的开放权重智能体模型，1T 总参数。",
+      "en": "An open-weight agentic coding model for long-horizon work, with 1T parameters."
+    }
+  },
+  {
+    "match": "kimi",
+    "text": {
+      "zh": "原生支持文本、图像与视频输入，含思考模式与工具调用。",
+      "en": "Native text, image and video input, with thinking mode and tool calling."
+    }
+  },
+  {
+    "match": "qwen[._-]?3[._-]?8.*max",
+    "text": {
+      "zh": "面向编程与办公的 2.4 万亿参数 MoE，支持思考模式与内置工具。",
+      "en": "A 2.4T-parameter MoE for coding and office work, with thinking mode and built-in tools."
+    }
+  },
+  {
+    "match": "qwen.*(coder|code)",
+    "text": {
+      "zh": "开放权重 MoE，面向补全、生成与仓库级修改。",
+      "en": "Open-weight MoE for completion, generation and repo-level edits."
+    }
+  },
+  {
+    "match": "qwen.*(flash|turbo)",
+    "text": {
+      "zh": "响应快、成本低，工具调用支持完整。",
+      "en": "Fast and cheap, with full tool calling."
+    }
+  },
+  {
+    "match": "qwen.*plus",
+    "text": {
+      "zh": "能力与成本均衡，完整工具调用支持。",
+      "en": "Balanced cost and capability with full tool calling."
+    }
+  },
+  {
+    "match": "qwen.*a\\d+b",
+    "text": {
+      "zh": "MoE 架构，单位成本低于同规模稠密模型。",
+      "en": "A mixture-of-experts model that costs less to serve than a dense model of its size."
+    }
+  },
+  {
+    "match": "qwen.*[-_]\\d+b($|[^a-z])",
+    "text": {
+      "zh": "可本地或低成本部署。",
+      "en": "Cheap to serve, or run locally."
+    }
+  },
+  {
+    "match": "qwen",
+    "text": {
+      "zh": "开放权重与云端 API 并行，覆盖文本、图像、音频与视频。",
+      "en": "Open weights and cloud APIs across text, image, audio and video."
+    }
+  },
+  {
+    "match": "step[._-]?5(?!\\d)",
+    "text": {
+      "zh": "面向编程与专业知识工作，原生支持文本、图像与视频输入。",
+      "en": "For coding and professional knowledge work, with native text, image and video input."
+    }
+  },
+  {
+    "match": "step[._-]?3[._-]?7.*flash",
+    "text": {
+      "zh": "面向智能体与代码任务的 198B 稀疏 MoE，支持图像与视频理解。",
+      "en": "A 198B sparse MoE for agentic and coding tasks, with image and video understanding."
+    }
+  },
+  {
+    "match": "step",
+    "text": {
+      "zh": "覆盖文本推理、多模态与语音，经官方开放平台提供。",
+      "en": "Reasoning, multimodal understanding and voice, served through the official open platform."
+    }
+  },
+  {
+    "match": "minimax.*m3|(^|[^a-z0-9])m3($|-)",
+    "text": {
+      "zh": "兼具前沿编程能力与原生多模态的开放权重模型。",
+      "en": "An open-weight model combining frontier coding with native multimodality."
+    }
+  },
+  {
+    "match": "minimax|(^|[^a-z0-9])m2[-.]?\\d",
+    "text": {
+      "zh": "主打智能体推理、工具调用、编程与多模态输入。",
+      "en": "Agentic reasoning, tool use, coding and multimodal input."
+    }
+  },
+  {
+    "match": "muse-spark",
+    "text": {
+      "zh": "小而快、原生多模态推理，驱动 Meta AI。",
+      "en": "Small and fast by design, natively multimodal, powering Meta AI."
+    }
+  },
+  {
+    "match": "celeris",
+    "text": {
+      "zh": "扩散架构大语言模型，主打超低延迟生成。",
+      "en": "Diffusion-architecture LLMs built for ultra-low-latency generation."
+    }
+  },
+  {
+    "match": "mercury-?\\d|inception",
+    "text": {
+      "zh": "扩散架构，面向代码生成，以极快的生成速度见长。",
+      "en": "Diffusion-based and built for code, with very fast generation."
+    }
+  },
+  {
+    "match": "apodex",
+    "text": {
+      "zh": "面向复杂专业工作、金融与科研。",
+      "en": "For complex professional work, finance and science."
+    }
+  },
+  {
+    "match": "motif",
+    "text": {
+      "zh": "MIT 许可的开放权重 MoE 模型。",
+      "en": "An MIT-licensed open-weight MoE model."
+    }
+  },
+  {
+    "match": "grok[._-]?4(?!\\d)",
+    "text": {
+      "zh": "全球最智能的模型之一，原生支持工具调用与实时搜索。",
+      "en": "One of the most intelligent models in the world, with native tool use and real-time search."
+    }
+  },
+  {
+    "match": "grok",
+    "text": {
+      "zh": "覆盖编程、智能体与知识工作，API 支持多模态输入。",
+      "en": "Coding, agentic tasks and knowledge work, with multimodal API input."
+    }
+  },
+  {
+    "match": "doubao.*2[._-]?1(?!\\d)|seed[._-]?2[._-]?1(?!\\d)",
+    "text": {
+      "zh": "分 Pro 与 Turbo 两档的生产力智能体模型，擅长通用任务与代码。",
+      "en": "A productivity agent model in Pro and Turbo tiers, strong at general agentic and coding tasks."
+    }
+  },
+  {
+    "match": "doubao|seed-?\\d|volc",
+    "text": {
+      "zh": "覆盖对话、编程与多模态，经大规模线上业务验证。",
+      "en": "Chat, coding and multimodal work, proven across large-scale production use."
+    }
+  },
+  {
+    "match": "ernie[._-]?5([._-]?0)?(-|$)",
+    "text": {
+      "zh": "2.4 万亿参数的原生全模态大模型。",
+      "en": "A native omni-modal model with 2.4 trillion parameters."
+    }
+  },
+  {
+    "match": "ernie",
+    "text": {
+      "zh": "产业级知识增强，支持中文理解与多模态生成。",
+      "en": "Industry-grade knowledge enhancement, with Chinese understanding and multimodal generation."
+    }
+  },
+  {
+    "match": "hunyuan|(^|[^a-z0-9])hy\\d",
+    "text": {
+      "zh": "中文理解与智能体场景表现均衡。",
+      "en": "Balanced for Chinese language and agentic scenarios."
+    }
+  },
+  {
+    "match": "codestral",
+    "text": {
+      "zh": "面向代码补全、FIM 与生成。",
+      "en": "Built for code completion, FIM and generation."
+    }
+  },
+  {
+    "match": "mistral.*large[._-]?3(?!\\d)",
+    "text": {
+      "zh": "Apache 2.0 许可的开放权重多模态 MoE，675B 总参数。",
+      "en": "An Apache 2.0 open-weight multimodal MoE with 675B parameters."
+    }
+  },
+  {
+    "match": "mistral|magistral",
+    "text": {
+      "zh": "从云端到边缘的前沿模型，开放权重与商用并行，可 API 调用或自托管。",
+      "en": "Frontier models from cloud to edge, open-weight and commercial, via API or self-hosting."
+    }
+  },
+  {
+    "match": "llama",
+    "text": {
+      "zh": "可自由微调、蒸馏并部署到任何环境。",
+      "en": "Fine-tune, distill and deploy it anywhere."
+    }
+  },
+  {
+    "match": "north",
+    "text": {
+      "zh": "把大模型、搜索与自动化整合进同一个企业级安全工作空间。",
+      "en": "LLMs, search and automation combined into one secure enterprise workspace."
+    }
+  },
+  {
+    "match": "command-?[ar]|cohere",
+    "text": {
+      "zh": "面向工具调用、RAG 与多语言任务。",
+      "en": "For tool use, RAG and multilingual work."
+    }
+  },
+  {
+    "match": "phi-?\\d",
+    "text": {
+      "zh": "面向边缘与本地部署的小模型，擅长推理、数学与代码。",
+      "en": "Small models for edge and local use, strong at reasoning, math and code."
+    }
+  },
+  {
+    "match": "(^|[^a-z0-9])nova(-|$)",
+    "text": {
+      "zh": "亚马逊的多模态模型，支持文本、图像与视频输入。",
+      "en": "Amazon's multimodal models, taking text, image and video input."
+    }
+  },
+  {
+    "match": "sonar|perplexity",
+    "text": {
+      "zh": "结合实时网络信息作答并附上引用来源，覆盖轻量问答到多步深度研究。",
+      "en": "Search APIs answering with fresh web data and citations, from quick answers to multi-step deep research."
+    }
+  }
+]

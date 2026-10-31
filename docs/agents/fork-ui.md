@@ -19,7 +19,10 @@ Run `node e2e/terminal-theme.mjs` for light/dark and narrow-layout regression ch
 `MarkdownBody` coalesces preprocessing snapshots at 48–96ms, then passes the
 existing Pi components and remark/rehype safety pipeline to `StreamingMarkdown`.
 The headless `@lobehub/streamdown` engine owns stable block caching, processor
-reuse and paced word fades (`realtime`); no Lobe UI theme is imported. Completion,
+reuse and word pacing (`realtime`); no Lobe UI theme is imported. Chat effects
+owns the 480ms text fade via Custom Highlights, disabling the engine’s 180ms fade
+so words never receive both effects. Birth times survive span replacement through
+text offsets. Turning the preference off renders plain Markdown. Completion,
 stop and replacement flush authoritative text. A replaced stream starts a new
 queue, and finished/user/history messages use the ordinary static renderer.
 
@@ -155,7 +158,20 @@ Both retain their windows when the metric/ranking range changes. Daily model tot
 projected with the same fork deduplication as totals. Model ranking initially shows five
 rows and expands to all recorded models. A time-based greeting heads the 480px panel
 aligned with the composer's left edge; the visible home refreshes every minute/on focus.
-No provider query, pricing estimate, prompt content or local path is returned.
+No provider query, prompt content or local path is returned. Official-price USD
+estimates are calculated offline from the four normalized token buckets using
+`lib/home-official-pricing.ts` (vendor sources and verification date are exported).
+Stored `usage.cost` and user/provider price overrides are never used. Current
+Standard rates reprice all history; this is not a dated invoice reconstruction.
+Prompt length includes input + cache read + cache write for long-context tiers.
+Cache retention defaults to Claude 5m / OpenAI 30m; DeepSeek uses peak list rates.
+Tool/storage/tax/discount/service-tier charges are excluded and the UI states this.
+Exact IDs (including relay prefixes and recognized Claude date/thinking suffixes)
+resolve; unknown routes and unsupported nonzero token buckets are unpriced, with
+excluded record/token counts alongside the priced subtotal. Costs deduplicate and
+filter ranges with the same record keys as tokens; per-model costs appear in Models.
+No price discovery or model-catalog refresh is triggered by opening the homepage.
+Validate with `node --experimental-strip-types --test lib/home-official-pricing.test.mjs lib/home-usage.test.mjs`.
 Unreadable files are reported as partial data. No scan runs while the dashboard is off.
 
 Validation: `node --test lib/home-usage.test.mjs` and
@@ -181,6 +197,29 @@ Upstream segment D (0e36743) restructured `AppShell.tsx`'s main region in ways t
 3. Since 2026-09-24 the topbar sits inside a main column that follows the sidebar as a child of the outer row: `.app-shell` (column) → offline banner → outer row → [backdrop, sidebar (full height), sidebar handle, main column → [topbar, inner row → [center chat]], panel block]. The sidebar runs the full window height (its header hosts the macOS traffic lights via `session-sidebar-header--mac-inset`), and the topbar spans only the center column. Since 2026-10-14 the file panel block is a full-height sibling of the main column, drawn as an inset card (`--right-panel-gutter`, rules at the end of `app/native-theme.css`) that reaches the window top, like Claude Desktop's side panel; the card is one plain surface (no horizontal rules, the file tree white on its left, a × close in its header) on a canvas the topbar no longer tints or underlines, and its header row is a window drag region. `WindowControls` render in the topbar while the panel is closed and in the panel's header row while it is open, so they stay at the window's top-right corner. There is deliberately no `paddingLeft: sidebarResizer.width` on the topbar anymore — that was the old full-width-topbar hack that left a blank strip above the sidebar; re-adding it on a merge regresses the layout. `app-topbar--mac-inset` (72px) is only for the sidebar-closed/mobile case where the traffic lights land on the topbar itself.
 
 The topbar renders exactly ONE toolbar group (`app-topbar-actions`: history/branches/more), pushed to the right edge by `margin-left: auto` — right-aligned since 2026-09-24 (a user request; an earlier experiment had it left of the title via `order: -1`, removed). The inline session-stats button (`renderSessionStatsButton`, ↑in ↓out ↻cache $cost) was removed the same day — session info opens from the More menu entry instead; `sessionStats`/`contextUsage` state stays (auto-name guards + More-menu labels). Segment D also left a second desktop group (`renderChatToolbarActions(false)` — history/generate-title/system/tools) next to it; the duplicate is removed, its unique entries (Sub-agents, Tools) live in the More menu via `handleSystemInfoToggle` (keeping the lazy dormant-session start), and its generate-title guards (persisted-stats counting + `selectedSession.transient` check) were merged into the group-A button — pinned by `AppShell.auto-name.test.mjs`. JSX indentation in AppShell.tsx is unreliable; verify structure with the TS AST or the DOM, not by counting whitespace. `fileContentBlock()` in `AppShell.file-viewer-state.test.mjs` slices source by the panel's closing-div sequence — keep in sync.
+## 聊天动效、模型说明与首页换算
+
+外观页的 `ChatEffectsSettings` 通过 `useChatEffects` 即时保存光标、增量文字淡入、
+发送动画、上下文图示及百分比选择。选项沿用 AppSelect 和 ConfigSwitch。
+`useAnimatedCaret` 仅替换成功测量后的可见光标，使用 3px 主题色光标和 150ms 跟随；
+选区、失焦、输入法组合、减少动态效果及测量失败时恢复原生光标。
+`useStreamReveal` 用 Custom Highlight API 对增量文字做 480ms 淡入，按文本偏移保留出生
+时间以适应渲染器替换节点；不切分或接管 Markdown 节点，不支持该 API 时直接显示文字。
+`captureMessageMotion` 位于引用解析之后、现有唯一一次 onSend 之前；只匹配同一聊天
+区域内本次提交的文字及提交后的消息时间，历史加载不触发。飞行从首次绘制前隐藏目标
+开始，680ms 内轻微上扬后落定。结束、卸载和减少动态效果时清理动画副本。
+
+模型说明按模型 id 优先、显示名其次匹配本地 `model-description-data.json`，
+沿用参考项目的系列文案，不按中转供应商推断品牌，不触发网络刷新。
+未知模型显示供应商配置提示。首页的 `home-token-books-data.json` 区分单本和合集，
+进入首页时固定一次随机选择，统计刷新保持不变；范围不足时退回更短作品。
+合集按“套”显示，未确认用量不显示换算。用量包含输入、输出、缓存，文案说明为参考
+版本的篇幅估算，不能解释为新生成正文长度。福尔摩斯全集的单词估算依据记录在数据中，
+与《福尔摩斯冒险史》保持独立条目。
+
+验证：`node e2e/chat-effects.mjs`、`node e2e/option-controls.mjs`、
+`node --experimental-strip-types --test lib/home-token-books.test.mjs lib/home-usage.test.mjs`。
+
 # 本地定制与桌面上游同步
 
 单选菜单（Config、推理级别、模型、表单选择与项目/分支/worktree）与设置导航共用左侧蓝色短条和选中底色，不使用对号。默认值星标保持独立：空心星直接可点，保存成功后显示点亮的实心星，无底色、边框或阴影；保存时菜单保持打开。保留键盘焦点提示与 4px 行间距。

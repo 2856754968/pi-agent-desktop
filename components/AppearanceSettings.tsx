@@ -9,6 +9,7 @@ import { ConfigButton } from "./SettingsUi";
 import { ThemeIcon } from "./ThemeIcon";
 import { FontSettings } from "./FontSettings";
 import { HomeExperienceSettings } from "./HomeExperienceSettings";
+import { ChatEffectsSettings } from "./ChatEffectsSettings";
 
 export function AppearanceSettings() {
   const { t } = useI18n();
@@ -53,6 +54,7 @@ export function AppearanceSettings() {
 
       <FontSettings />
       <HomeExperienceSettings />
+      <ChatEffectsSettings />
 
       <section className="settings-general-section">
         <div className="settings-option-list"><div className="settings-option">

@@ -5,6 +5,8 @@ import { memo, useState } from "react";
 import ReactMarkdown, { type Options } from "react-markdown";
 import { useReducedMotion } from "@/hooks/useStreamingMarkdown";
 import { needsWholeMarkdownDocument } from "@/lib/streaming-markdown";
+import { useChatEffect } from "@/hooks/useChatEffects";
+import { useStreamReveal } from "@/hooks/useStreamReveal";
 
 const completionOptions = {
   htmlTags: false,
@@ -39,8 +41,12 @@ function AnimatedMarkdown({ children, ...options }: Omit<Props, "isStreaming">) 
 }
 
 export const StreamingMarkdown = memo(function StreamingMarkdown({ children, isStreaming, ...options }: Props) {
-  if (!isStreaming || needsWholeMarkdownDocument(children)) {
-    return <ReactMarkdown {...options}>{children}</ReactMarkdown>;
-  }
-  return <AnimatedMarkdown {...options}>{children}</AnimatedMarkdown>;
+  const enabled = useChatEffect("streamReveal") === "on";
+  const wholeDocument = needsWholeMarkdownDocument(children);
+  // Keep Streamdown’s block cache and pacing, but own one consistent reveal
+  // duration for both ordinary Markdown and whole-document fallbacks.
+  const revealRef = useStreamReveal(Boolean(isStreaming));
+  return <div ref={revealRef} className={isStreaming && enabled ? "chat-stream-reveal" : undefined}>{!isStreaming || !enabled || wholeDocument
+    ? <ReactMarkdown {...options}>{children}</ReactMarkdown>
+    : <AnimatedMarkdown {...options}>{children}</AnimatedMarkdown>}</div>;
 });

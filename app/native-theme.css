@@ -9596,3 +9596,39 @@ html.dark .home-ripple-canvas { color: #a49ca6; border-top-color: #8ab4f8; }
   .home-usage-models li > div { flex-wrap: wrap; gap: 3px; }
 }
 @media (pointer: coarse) { .home-usage-tabs button, .home-model-expand { min-height: 44px; } }
+
+/* Chat effects preserve native editing and Markdown DOM ownership. */
+.composer-caret-mirror { position: fixed; left: -10000px; top: 0; box-sizing: border-box; height: auto; border: 0; white-space: pre-wrap; overflow-wrap: break-word; visibility: hidden; pointer-events: none; }
+.composer-animated-caret { position: fixed; left: 0; top: 0; width: 3px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 5px color-mix(in srgb, var(--accent) 35%, transparent); pointer-events: none; z-index: 900; transition: transform 150ms cubic-bezier(.2,.75,.25,1); animation: composer-caret-blink 1.2s ease-in-out infinite; }
+.composer-animated-caret[hidden] { display: none; }
+textarea[data-animated-caret="true"] { caret-color: transparent; }
+@keyframes composer-caret-blink { 0%, 45%, 100% { opacity: 1; } 65%, 80% { opacity: 0; } }
+.message-flight-ghost { position: fixed; box-sizing: border-box; margin: 0; max-width: none; max-height: none; overflow: hidden; pointer-events: none; transform-origin: top left; z-index: 850; }
+/* Streamdown retires its own fades after 180ms. Disable those, rather than
+   extending CSS duration past the lifetime of its spans. Ranges own the fade. */
+.chat-stream-reveal .streamdown-animated .stream-char,
+.chat-stream-reveal .streamdown-animated .stream-block { opacity: 1; animation: none; }
+::highlight(pi-stream-reveal-0) { color: color-mix(in srgb, currentColor 8%, transparent); }
+::highlight(pi-stream-reveal-1) { color: color-mix(in srgb, currentColor 18%, transparent); }
+::highlight(pi-stream-reveal-2) { color: color-mix(in srgb, currentColor 30%, transparent); }
+::highlight(pi-stream-reveal-3) { color: color-mix(in srgb, currentColor 44%, transparent); }
+::highlight(pi-stream-reveal-4) { color: color-mix(in srgb, currentColor 58%, transparent); }
+::highlight(pi-stream-reveal-5) { color: color-mix(in srgb, currentColor 72%, transparent); }
+::highlight(pi-stream-reveal-6) { color: color-mix(in srgb, currentColor 85%, transparent); }
+::highlight(pi-stream-reveal-7) { color: color-mix(in srgb, currentColor 94%, transparent); }
+.home-usage-pricing { color: var(--text-dim); font-size: 11px; line-height: 1.5; margin-top: 8px; }
+.home-usage-pricing summary { cursor: pointer; }
+.home-pricing-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 6px; }
+.home-pricing-links a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.context-usage-pie { width: 14px; height: 14px; flex-shrink: 0; border-radius: 50%; }
+.context-usage-percent { font-size: 10px; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.chat-effects-settings .app-select-trigger { width: 180px; flex-shrink: 0; }
+.model-option-copy { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+.model-option-description { color: var(--text-dim); font-size: 11px; line-height: 1.45; white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .chat-effects-settings .settings-option { flex-wrap: wrap; } .chat-effects-settings .app-select-trigger { width: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .composer-animated-caret, .message-flight-ghost { display: none; }
+  textarea[data-animated-caret="true"] { caret-color: auto; }
+  ::highlight(pi-stream-reveal-0), ::highlight(pi-stream-reveal-1), ::highlight(pi-stream-reveal-2), ::highlight(pi-stream-reveal-3),
+  ::highlight(pi-stream-reveal-4), ::highlight(pi-stream-reveal-5), ::highlight(pi-stream-reveal-6), ::highlight(pi-stream-reveal-7) { color: currentColor; }
+}

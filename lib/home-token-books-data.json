@@ -1,0 +1,616 @@
+[
+  {
+    "tokens": 7607,
+    "key": "home.reference.homeBookTaoTeChing",
+    "title": {
+      "zh": "《道德经》",
+      "en": "Tao Te Ching"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 7778,
+    "key": "home.reference.homeBookYellowWallpaper",
+    "title": {
+      "zh": "《黄色壁纸》",
+      "en": "The Yellow Wallpaper"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 27557,
+    "key": "home.reference.homeBookMetamorphosis",
+    "title": {
+      "zh": "《变形记》",
+      "en": "Metamorphosis"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 34713,
+    "key": "home.reference.homeBookJekyllAndHyde",
+    "title": {
+      "zh": "《化身博士》",
+      "en": "The Strange Case of Dr Jekyll and Mr Hyde"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 37248,
+    "key": "home.reference.homeBookAlice",
+    "title": {
+      "zh": "《爱丽丝漫游奇境》",
+      "en": "Alice's Adventures in Wonderland"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 39000,
+    "key": "home.reference.homeBookAnimalFarm",
+    "title": {
+      "zh": "《动物农场》",
+      "en": "Animal Farm"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 40306,
+    "key": "home.reference.homeBookChristmasCarol",
+    "title": {
+      "zh": "《圣诞颂歌》",
+      "en": "A Christmas Carol"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 42383,
+    "key": "home.reference.homeBookCallOfTheWild",
+    "title": {
+      "zh": "《野性的呼唤》",
+      "en": "The Call of the Wild"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 42817,
+    "key": "home.reference.homeBookTimeMachine",
+    "title": {
+      "zh": "《时间机器》",
+      "en": "The Time Machine"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 51004,
+    "key": "home.reference.homeBookWizardOfOz",
+    "title": {
+      "zh": "《绿野仙踪》",
+      "en": "The Wonderful Wizard of Oz"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 52163,
+    "key": "home.reference.homeBookHeartOfDarkness",
+    "title": {
+      "zh": "《黑暗之心》",
+      "en": "Heart of Darkness"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 53930,
+    "key": "home.reference.homeBookFaust",
+    "title": {
+      "zh": "《浮士德》",
+      "en": "Faust"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 57484,
+    "key": "home.reference.homeBookTurnOfTheScrew",
+    "title": {
+      "zh": "《螺丝在拧紧》",
+      "en": "The Turn of the Screw"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 60707,
+    "key": "home.reference.homeBookAesopsFables",
+    "title": {
+      "zh": "《伊索寓言》",
+      "en": "Aesop's Fables"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 63821,
+    "key": "home.reference.homeBookPeterPan",
+    "title": {
+      "zh": "《彼得·潘》",
+      "en": "Peter Pan"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 65763,
+    "key": "home.reference.homeBookGatsby",
+    "title": {
+      "zh": "《了不起的盖茨比》",
+      "en": "The Great Gatsby"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 66670,
+    "key": "home.reference.homeBookPrince",
+    "title": {
+      "zh": "《君主论》",
+      "en": "The Prince"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 68163,
+    "key": "home.reference.homeBookInvisibleMan",
+    "title": {
+      "zh": "《隐形人》",
+      "en": "The Invisible Man"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 73931,
+    "key": "home.reference.homeBookAndersensFairyTales",
+    "title": {
+      "zh": "《安徒生童话》",
+      "en": "Andersen's Fairy Tales"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 80168,
+    "key": "home.reference.homeBookWarOfTheWorlds",
+    "title": {
+      "zh": "《世界大战》",
+      "en": "The War of the Worlds"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 89836,
+    "key": "home.reference.homeBookBeyondGoodAndEvil",
+    "title": {
+      "zh": "《善恶的彼岸》",
+      "en": "Beyond Good and Evil"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 96418,
+    "key": "home.reference.homeBookWhiteFang",
+    "title": {
+      "zh": "《白牙》",
+      "en": "White Fang"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 96973,
+    "key": "home.reference.homeBookMeditations",
+    "title": {
+      "zh": "《沉思录》",
+      "en": "Meditations"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 97886,
+    "key": "home.reference.homeBookFrankenstein",
+    "title": {
+      "zh": "《弗兰肯斯坦》",
+      "en": "Frankenstein"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 100000,
+    "key": "home.reference.homeBookPhilosophersStone",
+    "title": {
+      "zh": "《哈利·波特与魔法石》",
+      "en": "Harry Potter and the Philosopher's Stone"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 106339,
+    "key": "home.reference.homeBookDorianGray",
+    "title": {
+      "zh": "《道林·格雷的画像》",
+      "en": "The Picture of Dorian Gray"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 115000,
+    "key": "home.reference.homeBookToLive",
+    "title": {
+      "zh": "《活着》",
+      "en": "To Live"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 123000,
+    "key": "home.reference.homeBookHobbit",
+    "title": {
+      "zh": "《霍比特人》",
+      "en": "The Hobbit"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 132467,
+    "key": "home.reference.homeBookGrimmsFairyTales",
+    "title": {
+      "zh": "《格林童话》",
+      "en": "Grimms' Fairy Tales"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 136278,
+    "key": "home.reference.homeBook1984",
+    "title": {
+      "zh": "《一九八四》",
+      "en": "Nineteen Eighty-Four"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 138725,
+    "key": "home.reference.homeBookSherlockHolmes",
+    "title": {
+      "zh": "《福尔摩斯冒险史》",
+      "en": "The Adventures of Sherlock Holmes"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 138958,
+    "key": "home.reference.homeBookGulliversTravels",
+    "title": {
+      "zh": "《格列佛游记》",
+      "en": "Gulliver's Travels"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 152659,
+    "key": "home.reference.homeBookWalden",
+    "title": {
+      "zh": "《瓦尔登湖》",
+      "en": "Walden"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 153596,
+    "key": "home.reference.homeBookRobinsonCrusoe",
+    "title": {
+      "zh": "《鲁滨逊漂流记》",
+      "en": "Robinson Crusoe"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 154263,
+    "key": "home.reference.homeBookHuckleberryFinn",
+    "title": {
+      "zh": "《哈克贝利·费恩历险记》",
+      "en": "Adventures of Huckleberry Finn"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 157765,
+    "key": "home.reference.homeBookDivineComedy",
+    "title": {
+      "zh": "《神曲》",
+      "en": "The Divine Comedy"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 159575,
+    "key": "home.reference.homeBookMadameBovary",
+    "title": {
+      "zh": "《包法利夫人》",
+      "en": "Madame Bovary"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 161488,
+    "key": "home.reference.homeBookZarathustra",
+    "title": {
+      "zh": "《查拉图斯特拉如是说》",
+      "en": "Thus Spoke Zarathustra"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 171701,
+    "key": "home.reference.homeBookPride",
+    "title": {
+      "zh": "《傲慢与偏见》",
+      "en": "Pride and Prejudice"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 173150,
+    "key": "home.reference.homeBookOdyssey",
+    "title": {
+      "zh": "《奥德赛》",
+      "en": "The Odyssey"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 187333,
+    "key": "home.reference.homeBookTaleOfTwoCities",
+    "title": {
+      "zh": "《双城记》",
+      "en": "A Tale of Two Cities"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 202000,
+    "key": "home.reference.homeBookThreeBody",
+    "title": {
+      "zh": "《三体》",
+      "en": "The Three-Body Problem"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 213648,
+    "key": "home.reference.homeBookDracula",
+    "title": {
+      "zh": "《德古拉》",
+      "en": "Dracula"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 252176,
+    "key": "home.reference.homeBookGreatExpectations",
+    "title": {
+      "zh": "《远大前程》",
+      "en": "Great Expectations"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 256179,
+    "key": "home.reference.homeBookJaneEyre",
+    "title": {
+      "zh": "《简·爱》",
+      "en": "Jane Eyre"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 279539,
+    "key": "home.reference.homeBookRepublic",
+    "title": {
+      "zh": "《理想国》",
+      "en": "The Republic"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 285009,
+    "key": "home.reference.homeBookCrimeAndPunishment",
+    "title": {
+      "zh": "《罪与罚》",
+      "en": "Crime and Punishment"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 304696,
+    "key": "home.reference.homeBookLeviathan",
+    "title": {
+      "zh": "《利维坦》",
+      "en": "Leviathan"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 306522,
+    "key": "home.reference.homeBookMobyDick",
+    "title": {
+      "zh": "《白鲸》",
+      "en": "Moby-Dick"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 307000,
+    "key": "home.reference.homeBookDarkForest",
+    "title": {
+      "zh": "《三体Ⅱ·黑暗森林》",
+      "en": "The Dark Forest"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 336000,
+    "key": "home.reference.homeBookDeathsEnd",
+    "title": {
+      "zh": "《三体Ⅲ·死神永生》",
+      "en": "Death's End"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 481659,
+    "key": "home.reference.homeBookAnnaKarenina",
+    "title": {
+      "zh": "《安娜·卡列尼娜》",
+      "en": "Anna Karenina"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 487590,
+    "key": "home.reference.homeBookBrothersKaramazov",
+    "title": {
+      "zh": "《卡拉马佐夫兄弟》",
+      "en": "The Brothers Karamazov"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 574243,
+    "key": "home.reference.homeBookDonQuixote",
+    "title": {
+      "zh": "《堂吉诃德》",
+      "en": "Don Quixote"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 625000,
+    "key": "home.reference.homeBookLordOfTheRings",
+    "title": {
+      "zh": "《魔戒》三部曲",
+      "en": "The Lord of the Rings trilogy"
+    },
+    "collection": true
+  },
+  {
+    "tokens": 638009,
+    "key": "home.reference.homeBookThreeKingdoms",
+    "title": {
+      "zh": "《三国演义》",
+      "en": "Romance of the Three Kingdoms"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 651128,
+    "key": "home.reference.homeBookCountOfMonteCristo",
+    "title": {
+      "zh": "《基督山伯爵》",
+      "en": "The Count of Monte Cristo"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 769001,
+    "key": "home.reference.homeBookWarAndPeace",
+    "title": {
+      "zh": "《战争与和平》",
+      "en": "War and Peace"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 783200,
+    "key": "home.reference.homeBookJourneyWest",
+    "title": {
+      "zh": "《西游记》",
+      "en": "Journey to the West"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 801791,
+    "key": "home.reference.homeBookLesMiserables",
+    "title": {
+      "zh": "《悲惨世界》",
+      "en": "Les Misérables"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 845000,
+    "key": "home.reference.threeBodyComplete",
+    "title": {
+      "zh": "《三体》三部曲",
+      "en": "The Three-Body Problem trilogy"
+    },
+    "collection": true
+  },
+  {
+    "tokens": 877533,
+    "key": "home.reference.sherlockComplete",
+    "title": {
+      "zh": "《福尔摩斯探案》全集（4部长篇、56篇短篇）",
+      "en": "the Sherlock Holmes canon (4 novels, 56 stories)"
+    },
+    "collection": true,
+    "estimate": "658,150 English words × 4/3 tokens per word; approximate, not a tokenizer measurement.",
+    "source": "https://www.mathworks.com/matlabcentral/fileexchange/114410-text-analytics-of-sherlock-holmes-books-using-topic-model"
+  },
+  {
+    "tokens": 903956,
+    "key": "home.reference.homeBookRedChamber",
+    "title": {
+      "zh": "《红楼梦》",
+      "en": "Dream of the Red Chamber"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 958242,
+    "key": "home.reference.homeBookWaterMargin",
+    "title": {
+      "zh": "《水浒传》",
+      "en": "Water Margin"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 998000,
+    "key": "home.reference.homeBookOrdinaryWorld",
+    "title": {
+      "zh": "《平凡的世界》",
+      "en": "Ordinary World"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 1409000,
+    "key": "home.reference.homeBookHarryPotter",
+    "title": {
+      "zh": "《哈利·波特》全集（全七部）",
+      "en": "the complete Harry Potter series (7 books)"
+    },
+    "collection": true
+  },
+  {
+    "tokens": 1647000,
+    "key": "home.reference.homeBookLostTime",
+    "title": {
+      "zh": "《追忆似水年华》",
+      "en": "In Search of Lost Time"
+    },
+    "collection": false
+  },
+  {
+    "tokens": 3283407,
+    "key": "home.reference.fourClassics",
+    "title": {
+      "zh": "中国古典四大名著合集",
+      "en": "the Four Great Classical Chinese Novels"
+    },
+    "collection": true
+  }
+]

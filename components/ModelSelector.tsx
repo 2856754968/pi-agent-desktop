@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { isImeComposing } from "@/lib/ime";
 import { SelectorRow } from "./SelectorRow";
 import { ModelIcon } from "./ProviderIcon";
+import { modelDescription } from "@/lib/model-description";
 
 export interface ModelSelectorOption {
   provider: string;
@@ -68,7 +69,7 @@ export function ModelSelector({
   defaultValue,
   onSetDefault,
 }: ModelSelectorProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isMobile = useIsMobile();
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -332,7 +333,9 @@ export function ModelSelector({
                         } : undefined}
                       >
                         <ModelIcon provider={option.provider} modelId={option.modelId} name={option.name} />
-                        <OptionLabel label={option.name} />
+                        <span className="model-option-copy"><OptionLabel label={option.name} />
+                          <span className="model-option-description">{modelDescription(option.modelId, option.name, locale) ?? t("effects.customModel")}</span>
+                        </span>
                       </SelectorRow>
                     );
                   })}

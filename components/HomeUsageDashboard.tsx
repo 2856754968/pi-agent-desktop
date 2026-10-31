@@ -5,10 +5,8 @@ import { useHomeExperience } from "@/hooks/useHomeExperience";
 import type { HomeUsage, HomeUsageRange } from "@/lib/home-usage";
 import { ConfigButton } from "./SettingsUi";
 
-const TOKEN_BOOKS = [
-  [7607, "home.bookTao"], [27557, "home.bookMetamorphosis"], [39000, "home.bookAnimalFarm"],
-  [65763, "home.bookGatsby"], [80168, "home.bookWarOfTheWorlds"], [136278, "home.book1984"],
-] as const;
+import { tokenBook } from "@/lib/home-token-books";
+import { HOME_PRICING_CHECKED, HOME_PRICING_SOURCES } from "@/lib/home-official-pricing";
 
 export function HomeUsageDashboard() {
   const { dashboard } = useHomeExperience();
@@ -20,6 +18,7 @@ function Dashboard() {
   const [range, setRange] = useState<HomeUsageRange>("all");
   const [expanded, setExpanded] = useState(false);
   const [hour] = useState(() => new Date().getHours());
+  const [bookPick] = useState(() => Math.random());
   const [tab, setTab] = useState<"overview" | "models">("overview");
   const [result, setResult] = useState<{ range: HomeUsageRange; data: HomeUsage } | null>(null);
   const [history, setHistory] = useState<HomeUsage | null>(null);
@@ -82,14 +81,16 @@ function Dashboard() {
     });
   }, [history]);
   const chartMax = Math.max(1, ...chartDays.map((day) => day.tokens));
-  const funBook = TOKEN_BOOKS.filter(([tokens]) => (data?.tokens ?? 0) >= tokens).at(-1);
-  const funText = funBook && data?.tokens != null
-    ? t("home.funBook", { count: Math.max(1, Math.round(data.tokens / funBook[0])), book: t(funBook[1]) })
+  const funBook = tokenBook(data?.tokens, bookPick);
+  const funText = funBook
+    ? t(funBook.collection ? "home.funCollection" : "home.funBook", { count: format(funBook.count), book: funBook.title[locale.startsWith("zh") ? "zh" : "en"] })
     : null;
+  const dollars = (value: number | null | undefined) => value == null ? "—"
+    : "$" + value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: value > 0 && value < .01 ? 6 : 2 });
   const colors = ["#426cad", "#6a8fc3", "#94afd3", "#bbcbe0", "#93969c"];
   const metrics = [
-    ["sessions", data?.sessions], ["messages", data?.messages], ["tokens", data?.tokens],
-    ["activeDays", data?.activeDays], ["peakHour", data?.peakHour == null ? "—" : String(data.peakHour).padStart(2, "0") + ":00 UTC"],
+    ["sessions", data?.sessions], ["messages", data?.messages], ["tokens", data?.tokens], ["costUsd", dollars(data?.costUsd)],
+    ["activeDays", data?.activeDays],
     ["favoriteModel", data?.favoriteModel ?? "—"],
   ] as const;
   return <section className="home-usage" aria-label={t("home.dashboard")} aria-busy={loading}>
@@ -118,7 +119,7 @@ function Dashboard() {
             aria-label={day.date + ": " + format(day.tokens) + " tokens"}
             title={day.date + ": " + format(day.tokens) + " tokens"} />)}
         </div>
-        {funText && <p className="home-usage-fun">{funText}</p>}
+        {funText && <p className="home-usage-fun" title={t("effects.bookHint")}>{funText}</p>}
       </> : data.models.length > 0 ? <>
         <div className="home-model-chart" role="img" aria-label={t("home.modelTrend")}>
           <div className="home-model-chart-bars">{chartDays.map((day) => <div className="home-model-chart-day" key={day.date} title={day.date + ": " + format(day.tokens) + " tokens"}>
@@ -128,12 +129,18 @@ function Dashboard() {
         </div>
         <ol className="home-usage-models">
         {data.models.slice(0, expanded ? undefined : 5).map((model, index) => <li key={model.name}>
-          <div><span className="home-model-name"><i style={{ background: colors[Math.min(Math.max(0, history?.models.findIndex((entry) => entry.name === model.name) ?? index), 4)] }} />{index + 1}. {model.name}</span><span>{format(model.tokens)} · {((model.tokens / Math.max(1, data.tokens ?? 0)) * 100).toFixed(1)}%</span></div>
+          <div><span className="home-model-name"><i style={{ background: colors[Math.min(Math.max(0, history?.models.findIndex((entry) => entry.name === model.name) ?? index), 4)] }} />{index + 1}. {model.name}</span><span>{format(model.tokens)} · {((model.tokens / Math.max(1, data.tokens ?? 0)) * 100).toFixed(1)}% · {dollars(model.costUsd)}{model.unpricedRecords > 0 && model.costUsd != null ? " *" : ""}</span></div>
           <meter min={0} max={Math.max(1, data.tokens ?? 0)} value={model.tokens} aria-label={model.name} />
         </li>)}
         </ol>
         {data.models.length > 5 && <button className="home-model-expand" type="button" onClick={() => setExpanded(!expanded)}>{t(expanded ? "home.showLess" : "home.showMore")}</button>}
       </> : <p className="home-usage-note">{t("home.noUsage")}</p>}
+      <p className="home-usage-note">{t("home.costHint", { date: HOME_PRICING_CHECKED })}</p>
+      {(data.unpricedRecords ?? 0) > 0 && <p className="home-usage-note" role="status">{t("home.unpriced", { count: format(data.unpricedRecords), tokens: format(data.unpricedTokens) })}</p>}
+      <details className="home-usage-pricing"><summary>{t("home.pricingSources")}</summary>
+        <p className="home-usage-note">{t("home.pricingAssumptions")}</p>
+        <div className="home-pricing-links">{HOME_PRICING_SOURCES.map((source) => <a key={source.name} href={source.url} target="_blank" rel="noreferrer">{source.name}</a>)}</div>
+      </details>
       {data.messages === 0 && <p className="home-usage-note">{t("home.empty")}</p>}
       {data.skippedFiles > 0 && <p className="home-usage-note" role="status">{t("home.skipped", { count: data.skippedFiles })}</p>}
       <p className="home-usage-note">{t("home.dataHint")}</p>
