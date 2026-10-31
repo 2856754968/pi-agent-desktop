@@ -1154,6 +1154,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
     <ChatInput
       ref={chatInputRef}
       onSend={handleSend}
+      onClearDraft={cancelEdit}
       onAttachFiles={onAttachFiles}
       onAbort={handleAbort}
       onSteer={agentRunning ? handleSteer : undefined}
