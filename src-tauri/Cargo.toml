@@ -29,6 +29,12 @@ tauri-plugin-process = "^2"
 tauri-plugin-updater = "^2"
 tauri-plugin-window-state = "^2"
 
+[target.'cfg(windows)'.dependencies]
+# A second launch (slow start, repeated icon clicks) must hand over to the
+# running instance instead of starting another server on the same ports.
+# macOS gets this from LaunchServices and Linux from `ensure_single_instance`.
+tauri-plugin-single-instance = "2"
+
 [target.'cfg(target_os = "macos")'.dependencies]
 # NSVisualEffectView behind the (transparent) webview: the sidebar material.
 window-vibrancy = "0.8"
