@@ -6,7 +6,6 @@ import type { HomeUsage, HomeUsageRange } from "@/lib/home-usage";
 import { ConfigButton } from "./SettingsUi";
 
 import { tokenBook } from "@/lib/home-token-books";
-import { HOME_PRICING_CHECKED, HOME_PRICING_SOURCES } from "@/lib/home-official-pricing";
 
 export function HomeUsageDashboard() {
   const { dashboard } = useHomeExperience();
@@ -129,20 +128,24 @@ function Dashboard() {
         </div>
         <ol className="home-usage-models">
         {data.models.slice(0, expanded ? undefined : 5).map((model, index) => <li key={model.name}>
-          <div><span className="home-model-name"><i style={{ background: colors[Math.min(Math.max(0, history?.models.findIndex((entry) => entry.name === model.name) ?? index), 4)] }} />{index + 1}. {model.name}</span><span>{format(model.tokens)} · {((model.tokens / Math.max(1, data.tokens ?? 0)) * 100).toFixed(1)}% · {dollars(model.costUsd)}{model.unpricedRecords > 0 && model.costUsd != null ? " *" : ""}</span></div>
+          <div><span className="home-model-name"><i style={{ background: colors[Math.min(Math.max(0, history?.models.findIndex((entry) => entry.name === model.name) ?? index), 4)] }} />{index + 1}. {model.name}</span><span>{format(model.tokens)} · {((model.tokens / Math.max(1, data.tokens ?? 0)) * 100).toFixed(1)}% · {dollars(model.costUsd)}</span></div>
           <meter min={0} max={Math.max(1, data.tokens ?? 0)} value={model.tokens} aria-label={model.name} />
         </li>)}
         </ol>
         {data.models.length > 5 && <button className="home-model-expand" type="button" onClick={() => setExpanded(!expanded)}>{t(expanded ? "home.showLess" : "home.showMore")}</button>}
       </> : <p className="home-usage-note">{t("home.noUsage")}</p>}
-      <p className="home-usage-note">{t("home.costHint", { date: HOME_PRICING_CHECKED })}</p>
-      {(data.unpricedRecords ?? 0) > 0 && <p className="home-usage-note" role="status">{t("home.unpriced", { count: format(data.unpricedRecords), tokens: format(data.unpricedTokens) })}</p>}
+      <p className="home-usage-note">{t("home.costHint")}</p>
       <details className="home-usage-pricing"><summary>{t("home.pricingSources")}</summary>
         <p className="home-usage-note">{t("home.pricingAssumptions")}</p>
-        <div className="home-pricing-links">{HOME_PRICING_SOURCES.map((source) => <a key={source.name} href={source.url} target="_blank" rel="noreferrer">{source.name}</a>)}</div>
+        {data.breakdown && <dl className="home-usage-metrics">{(["input", "output", "cacheRead", "cacheWrite"] as const).map((field) =>
+          <div key={field}><dt>{t("home." + field)}</dt><dd>{format(data.breakdown?.[field])}</dd></div>)}</dl>}
+        <p className="home-usage-note">{t("home.scan", { files: format(data.scannedFiles), duplicates: format(data.duplicates), records: format(data.usageRecords) })}</p>
+        <ol className="home-usage-models">{data.providers?.map((provider) => <li key={provider.name}>
+          <div><span className="home-model-name">{provider.name || t("home.unattributed")}</span><span>{format(provider.tokens)} · {dollars(provider.costUsd)} · {format(provider.usageRecords)}</span></div>
+        </li>)}</ol>
       </details>
       {data.messages === 0 && <p className="home-usage-note">{t("home.empty")}</p>}
-      {data.skippedFiles > 0 && <p className="home-usage-note" role="status">{t("home.skipped", { count: data.skippedFiles })}</p>}
+      {(data.skippedFiles > 0 || (data.invalidLines ?? 0) > 0) && <p className="home-usage-note" role="status">{t("home.skipped", { count: data.skippedFiles, lines: data.invalidLines ?? 0 })}</p>}
       <p className="home-usage-note">{t("home.dataHint")}</p>
     </>}
     </div>

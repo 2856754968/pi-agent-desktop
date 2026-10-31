@@ -25,7 +25,9 @@ await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || "chrome" });
 const data = { sessions: 12, messages: 50, tokens: 12340, costUsd: 12.34, unpricedRecords: 1, unpricedTokens: 340, activeDays: 4, peakHour: 8,
   favoriteModel: "provider/example-model", days: [{ date: "2026-10-29", messages: 50, tokens: 12340, models: { "provider/example-model": 12340 } }],
-  models: [{ name: "provider/example-model", tokens: 12340, costUsd: 12.34, unpricedRecords: 1 }], usageRecords: 25, skippedFiles: 0, generatedAt: "2026-10-30T12:00:00Z" };
+  models: [{ name: "provider/example-model", tokens: 12340, costUsd: 12.34, unpricedRecords: 1 }], usageRecords: 25, skippedFiles: 0, generatedAt: "2026-10-30T12:00:00Z",
+  breakdown: { input: 1000, output: 340, cacheRead: 10000, cacheWrite: 1000 }, scannedFiles: 12, duplicates: 2,
+  providers: [{ name: "provider", tokens: 12340, costUsd: 12.34, usageRecords: 25 }] };
 try {
   for (const theme of ["light", "dark"]) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -40,9 +42,11 @@ try {
     await page.getByRole("switch", { name: "Pixel crab companion" }).waitFor();
     await page.getByText("12,340", { exact: true }).waitFor();
     await page.getByText("$12.34", { exact: true }).waitFor();
-    await page.getByText(/1 usage records .*340 tokens/).waitFor();
+    await page.getByText("Recorded-price estimate", { exact: true }).waitFor();
     await page.locator(".home-usage-pricing summary").click();
-    assert.equal(await page.locator(".home-pricing-links a").count(), 5);
+    await page.getByText("Cache read", { exact: true }).waitFor();
+    await page.getByText("Scanned 12 session files · 2 copied usage records deduplicated · 25 usage records", { exact: true }).waitFor();
+    assert.equal(await page.locator(".home-pricing-links a").count(), 0);
     await page.locator(".home-usage-pricing summary").click();
     assert.equal(await page.getByRole("switch", { name: "Pixel crab companion" }).getAttribute("aria-checked"), "true", "reference experience enabled by default");
     await page.getByRole("switch", { name: "Pixel crab companion" }).click();
@@ -97,6 +101,11 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await page.locator(".home-usage").evaluate((el) => el.scrollWidth > el.clientWidth + 1), false);
       await page.screenshot({ path: out + "/" + theme + "-" + width + ".png" });
+      await page.locator(".home-usage-pricing summary").click();
+      await page.getByText("Cache read", { exact: true }).scrollIntoViewIfNeeded();
+      assert.equal(await page.locator(".home-usage").evaluate((el) => el.scrollWidth > el.clientWidth + 1), false);
+      await page.screenshot({ path: out + "/" + theme + "-" + width + "-usage.png" });
+      await page.locator(".home-usage-pricing summary").click();
     }
     await page.getByRole("button", { name: "Models", exact: true }).click();
     await page.getByRole("meter", { name: "provider/example-model" }).waitFor();

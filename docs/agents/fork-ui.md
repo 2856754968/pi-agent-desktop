@@ -146,30 +146,29 @@ bubble scales from its bottom-right corner. History loading and streaming reconc
 do not replay it. Reduced motion disables entrance transforms. Verify the lifecycle with
 `components/ChatWindow.message-motion.test.mjs` and glyph motion with the home E2E.
 
-`GET /api/home-usage?range=all|30|7` reads only catalogue-owned local JSONL paths,
-projects away content, and caches each range for up to 60 seconds. Sessions means files
+`GET /api/home-usage?range=all|30|7` recursively scans the server-owned agent sessions
+root without opening/migrating sessions, projects away content, and caches each range
+for up to 60 seconds. This follows the `pi-relay-models` `/relay-usage` scan rules. Sessions means files
 created in the selected range; messages means user/assistant records across all branches,
-not tool results. Copies with the same entry identity and timestamp (fork ancestry) count
-once. Tokens sum recorded input, output, cache-read and cache-write buckets, including
-usage/compaction entries, and may be incomplete; missing usage is not fabricated as a
-known zero. Dates, ranges and peak hours use UTC. The blue activity grid covers the
+not tool results. Usage copies are SHA-256 fingerprints of stable JSON identity/content, excluding
+rewritten parent IDs. Legacy entries without IDs keep the maximum occurrence count
+across copied files. Tokens include assistant, tool-result, compaction and branch-summary
+usage across all branches, sum input/output/cache-read/cache-write, and fall back to
+`totalTokens` when those buckets sum to zero. Generic `usage` entries are excluded,
+as in `/relay-usage`. Undated records belong to all-time totals only. Dates, ranges and peak hours use UTC. The blue activity grid covers the
 latest 26 weeks, aligned to Sunday; the stacked model chart covers the latest 30 days.
 Both retain their windows when the metric/ranking range changes. Daily model totals are
 projected with the same fork deduplication as totals. Model ranking initially shows five
 rows and expands to all recorded models. A time-based greeting heads the 480px panel
 aligned with the composer's left edge; the visible home refreshes every minute/on focus.
-No provider query, prompt content or local path is returned. Official-price USD
-estimates are calculated offline from the four normalized token buckets using
-`lib/home-official-pricing.ts` (vendor sources and verification date are exported).
-Stored `usage.cost` and user/provider price overrides are never used. Current
-Standard rates reprice all history; this is not a dated invoice reconstruction.
-Prompt length includes input + cache read + cache write for long-context tiers.
-Cache retention defaults to Claude 5m / OpenAI 30m; DeepSeek uses peak list rates.
-Tool/storage/tax/discount/service-tier charges are excluded and the UI states this.
-Exact IDs (including relay prefixes and recognized Claude date/thinking suffixes)
-resolve; unknown routes and unsupported nonzero token buckets are unpriced, with
-excluded record/token counts alongside the priced subtotal. Costs deduplicate and
-filter ranges with the same record keys as tokens; per-model costs appear in Models.
+No provider query, prompt content or local path is returned. USD estimates sum saved
+`usage.cost.total`, treating absent/invalid costs as zero exactly like `/relay-usage`;
+history is never repriced and the result is not relay billing. The previous official
+price calculator remains independent of dashboard aggregation. Costs and tokens share
+deduplication and range rules. The expandable breakdown shows the four token buckets,
+scan/duplicate/usage-record counts, provider subtotals and unattributed tools/summaries.
+Malformed lines and unreadable paths are reported. The dashboard reads saved files;
+`/relay-usage` can additionally include the current session's unflushed in-memory entries.
 No price discovery or model-catalog refresh is triggered by opening the homepage.
 Validate with `node --experimental-strip-types --test lib/home-official-pricing.test.mjs lib/home-usage.test.mjs`.
 Unreadable files are reported as partial data. No scan runs while the dashboard is off.
