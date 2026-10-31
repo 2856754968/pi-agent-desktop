@@ -3549,6 +3549,10 @@ html.dark {
   box-shadow: none !important;
   color: var(--text-muted);
 }
+/* `.native-popover button:hover:not(:disabled)` paints every popover button
+   with !important and outranks the rule above; the star is an icon toggle on a
+   row that already shows the hover, so it stays clear. */
+.app-menu .app-default-star:hover:not(:disabled) { background: transparent !important; }
 .app-menu .app-default-star:hover,
 .app-menu .app-default-star.is-default { color: var(--menu-selection-color); }
 .app-menu .app-default-star:focus:not(:focus-visible) { outline: none; }
@@ -5715,8 +5719,9 @@ html.dark {
   color: var(--text);
 }
 
-/* Artifact tab in the right panel (components/ArtifactPanel.tsx). The toolbar
-   reuses FileViewer's classes; these rules only cover what is new. */
+/* Artifact viewer (components/ArtifactView.tsx: the right-panel tab and the
+   Artifacts page). The toolbar reuses FileViewer's classes; these rules only
+   cover what is new. */
 .artifact-panel {
   display: flex;
   flex: 1;
@@ -8232,6 +8237,276 @@ span.linenumber {
   .scheduled-card-meta { align-items: flex-start; text-align: left; flex-basis: 100%; padding-left: 21px; }
   .scheduled-header .scheduled-actions { width: 100%; }
   .scheduled-actions .scheduled-button { flex: 1 1 auto; }
+}
+
+/* ==========================================================================
+   Artifacts — sidebar entry and the cross-session page (components/artifacts/*).
+   The row reuses the Scheduled row's classes; the page reuses its overlay
+   placement, title, inputs and tags. New fork classes only.
+   ========================================================================== */
+
+.artifacts-view {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+}
+
+.artifacts-list-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 12px 32px 16px;
+  border-right: var(--hairline) solid var(--border);
+  box-sizing: border-box;
+}
+
+.artifacts-header {
+  padding: 0 4px;
+}
+
+.artifacts-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.artifacts-search:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.artifacts-filter-row {
+  display: flex;
+  gap: 8px;
+}
+
+.artifacts-filter-row .artifacts-filter {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.artifacts-status {
+  padding: 0 4px;
+}
+
+.artifacts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: opacity 120ms ease;
+}
+
+.artifacts-list.is-loading { opacity: 0.6; }
+
+.artifacts-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.artifacts-item:hover { background: var(--bg-hover); }
+.artifacts-item[aria-current="true"] { background: var(--bg-selected); }
+.artifacts-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+/* Thumbnail box: the newest version as an image, a static frame scaled from
+   800x600, or a text excerpt (components/artifacts/ArtifactThumbnail.tsx). */
+.artifacts-thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 48px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+
+.artifacts-thumb.is-filled { background: var(--surface); }
+
+.artifacts-thumb-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 3px;
+  box-sizing: border-box;
+}
+
+.artifacts-thumb-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  background: #fff;
+  transform: scale(0.08);
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.artifacts-thumb-text {
+  align-self: stretch;
+  width: 100%;
+  padding: 4px 5px;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 5px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.artifacts-thumb-text.is-code { font-family: var(--font-mono); }
+
+.artifacts-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.artifacts-item-title,
+.artifacts-item-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifacts-item-title {
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.artifacts-item-meta {
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+}
+
+.artifacts-item-snippet {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.artifacts-item-snippet mark {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+}
+
+.artifacts-item-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.artifacts-detail-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.artifacts-detail-source {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-bottom: var(--hairline) solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+}
+
+.artifacts-back { display: none; }
+
+.artifacts-detail-session {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifacts-detail-error {
+  padding: 8px 14px 0;
+}
+
+.artifacts-continue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: var(--hairline) solid var(--border);
+}
+
+.artifacts-continue .scheduled-actions { justify-content: flex-end; }
+
+.artifacts-continue .scheduled-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.artifacts-detail-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.artifacts-detail-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--text-dim);
+  font-size: var(--fs-small);
+  text-align: center;
+}
+
+/* Narrow: the list and the preview take turns. */
+@media (max-width: 640px) {
+  .artifacts-view { grid-template-columns: minmax(0, 1fr); }
+  .artifacts-list-pane { padding: 20px 12px 32px; border-right: 0; }
+  .artifacts-view.has-selection .artifacts-list-pane,
+  .artifacts-view:not(.has-selection) .artifacts-detail-pane { display: none; }
+  .artifacts-back { display: inline-block; flex-shrink: 0; }
 }
 
 
