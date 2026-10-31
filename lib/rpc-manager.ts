@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { existsSync, realpathSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { validateAgentImages } from "./image-attachments";
+import { userImageDisplayText, userMessageImageCount } from "./user-image-display";
 import { invalidateModelsCache } from "./models-cache";
 import { resolveVisibleModels, selectInitialModelScope } from "./model-scope";
 import {
@@ -15,6 +16,7 @@ import {
 import { cacheSessionPath, getLatestModelChange, getLatestResponseModel, getSessionListVersion, invalidateSessionListCache, readLatestSessionEntryId, resolveSessionPath } from "./session-reader";
 import { getProjectTrustStatus, projectTrustReloadOptions } from "./project-trust";
 import { notifySessionComplete } from "./web-push";
+import { isVerboseLogging } from "../bin/pi-web-options.js";
 import { hasActiveSessionLivenessProvider } from "./session-liveness";
 import type { LoadExtensionsResult, SlashCommandInfo } from "@earendil-works/pi-coding-agent";
 import { PRODUCT_NAME } from "./branding";
@@ -626,7 +628,7 @@ export class AgentSessionWrapper {
         this.inner.extensionRunner.setUIContext?.(uiContext, "rpc");
       }
       this.extensionsBound = true;
-      console.log(`[pi-web] session_start dispatched to extensions for session ${this.inner.sessionId}`);
+      if (isVerboseLogging()) console.log("[pi-web] session_start dispatched to extensions");
     })().catch((err) => {
       this.extensionBindingError = err;
       throw err;
@@ -2505,7 +2507,9 @@ export function getRpcSessionInfos(options: { includeTransient?: boolean } = {})
       created,
       modified: new Date(lastActivityMs).toISOString(),
       messageCount: messages.length,
-      firstMessage: (firstUserMessage ? runtimeMessageText(firstUserMessage) : pendingPrompt?.text) || "(no messages)",
+      firstMessage: (firstUserMessage
+        ? userImageDisplayText(runtimeMessageText(firstUserMessage), userMessageImageCount("content" in firstUserMessage.message ? firstUserMessage.message.content : undefined))
+        : pendingPrompt?.text) || "(no messages)",
       ...(subagent ? {
         parentSessionId: subagent.parentSessionId,
         relation: {

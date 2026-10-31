@@ -10,18 +10,20 @@ import { selectProjectDirectoryNative } from "./ProjectPicker";
 import { SessionSidebar } from "./SessionSidebar";
 import { ChatWindow } from "./ChatWindow";
 import { AppNoticeShelf } from "./AppNoticeShelf";
+import { appNotify, updateAppNotice } from "@/lib/notification-store";
+import { useMenuPlacement } from "@/hooks/useMenuPlacement";
+import type { MenuAnchor } from "@/lib/menu-placement";
 import { useScheduledRunNotifications } from "@/hooks/useScheduledRunNotifications";
 import type { ChatScrollPosition } from "@/lib/chat-scroll-position";
 import { clearDraft } from "@/lib/draft-store";
 import { TabBar, type Tab } from "./TabBar";
+import { LazyTerminalPanel as TerminalPanel, preloadTerminalPanel } from "./LazyTerminalPanel";
 
 // Heavy, rarely-used surfaces are code-split out of the main bundle. The
 // config modals may never be opened at all; FileViewer drags in markdown +
 // syntax highlighting a second time and only matters once a file tab opens.
 const FileViewer = dynamic(() => import("./FileViewer").then((m) => m.FileViewer), { ssr: false });
 const FileExplorer = dynamic(() => import("./FileExplorer").then((m) => m.FileExplorer), { ssr: false });
-// Only mounted once opened; xterm alone is a large share of the page bundle.
-const TerminalPanel = dynamic(() => import("./TerminalPanel").then((m) => m.TerminalPanel), { ssr: false });
 const ScheduledView = dynamic(() => import("./scheduled/ScheduledView").then((m) => m.ScheduledView), { ssr: false });
 import { openFileTab, saveFileViewerState } from "./file-tab-state";
 import { SettingsPanel } from "./SettingsPanel";
@@ -30,6 +32,7 @@ import { ProjectTrustDialog, type ProjectTrustFailure } from "./ProjectTrustDial
 import { BranchNavigator, hasSessionBranches } from "./BranchNavigator";
 import { UpdateReminder } from "./UpdateReminder";
 import { useTheme } from "@/hooks/useTheme";
+import { useFonts } from "@/hooks/useFonts";
 import { useI18n } from "@/hooks/useI18n";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useMenuNavigation } from "@/hooks/useMenuNavigation";
@@ -42,6 +45,7 @@ import { canUseNativeMenu, menuPointBelow, showNativeMenu } from "@/lib/desktop-
 import { useNativeContextMenu } from "@/hooks/useNativeContextMenu";
 import { DomContextMenuHost } from "./DomContextMenuHost";
 import { getFileName } from "@/lib/file-paths";
+import { isPathInside } from "@/lib/file-links";
 import { buildAtMentionText, buildFileAtMentionsText, buildFileLineMentionText } from "@/lib/file-fuzzy";
 import { PRODUCT_NAME } from "@/lib/branding";
 import { isImeComposing } from "@/lib/ime";
@@ -58,6 +62,7 @@ import { AgentSessionPanel } from "./AgentSessionPanel";
 import { newTerminalTab, restoreTerminalTabs, TERMINAL_TABS_KEY, type TerminalTab } from "./terminal-tab-state";
 import { artifactPanelTab, artifactTabId, artifactTabsForSession, upsertArtifactTab, type ArtifactTab } from "./artifact-tabs";
 import { ArtifactPanel } from "./ArtifactPanel";
+import { ArtifactsView } from "./artifacts/ArtifactsView";
 import { setArtifactOpener, useArtifactTitles } from "@/lib/artifact-store";
 import { useAudio } from "@/hooks/useAudio";
 import { copyText } from "@/lib/clipboard";
@@ -104,6 +109,12 @@ import { getSessionFamily } from "@/lib/session-family";
 import { getLastSettingsSection, type SettingsSection } from "@/lib/settings-navigation";
 
 type SessionCopyField = "file" | "id" | "projectDir" | "gitBranch" | "gitWorktree";
+/** A page covering the chat area, named by `?view=`. */
+type WorkspaceView = "scheduled" | "artifacts" | null;
+
+function parseWorkspaceView(value: string | null | undefined): WorkspaceView {
+  return value === "scheduled" || value === "artifacts" ? value : null;
+}
 type AutoNameStatus =
   | { kind: "idle" }
   | { kind: "naming" }
@@ -137,6 +148,7 @@ export function AppShell() {
   // into the desktop config while the settings dialog is closed. The sidebar's
   // sun/moon toggle was removed — theme selection lives in Settings → General.
   useTheme();
+  useFonts();
   const { locale, t: translate } = useI18n();
   const isMobile = useIsMobile();
   useViewportHeight();
@@ -183,12 +195,16 @@ export function AppShell() {
       });
     return () => controller.abort();
   }, []);
-  // The Scheduled page covers the chat area without unmounting it, so the open session keeps its state.
-  const [scheduledOpen, setScheduledOpen] = useState(() => searchParams?.get("view") === "scheduled");
+  // The Scheduled and Artifacts pages cover the chat area without unmounting
+  // it, so the open session keeps its state. At most one is open (`?view=`).
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(() => parseWorkspaceView(searchParams?.get("view")));
+  const scheduledOpen = workspaceView === "scheduled";
+  const artifactsOpen = workspaceView === "artifacts";
+  const pageOpen = workspaceView !== null;
   // Read by restoreWorkspaceContext and handleSelectSession; those identities
-  // must not change when the page opens.
-  const scheduledOpenRef = useRef(scheduledOpen);
-  scheduledOpenRef.current = scheduledOpen;
+  // must not change when a page opens.
+  const pageOpenRef = useRef(pageOpen);
+  pageOpenRef.current = pageOpen;
   const [explorerUploadBusy, setExplorerUploadBusy] = useState(false);
   const fileExplorerRef = useRef<FileExplorerHandle>(null);
   // The panel is a preview surface; keep the file index hidden until asked for.
@@ -270,6 +286,7 @@ export function AppShell() {
   const topMoreRef = useRef<HTMLDivElement>(null);
   const topMoreMenuRef = useRef<HTMLDivElement>(null);
   const [topMorePos, setTopMorePos] = useState<{ top: number; right: number } | null>(null);
+  const [topMoreAnchor, setTopMoreAnchor] = useState<MenuAnchor | null>(null);
   useMenuNavigation(topMoreOpen && Boolean(topMorePos), topMoreMenuRef, () => setTopMoreOpen(false));
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const shortcutHelpDialogRef = useRef<HTMLDivElement | null>(null);
@@ -282,6 +299,23 @@ export function AppShell() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [rightPanelExpanded, setRightPanelExpanded] = useState(false);
   const rightPanelFullWidth = rightPanelOpen && rightPanelExpanded && !isMobile;
+  useEffect(() => {
+    const preload = () => {
+      // A failed speculative load must not make the on-demand loader's state
+      // sticky; opening the panel below retries the same import.
+      void preloadTerminalPanel().catch(() => {});
+    };
+    if (rightPanelOpen) {
+      preload();
+      return;
+    }
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(preload, { timeout: 2_000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(preload, 1_000);
+    return () => window.clearTimeout(id);
+  }, [rightPanelOpen]);
   useEffect(() => {
     if (!rightPanelOpen || isMobile) setRightPanelExpanded(false);
   }, [rightPanelOpen, isMobile]);
@@ -472,6 +506,8 @@ export function AppShell() {
   const [sessionStats, setSessionStats] = useState<SessionStatsInfo | null>(null);
   const [autoNameStatus, setAutoNameStatus] = useState<AutoNameStatus>({ kind: "idle" });
   const autoNameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoNameInFlightRef = useRef(new Set<string>());
+  const autoNameNoticeIdsRef = useRef(new Map<string, string>());
   const activeSessionIdRef = useRef<string | null>(selectedSession?.id ?? null);
   activeSessionIdRef.current = selectedSession?.id ?? null;
   const handleSessionStatsChange = useCallback((stats: SessionStatsInfo | null) => {
@@ -599,11 +635,16 @@ export function AppShell() {
       const rect = topMoreRef.current?.getBoundingClientRect();
       if (!rect) return;
       setTopMorePos({ top: rect.bottom + 7, right: window.innerWidth - rect.right - 2 });
+      setTopMoreAnchor({ top: rect.top, bottom: rect.bottom, right: rect.right + 2 });
     };
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, [topMoreOpen]);
+
+  // The menu is measured after rendering, so a short window flips it above
+  // the trigger instead of letting its last entries fall off the screen.
+  const placedTopMorePos = useMenuPlacement(topMoreOpen ? topMoreAnchor : null, topMoreMenuRef);
 
   useEffect(() => {
     if (!topMoreOpen) return;
@@ -781,6 +822,11 @@ export function AppShell() {
   // Project-scoped chrome (trust, pickers, file tree, window title) must never
   // receive the hidden chat workspace path.
   const visibleProjectCwd = isChatWorkspaceActive ? null : activeCwd;
+  // A chat that owns a folder shows that folder (file tree + viewer) in the right
+  // panel so what it made can be opened. Terminals, trust and the rest of the
+  // workbench stay project-only, so they keep using visibleProjectCwd.
+  const chatFolderCwd = isChatWorkspaceActive && selectedSession?.chatFolder ? selectedSession.cwd : null;
+  const workbenchCwd = visibleProjectCwd ?? chatFolderCwd;
   const projectPickerStartCwd = isChatWorkspaceActive
     ? null
     : selectedSession?.cwd ?? newSessionCwd ?? activeCwd;
@@ -792,14 +838,21 @@ export function AppShell() {
       && initialNavigation.requestedCwd
       && initialNavigation.requestedCwd !== chatWorkspaceCwd,
   );
+  const selectedChatSessionId = selectedSession?.id ?? null;
   useEffect(() => {
     if (!isChatWorkspaceActive) return;
-    setRightPanelOpen(false);
-    setRightPanelExpanded(false);
-    setFileTreeOpen(false);
-    setFileTabs([]);
-    setActiveFileTabId(null);
-  }, [isChatWorkspaceActive]);
+    const resetPanel = () => {
+      setRightPanelOpen(false);
+      setRightPanelExpanded(false);
+      setFileTreeOpen(false);
+      setFileTabs([]);
+      setActiveFileTabId(null);
+    };
+    resetPanel();
+    // A chat's files belong to its own folder: they never follow into another
+    // chat or a project.
+    return resetPanel;
+  }, [isChatWorkspaceActive, selectedChatSessionId]);
   // True once the initial ?session= URL param has been resolved (or confirmed absent)
   const [initialSessionRestored, setInitialSessionRestored] = useState<boolean>(() => !initialSessionId);
   // sessionStorage is empty during SSR. Applying the tab's remembered session
@@ -925,9 +978,9 @@ export function AppShell() {
       // the restored session's messages.
       setSelectedSession(s);
       setSessionKey((k) => k + 1);
-      // A direct Scheduled URL can restore its hidden workspace while sessions
-      // load. That fills the chat but must not switch the visible page.
-      if (!scheduledOpenRef.current) {
+      // A direct Scheduled / Artifacts URL can restore its hidden workspace while
+      // sessions load. That fills the chat but must not switch the visible page.
+      if (!pageOpenRef.current) {
         if (new URLSearchParams(window.location.search).get("session") !== s.id) {
           router.replace(`?session=${encodeURIComponent(s.id)}`, { scroll: false });
         }
@@ -1031,16 +1084,16 @@ export function AppShell() {
       restoreWorkspaceContext(newProject, cwd);
     }
     // This callback also runs when the sidebar picks its default project on a
-    // direct Scheduled URL. There is no explicit navigation away from that
-    // page yet, so retain the URL that made it visible.
-    if (!scheduledOpenRef.current) {
+    // direct Scheduled / Artifacts URL. There is no explicit navigation away
+    // from that page yet, so retain the URL that made it visible.
+    if (!pageOpenRef.current) {
       router.replace(typeof window !== "undefined" ? window.location.pathname : "/", { scroll: false });
     }
   }, [activeCwd, activeFileTabId, invalidateWorkspaceRestore, newSessionCwd, router, selectedSession, restoreWorkspaceContext]);
 
   const handleSelectSession = useCallback((session: SessionInfo, isRestore = false, entryId?: string, blockIndex?: number) => {
-    // Picking a session means leaving Scheduled; a cold-start restore must not.
-    if (!isRestore) setScheduledOpen(false);
+    // Picking a session means leaving Scheduled / Artifacts; a cold-start restore must not.
+    if (!isRestore) setWorkspaceView(null);
     setNewSessionWorkspaceKind(
       session.workspaceKind
       ?? (chatWorkspaceCwd && session.cwd === chatWorkspaceCwd ? "chat" : "project"),
@@ -1103,8 +1156,8 @@ export function AppShell() {
     // replace in production Next.js triggers a Suspense remount loop.
     // Tab-memory restore lands on `/` and must write `?session=` so reload
     // and copy-link keep this session.
-    if (isRestore && scheduledOpenRef.current) {
-      // A cold-start restore behind the Scheduled page leaves `?view=scheduled` alone.
+    if (isRestore && pageOpenRef.current) {
+      // A cold-start restore behind the Scheduled / Artifacts page leaves `?view=` alone.
     } else if (!isRestore || new URLSearchParams(window.location.search).get("session") !== session.id) {
       router.replace(`?session=${encodeURIComponent(session.id)}`, { scroll: false });
     }
@@ -1117,7 +1170,7 @@ export function AppShell() {
   ) => {
     const resolvedWorkspaceKind = workspaceKind
       ?? (chatWorkspaceCwd && cwd === chatWorkspaceCwd ? "chat" : newSessionWorkspaceKind);
-    setScheduledOpen(false);
+    setWorkspaceView(null);
     invalidateWorkspaceRestore();
     setNewSessionWorkspaceKind(resolvedWorkspaceKind);
     // "New task" is an explicit reset. A cwd-based blank-task draft would
@@ -1288,32 +1341,34 @@ export function AppShell() {
       .catch(() => {});
   }, []);
 
-  const handleOpenSession = useCallback(async (sessionId: string) => {
+  const handleOpenSession = useCallback(async (sessionId: string, entryId?: string) => {
     // Prefer the catalogue the sidebar already delivered: selecting from it
     // avoids a full detail round trip just to obtain the SessionInfo.
     const catalogued = sessionCatalog.find((s) => s.id === sessionId);
     if (catalogued && !catalogued.transient) {
-      handleSelectSession(catalogued);
+      handleSelectSession(catalogued, false, entryId);
       return;
     }
     try {
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, { cache: "no-store" });
       const data = await response.json() as { info?: SessionInfo; error?: string };
       if (!response.ok || !data.info) throw new Error(data.error ?? `HTTP ${response.status}`);
-      handleSelectSession(data.info);
+      handleSelectSession(data.info, false, entryId);
     } catch (error) {
       console.error("[pi-web] failed to open session:", error instanceof Error ? error.message : error);
     }
   }, [handleSelectSession, sessionCatalog]);
 
-  const handleOpenScheduled = useCallback(() => {
-    setScheduledOpen(true);
+  const openWorkspaceView = useCallback((view: Exclude<WorkspaceView, null>) => {
+    setWorkspaceView(view);
     if (isMobile) setSidebarOpen(false);
     // Skip the replace when the URL already says so (see handleSelectSession).
-    if (new URLSearchParams(window.location.search).get("view") !== "scheduled") {
-      router.replace("?view=scheduled", { scroll: false });
+    if (new URLSearchParams(window.location.search).get("view") !== view) {
+      router.replace(`?view=${view}`, { scroll: false });
     }
   }, [isMobile, router]);
+  const handleOpenScheduled = useCallback(() => openWorkspaceView("scheduled"), [openWorkspaceView]);
+  const handleOpenArtifacts = useCallback(() => openWorkspaceView("artifacts"), [openWorkspaceView]);
 
   // Validated and allow-listed like any project pick, which /api/models needs for the new folder.
   const handleBrowseScheduledFolder = useCallback(
@@ -1425,12 +1480,21 @@ export function AppShell() {
 
   const handleAutoName = useCallback(async () => {
     const sessionId = selectedSession?.id;
-    if (!sessionId || autoNameStatus.kind === "naming") return;
+    if (!sessionId || autoNameInFlightRef.current.has(sessionId)) return;
+    autoNameInFlightRef.current.add(sessionId);
+    if (autoNameTimerRef.current) clearTimeout(autoNameTimerRef.current);
     setAutoNameStatus({ kind: "naming" });
+    const progress = { message: translate("title.generatingNotice"), type: "info" as const, persistent: true, action: undefined };
+    const previousNoticeId = autoNameNoticeIdsRef.current.get(sessionId);
+    const noticeId = previousNoticeId && updateAppNotice(previousNoticeId, progress)
+      ? previousNoticeId
+      : appNotify.info(progress);
+    autoNameNoticeIdsRef.current.set(sessionId, noticeId);
 
     try {
       const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/auto-name`, {
         method: "POST",
+        signal: AbortSignal.timeout(105_000),
       });
       const body = (await response.json().catch(() => ({}))) as { title?: string; error?: string };
       if (!response.ok || !body.title) {
@@ -1438,6 +1502,9 @@ export function AppShell() {
       }
 
       const title = body.title.trim();
+      if (!title) throw new Error(translate("title.emptyResponse"));
+      const completed = { message: translate("title.updatedNotice", { title }), type: "success" as const, persistent: false };
+      if (!updateAppNotice(noticeId, completed)) appNotify.success(completed);
       setRefreshKey((key) => key + 1);
       if (activeSessionIdRef.current !== sessionId) return;
       setSelectedSession((current) => current?.id === sessionId ? { ...current, name: title } : current);
@@ -1445,16 +1512,29 @@ export function AppShell() {
       setAutoNameStatus({ kind: "success" });
       autoNameTimerRef.current = setTimeout(() => setAutoNameStatus({ kind: "idle" }), 1800);
     } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      const authenticationFailed = /\b401\b|authentication[_ ](?:error|fails?)|invalid[_ ]api[_ ]?key/i.test(detail);
+      const message = authenticationFailed
+        ? translate("title.authError")
+        : error instanceof Error && error.name === "TimeoutError"
+          ? translate("title.timeoutNotice")
+          : translate("title.errorNotice", { error: detail });
+      const failed = {
+        message, type: "error" as const, persistent: true,
+        action: { label: translate("title.modelSettings"), run: () => setSettingsSection("models") },
+      };
+      if (!updateAppNotice(noticeId, failed)) appNotify.error(failed);
       if (activeSessionIdRef.current !== sessionId) return;
-      const message = error instanceof Error ? error.message : String(error);
       setAutoNameStatus({ kind: "error", message });
       autoNameTimerRef.current = setTimeout(() => setAutoNameStatus({ kind: "idle" }), 5000);
+    } finally {
+      autoNameInFlightRef.current.delete(sessionId);
     }
-  }, [autoNameStatus.kind, selectedSession?.id]);
+  }, [selectedSession?.id, translate]);
 
   useEffect(() => {
     if (autoNameTimerRef.current) clearTimeout(autoNameTimerRef.current);
-    setAutoNameStatus({ kind: "idle" });
+    setAutoNameStatus(selectedSession?.id && autoNameInFlightRef.current.has(selectedSession.id) ? { kind: "naming" } : { kind: "idle" });
   }, [selectedSession?.id]);
 
   const handleSessionForked = useCallback((newSessionId: string) => {
@@ -1484,6 +1564,27 @@ export function AppShell() {
     setPendingQuotePrompt({ sessionId: result.newSessionId, text: prompt });
     handleSessionForked(result.newSessionId);
   }, [handleSessionForked, translate]);
+
+  // The Artifacts page's "continue in new chat": like the quote flow, a fork at
+  // the artifact's entry that sends the prompt once it opens. The source may
+  // not be the session shown, so the fork is opened from its own info.
+  const handleContinueArtifact = useCallback(async (
+    sourceSessionId: string,
+    sourceEntryId: string,
+    prompt: string,
+  ) => {
+    const result = await sendAgentCommand<{ newSessionId?: string }>(sourceSessionId, {
+      type: "fork_branch",
+      entryId: sourceEntryId,
+    });
+    if (!result?.newSessionId) throw new Error(translate("chat.quoteForkFailed"));
+    const response = await fetch(`/api/sessions/${encodeURIComponent(result.newSessionId)}`, { cache: "no-store" });
+    const data = await response.json().catch(() => ({})) as { info?: SessionInfo; error?: string };
+    if (!response.ok || !data.info) throw new Error(data.error ?? translate("chat.quoteForkFailed"));
+    setPendingQuotePrompt({ sessionId: result.newSessionId, text: prompt });
+    setRefreshKey((k) => k + 1);
+    handleSelectSession(data.info);
+  }, [handleSelectSession, translate]);
 
   const handleInitialRestoreDone = useCallback(() => {
     setInitialSessionRestored(true);
@@ -1527,7 +1628,7 @@ export function AppShell() {
     fileName: string,
     options?: { sourceSessionId?: string | null; modeHint?: "diff"; page?: number },
   ) => {
-    if (isChatWorkspaceActive) return;
+    if (isChatWorkspaceActive && !(chatFolderCwd && isPathInside(filePath, chatFolderCwd))) return;
     const sourceSessionId = options?.sourceSessionId;
     const modeHint = options?.modeHint;
     const page = options?.page;
@@ -1544,7 +1645,7 @@ export function AppShell() {
     setRightPanelOpen(true);
     // On mobile the file panel is full-screen; close the drawer so it shows.
     if (isMobile) setSidebarOpen(false);
-  }, [isChatWorkspaceActive, isMobile]);
+  }, [chatFolderCwd, isChatWorkspaceActive, isMobile]);
 
   const [copiedSessionField, setCopiedSessionField] = useState<SessionCopyField | null>(null);
   const sessionCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1557,9 +1658,8 @@ export function AppShell() {
   }, []);
 
   const handleOpenLinkedFile = useCallback((filePath: string, page?: number) => {
-    if (isChatWorkspaceActive) return;
     handleOpenFile(filePath, getFileName(filePath), { sourceSessionId: selectedSession?.id ?? null, page });
-  }, [handleOpenFile, isChatWorkspaceActive, selectedSession?.id]);
+  }, [handleOpenFile, selectedSession?.id]);
 
   const handleOpenTerminal = useCallback((cwd: string) => {
     if (isChatWorkspaceActive) return;
@@ -1772,12 +1872,14 @@ export function AppShell() {
   const activeCwdName = visibleProjectCwd ? getFileName(visibleProjectCwd) || visibleProjectCwd : null;
   const topBarTitle = scheduledOpen
     ? translate("scheduled.title")
+    : artifactsOpen
+      ? translate("artifacts.page.title")
     : selectedSession
       ? selectedSession.name || selectedSession.firstMessage || translate("appshell.untitledTask")
       : showChat
         ? translate(isChatWorkspaceActive ? "sidebar.newChatTitle" : "appshell.newTask")
         : PRODUCT_NAME;
-  const topBarSubtitle = scheduledOpen
+  const topBarSubtitle = pageOpen
     ? ""
     : isChatWorkspaceActive
       ? translate("workspace.chatTitle")
@@ -1841,6 +1943,8 @@ export function AppShell() {
         onSessionsChange={handleSessionsChange}
         onOpenScheduled={handleOpenScheduled}
         scheduledOpen={scheduledOpen}
+        onOpenArtifacts={handleOpenArtifacts}
+        artifactsOpen={artifactsOpen}
         onChatWorkspaceCwdChange={setChatWorkspaceCwd}
       />
     </>
@@ -1898,9 +2002,9 @@ export function AppShell() {
   };
 
 
-  // The workspace can still show a terminal or artifact while Scheduled is open,
+  // The workspace can still show a terminal or artifact while a page is open,
   // and the overlay always needs its own visible way back to the page.
-  const showFilePanelToggle = !isChatWorkspaceActive && (isMobile || !scheduledOpen || rightPanelOpen);
+  const showFilePanelToggle = (!isChatWorkspaceActive || Boolean(chatFolderCwd)) && (isMobile || !pageOpen || rightPanelOpen);
 
   const renderMainFileToggle = () => {
     return (
@@ -2103,7 +2207,7 @@ export function AppShell() {
             <span>{topBarTitle}</span>
             <small>{topBarSubtitle}</small>
           </div>
-          {showChat && !scheduledOpen && projectTrust?.requiresTrust && !projectTrust.trusted && (
+          {showChat && !pageOpen && projectTrust?.requiresTrust && !projectTrust.trusted && (
             <button
               type="button"
               onClick={() => {
@@ -2139,7 +2243,7 @@ export function AppShell() {
               {!isMobile && <span>{translate("trust.resourcesNotLoaded")}</span>}
             </button>
           )}
-          {showChat && !scheduledOpen && (
+          {showChat && !pageOpen && (
             <div className="app-topbar-actions" style={{ display: "flex", alignItems: "stretch", height: "100%" }}>
               <button
                 className="native-toolbar-button"
@@ -2304,7 +2408,12 @@ export function AppShell() {
                         className="native-popover app-menu app-topbar-more-menu"
                         role="menu"
                         aria-label={translate("appshell.moreActions")}
-                        style={{ position: "fixed", top: topMorePos.top, right: topMorePos.right, zIndex: 700 }}
+                        style={{
+                          position: "fixed", zIndex: 700,
+                          ...(placedTopMorePos
+                            ? { top: placedTopMorePos.top, left: placedTopMorePos.left }
+                            : { top: topMorePos.top, right: topMorePos.right }),
+                        }}
                       >
                         <button
                           className="app-topbar-more-item"
@@ -2715,7 +2824,7 @@ export function AppShell() {
         {isMobile && renderProjectTrustWarning(true)}
 
         {/* Chat content */}
-        <div inert={scheduledOpen} aria-hidden={scheduledOpen || undefined} style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+        <div inert={pageOpen} aria-hidden={pageOpen || undefined} style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           {showChat ? (
             <ChatWindow
               key={sessionKey}
@@ -2736,6 +2845,7 @@ export function AppShell() {
               workspaceUnavailable={unavailableWorkspace}
               onRecheckWorkspace={recheckWorkspace}
               chatInputRef={chatInputRef}
+              conversationNavigatorEnabled={!rightPanelOpen}
               onBranchDataChange={isChatWorkspaceActive ? undefined : handleBranchDataChange}
               onSystemPromptChange={handleSystemPromptChange}
               onSystemToolsChange={handleSystemToolsChange}
@@ -2750,7 +2860,7 @@ export function AppShell() {
               projectOptions={selectedSession || isChatWorkspaceActive ? [] : availableProjectRoots}
               onProjectChange={selectedSession || isChatWorkspaceActive ? undefined : handleProjectChangeFromComposer}
               onOpenModelsConfig={() => setSettingsSection("models")}
-              onOpenFile={isChatWorkspaceActive ? undefined : handleOpenLinkedFile}
+              onOpenFile={handleOpenLinkedFile}
               onOpenSession={handleOpenSession}
               onAskInNewChat={handleAskInNewChat}
               quoteSelectionEnabled={quoteSelectionEnabled}
@@ -2817,6 +2927,21 @@ export function AppShell() {
               await handleOpenSession(sessionId);
               return true;
             }}
+          />
+        )}
+        {artifactsOpen && (
+          <ArtifactsView
+            runningCount={runningSessionIds.size}
+            onOpenInConversation={async (sessionId, entryId) => {
+              const known = sessionCatalog.some((s) => s.id === sessionId && !s.transient);
+              if (!known) {
+                const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, { cache: "no-store" }).catch(() => null);
+                if (!response?.ok) return false;
+              }
+              await handleOpenSession(sessionId, entryId);
+              return true;
+            }}
+            onContinueInNewChat={handleContinueArtifact}
           />
         )}
       </div>
@@ -2978,7 +3103,7 @@ export function AppShell() {
               onNewTerminal={visibleProjectCwd ? () => handleOpenTerminal(visibleProjectCwd) : undefined}
             />
           </div>
-          {visibleProjectCwd && (
+          {workbenchCwd && (
             <button
               type="button"
               className={`file-workbench-icon-button file-tree-toggle${fileTreeShown ? " is-active" : ""}`}
@@ -3043,7 +3168,7 @@ export function AppShell() {
             <FileViewer
               key={`${activeFileTab.id}:${activeFileTab.viewerRevision ?? 0}`}
               filePath={activeFileTab.filePath}
-              cwd={visibleProjectCwd ?? undefined}
+              cwd={workbenchCwd ?? undefined}
               sourceSessionId={activeFileTab.sourceSessionId}
               gitRefreshKey={explorerRefreshKey}
               initialDisplayMode={activeFileTab.initialDisplayMode}
@@ -3055,8 +3180,8 @@ export function AppShell() {
                 activeFileTab.viewerRevision ?? 0,
                 viewerState,
               )}
-              onMentionLines={rightPanelOpen ? handleFileLineMention : undefined}
-              onAtMention={handleAtMention}
+              onMentionLines={rightPanelOpen && !isChatWorkspaceActive ? handleFileLineMention : undefined}
+              onAtMention={isChatWorkspaceActive ? undefined : handleAtMention}
               onOpenFile={(filePath, page) => handleOpenFile(
                 filePath,
                 getFileName(filePath),
@@ -3067,7 +3192,7 @@ export function AppShell() {
             <div className="right-panel-empty">
               <span>{translate("files.noneOpen")}</span>
               {/* The file list starts hidden; offer it where the panel is empty. */}
-              {visibleProjectCwd && !fileTreeShown && (
+              {workbenchCwd && !fileTreeShown && (
                 <button type="button" className="right-panel-empty-action" onClick={handleFileTreeToggle}>
                   {translate("contextPanel.showFileList")}
                 </button>
@@ -3088,7 +3213,7 @@ export function AppShell() {
         </div>
       
         {/* Explorer column — always-on project file tree */}
-          {visibleProjectCwd && fileTreeShown && (
+          {workbenchCwd && fileTreeShown && (
             <>
               <div
                 {...fileTreeResizer.separatorProps}
@@ -3160,11 +3285,11 @@ export function AppShell() {
               <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
                 <FileExplorer
                   ref={fileExplorerRef}
-                  cwd={visibleProjectCwd}
+                  cwd={workbenchCwd}
                   onOpenFile={handleOpenFile}
                   refreshKey={explorerRefreshKey}
-                  onAtMention={handleAtMention}
-                  onAtMentions={handleAtMentions}
+                  onAtMention={isChatWorkspaceActive ? undefined : handleAtMention}
+                  onAtMentions={isChatWorkspaceActive ? undefined : handleAtMentions}
                   onUploadBusyChange={setExplorerUploadBusy}
                   changesCollapsed={changesCollapsed}
                   onChangesCountChange={setChangesCount}

@@ -114,57 +114,51 @@ jobs:
           tagName: v__VERSION__
           releaseName: pi-agent-desktop v__VERSION__
           releaseBody: |
-            ## Pi Agent Desktop 0.7.5
+            ## Pi Agent Desktop 0.7.8
 
             ### New
 
-            - **Chats can do more.** A chat now uses your installed skills and MCP servers (an MCP server you configured is trusted: its tools may write files or run commands), and you can attach text, code, and Word (.docx) files to a message. Name a file by its full path and the chat can read it; ask for a file and it is saved to your Downloads folder (never overwriting; you can require a confirmation before each save in the Chats section of Settings › General). Programs and installers are never saved.
-            - Pin, group, and archive chats from the sidebar, set a default model and reasoning level for new chats, and choose which extra tools chats may use in the **Chats** section of **Settings › General**. **Continue in a project** copies a chat into a project so it gains that project's tools.
-            - **Editable follow-up queue.** Messages sent while the agent is working wait in a list above the composer: edit, delete, or send one now to steer the current run. They are delivered automatically when the run finishes.
-            - Settings and every menu, dropdown, and option picker now share one consistent look, spacing, and keyboard behavior.
+            - **Find in conversation.** Press Ctrl/Cmd+F to search the loaded part of a conversation, with match highlighting, a counter, Enter / Shift+Enter to step through matches and Esc to return to the composer. Matches stay put while a reply is streaming.
+            - **Choose the terminal shell.** General settings now lets you pick the shell used by "Open in terminal". Windows prefers PowerShell 7, then Windows PowerShell, then CMD; macOS and Linux keep your login shell. The choice applies to new or restarted terminals.
+            - **Richer replies.** A leading YAML block is shown as a code block instead of disappearing, GitHub alerts (`> [!NOTE]`) render as callouts, long code blocks fold, and code blocks that the reply says were saved to a file get an Open button.
+            - **Conversation titles.** Title generation shows its progress and gives an actionable message when it fails.
 
             ### Improved
 
-            - The window appears once its first screen is ready instead of showing an empty frame, and the app starts faster.
-            - Chat scrolling keeps your sent message in place while a reply streams.
+            - **A calmer look.** Neutral grays, a flat window and sidebar canvas, thinner two-tier borders that stay visible on Retina screens, softer code colors and consistent corner radii. The accent color follows the system. The background presets from 0.7.7 are gone, replaced by this neutral canvas; light, dark and system modes remain.
+            - Terminals use the workbench's light and dark colors and start faster, and closing a terminal on Windows no longer errors.
+            - Project and session menus stay inside the window, and delete confirmations are shared and keyboard friendly.
+            - Line numbers are excluded when you select code.
 
             ### Fixed
 
-            - After a Windows overwrite install, the app no longer keeps showing the previous version's interface.
-            - Files attached in one chat no longer appear in another; editing or restoring a message with attachments brings the files back as attachments.
-            - A path written inside an attached file no longer lets the chat read that file; only paths you type yourself count.
-            - The default reasoning level can be saved from the keyboard (arrow right to the star, then Enter).
-            - `dev:lan` and `start:lan` now mark the server as network-exposed, which switches off chats reading and saving files on this computer.
-            - Opening Settings from a chat whose first message contains a double space no longer freezes the app.
+            - A project that is a subfolder of a Git repository no longer shows the parent repository's worktrees in the sidebar.
 
-            Bundled components: pi 1.3.0, pi-web 0.10.0.
+            Bundled components: pi 1.4.0, pi-web 0.10.0.
 
             ---
 
-            ## Pi Agent Desktop 0.7.5
+            ## Pi Agent Desktop 0.7.8
 
             ### 新增
 
-            - **对话能力增强。** 对话现在可以使用已安装的 Skills 和 MCP 服务器（你配置的 MCP 服务器被视为可信，其工具可能写入文件或执行命令），消息可附加文本、代码和 Word（.docx）文件。写出文件的完整路径，对话就能读取它；让它生成文件，会保存到“下载”文件夹（不会覆盖已有文件；可在 设置 › 通用 的“对话”部分要求每次保存前先确认）。程序和安装包不会被保存。
-            - 侧边栏可固定、分组和归档对话；在 **设置 › 通用** 的“对话”部分可设置新对话的默认模型与推理级别，并选择对话额外可用的工具。**在项目中继续**会把对话复制到项目里，使其获得该项目的工具。
-            - **可编辑的跟进队列。** 智能体工作期间发送的消息会排在输入框上方的列表中：可编辑、删除，或立即发送以引导当前运行；运行结束后自动投递。
-            - 设置页以及所有菜单、下拉框和选项选择器，统一了外观、间距和键盘操作。
+            - **对话内查找。** 按 Ctrl/Cmd+F 搜索已加载的对话内容：高亮匹配、显示计数，Enter / Shift+Enter 在匹配间跳转，Esc 回到输入框。回复流式输出时，当前匹配位置保持不动。
+            - **选择终端 Shell。** “通用”设置可选择“在终端中打开”使用的 Shell。Windows 优先 PowerShell 7，其次 Windows PowerShell，再次 CMD；macOS 和 Linux 沿用登录 Shell。新建或重启的终端会使用该选择。
+            - **更丰富的回复渲染。** 开头的 YAML 块现在以代码块显示而不是消失；支持 GitHub 提示块（`> [!NOTE]`）；长代码块可折叠；回复中说明已保存到文件的代码块会出现“打开”按钮。
+            - **对话标题生成。** 标题生成会显示进度，失败时给出可操作的提示。
 
             ### 改进
 
-            - 窗口在首屏就绪后才显示，不再先出现空白画面，应用启动也更快。
-            - 对话滚动在回复流式输出时，会让你刚发送的消息保持在原位。
+            - **更平静的外观。** 中性灰、统一的窗口与侧栏纯色底、更细的两档边线（在 Retina 屏上依然清晰）、更柔和的代码配色和统一圆角；强调色跟随系统。0.7.7 的背景预设已移除，由中性底色取代；浅色、深色与跟随系统模式保留。
+            - 终端使用工作台的明暗配色且启动更快；Windows 上关闭终端不再报错。
+            - 项目和会话菜单不会超出窗口，删除确认改为共用组件并支持键盘操作。
+            - 选择代码时不再选中行号。
 
             ### 修复
 
-            - Windows 覆盖安装后，应用不再继续显示上一版本的界面。
-            - 在一个对话中添加的附件不会再出现在另一个对话里；编辑或恢复带附件的消息时，文件会作为附件回到输入框。
-            - 附件内容中写出的路径不再让对话获得读取该文件的权限，只有你自己输入的路径才算数。
-            - 默认推理级别现在可以用键盘保存（方向键右移到星标，再按 Enter）。
-            - `dev:lan` 与 `start:lan` 现在会把服务标记为对外开放，从而关闭对话读取和保存本机文件的能力。
-            - 修复：当对话的第一条消息含连续空格时，点击设置会导致应用卡死。
+            - 位于 Git 仓库子目录的项目，侧栏不再显示父仓库的 worktree。
 
-            内置组件版本：pi 1.3.0、pi-web 0.10.0。
+            内置组件版本：pi 1.4.0、pi-web 0.10.0。
           releaseDraft: true
           prerelease: false
           uploadUpdaterJson: true

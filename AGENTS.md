@@ -36,6 +36,12 @@ Typecheck: `node_modules/.bin/tsc --noEmit` · Lint: `npm run lint`
 - A worktree's `node_modules` can lag the lockfile (created before an SDK bump), which
   fails tests that pin newer SDK behaviour. `npm test` runs `npm run check:deps` first and
   stops with the mismatched packages; `npm ci` fixes it.
+- Windows test fixtures use `scripts/test-platform.mjs`: directory links are junctions,
+  unavailable file links skip only their own subtests, and POSIX mode checks remain
+  active on POSIX hosts. Shell-command fixtures select native Git Bash inside the
+  test process; trust fixtures must not inherit the user's ancestor skills. Await
+  session shutdown before deleting MCP working directories. Real PTY integration
+  runs in a child process; fake-clock tests use a controlled PTY.
 - **`next dev` rewrites `AGENTS.md`**: it appends a "This is NOT the Next.js you know" block
   to this file on every start. Preserve the project and user instructions here; review generated
   additions separately and never reset the entire file to discard development output.
@@ -90,11 +96,14 @@ app/api/
   desktop/read-images/route.ts    POST read natively-picked images into attachment payloads
   desktop/save/route.ts           POST copy a file to, or write bytes at, a natively-picked path
   artifacts/settings/route.ts     GET/PUT the "artifacts in the side panel" prompt switch
+  artifacts/route.ts              GET ?q= artifacts across all sessions (Artifacts page)
+  artifacts/item/route.ts         GET ?session=&identifier= one artifact with every version
 
 lib/
   agent-client.ts      typed fetch helper for /api/agent commands
   artifacts.ts         `:::artifact` scanner, markdown encoding, version collection
   artifact-store.ts    client store shared by ChatWindow, message cards and the artifact panel
+  artifact-index.ts    server index of artifacts in every session file (Artifacts page)
   artifact-settings.ts / artifact-guide-extension.ts  prompt switch file + `<artifacts>` prompt section
   html-preview.ts      inline HTML/SVG/React preview detection, sandbox, srcdoc bootstrap, React document
   preview-runtime.ts   loads public/preview-runtime/ (bundled React, Sucrase, Tailwind) for React previews
@@ -128,7 +137,8 @@ components/
   BranchNavigator.tsx in-session branch switcher
   MarkdownBody.tsx    markdown renderer
   HtmlPreviewBlock.tsx / HtmlPreviewErrorBar.tsx  inline previews and their error strip
-  ArtifactCard.tsx / ArtifactPanel.tsx / artifact-tabs.ts  artifact card in messages, right-panel tab
+  ArtifactCard.tsx / ArtifactPanel.tsx / ArtifactView.tsx / artifact-tabs.ts  artifact card in messages, right-panel tab, shared viewer
+  artifacts/          Artifacts page (cross-session list, search, preview) and its sidebar row
   ModelsConfig.tsx    modal for editing models.json (opened from sidebar bottom)
   EnabledModelsSection.tsx  model switches inside ModelsConfig, backed by enabledModels
   AgentsConfig.tsx    built-in subagent toggle + agent profile editor
@@ -170,7 +180,7 @@ Read the doc for the area you touch before changing it. Upstream docs (no prefix
 - [settings-ui.md](docs/agents/settings-ui.md): Plugins and Skills routes, sidebar group switches, the shared `SettingsUi` blocks every settings panel and add pane uses. Files: `app/api/plugins/**`, `app/api/skills/**`, `components/SettingsUi.tsx`, `components/settings-ui-helpers.ts`, `components/SkillsConfig.tsx`, `components/PluginsConfig.tsx`; also before adding a settings section or add pane.
 - [subagents.md](docs/agents/subagents.md): the built-in subagent setting, profiles and their files, run status, completion notifications. Files: `lib/subagent*.ts`, `app/api/subagents/**`, `components/AgentsConfig.tsx`.
 - [scheduled-tasks.md](docs/agents/scheduled-tasks.md): scheduled tasks (the Scheduled page): server-side scheduler and its lease, catch-up and overlap rules, read-only default, the run index that hides runs from the project tree, why shared state is on `globalThis`. Files: `lib/scheduled-tasks/**`, `app/api/scheduled-tasks/**`, `instrumentation-node.ts`, `hooks/useScheduledTasks.ts`, `components/scheduled/**`, the Scheduled row in `components/SessionSidebar.tsx`, the page overlay in `components/AppShell.tsx`.
-- [artifacts.md](docs/agents/artifacts.md): inline HTML/SVG/React previews and `:::artifact` blocks: what renders where, the sandbox rules and the desktop `about:srcdoc` allowance, the auto-run rule for scripted pages, the bundled React runtime (inlined, because sandboxed frames cannot reach localhost; `npm run preview-runtime` regenerates it), the fix flow and the prompt switch. Files: `lib/artifacts.ts`, `lib/artifact-store.ts`, `lib/html-preview.ts`, `lib/artifact-settings.ts`, `lib/artifact-guide-extension.ts`, `hooks/useArtifactPublisher.ts`, `hooks/useHtmlPreviewFrame.ts`, `lib/preview-runtime.ts`, `scripts/build-preview-runtime.mjs`, `public/preview-runtime/`, `components/Artifact*.tsx`, `components/HtmlPreview*.tsx`, `components/artifact-tabs.ts`, `app/api/artifacts/**`, `is_inline_frame_document` in `src-tauri/src/lib.rs`.
+- [artifacts.md](docs/agents/artifacts.md): inline HTML/SVG/React previews and `:::artifact` blocks: what renders where, the sandbox rules and the desktop `about:srcdoc` allowance, the auto-run rule for scripted pages, the bundled React runtime (inlined, because sandboxed frames cannot reach localhost; `npm run preview-runtime` regenerates it), the fix flow and the prompt switch, the cross-session Artifacts page. Files: `lib/artifacts.ts`, `lib/artifact-store.ts`, `lib/artifact-index.ts`, `components/artifacts/**`, `lib/html-preview.ts`, `lib/artifact-settings.ts`, `lib/artifact-guide-extension.ts`, `hooks/useArtifactPublisher.ts`, `hooks/useHtmlPreviewFrame.ts`, `lib/preview-runtime.ts`, `scripts/build-preview-runtime.mjs`, `public/preview-runtime/`, `components/Artifact*.tsx`, `components/HtmlPreview*.tsx`, `components/artifact-tabs.ts`, `app/api/artifacts/**`, `is_inline_frame_document` in `src-tauri/src/lib.rs`.
 - [client-platform.md](docs/agents/client-platform.md): mobile software keyboard and viewport height, completion sound. Files: `hooks/useViewportHeight.ts`, `hooks/useAudio.ts`, the keyboard-open CSS.
 
 Fork notes:

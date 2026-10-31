@@ -146,6 +146,8 @@ export type NoticeItem = {
   id: string;
   message: string;
   type: NoticeType;
+  /** Override only brief action feedback; errors keep the default duration. */
+  durationMs?: number;
   exiting?: boolean;
 };
 
@@ -278,6 +280,10 @@ function fillPendingNotices(visible: NoticeItem[], pending: NoticeItem[]): Notic
 function noticeReducer(state: NoticeState, action: NoticeAction): NoticeState {
   switch (action.type) {
     case "add": {
+      // Identical retries (for example repeated Edit from here clicks) should
+      // not create a stack of notices for one unchanged user action.
+      if (state.visible.some((notice) => notice.id === action.notice.id)
+        || state.pending.some((notice) => notice.id === action.notice.id)) return state;
       if (state.visible.some((notice) => notice.exiting) || state.visible.length >= MAX_NOTICES) {
         return {
           visible: state.visible.some((notice) => notice.exiting)
@@ -309,7 +315,7 @@ function readCompactResult(result: unknown, reason: string): CompactResultInfo |
 export interface ChatInputHandle {
   insertText: (text: string) => void;
   insertIfEmpty: (content: string) => void;
-  replaceMessage: (message: UserMessage) => void;
+  replaceMessage: (message: UserMessage) => boolean;
   prependText: (text: string) => void;
   addImages: (files: File[]) => void;
   rekeyDraft: (previousKey: string, nextKey: string) => void;
@@ -691,11 +697,6 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
     else pendingHistoryEdits.delete(session.id);
     setEditEntryId(entryId);
   }, [session?.id]);
-  const handleEditContent = useCallback((message: UserMessage, entryId: string) => {
-    if (!session?.id) return;
-    opts.chatInputRef?.current?.replaceMessage(message);
-    setEdit(entryId);
-  }, [opts.chatInputRef, session?.id, setEdit]);
   const cancelEdit = useCallback(() => setEdit(null), [setEdit]);
 
   const sessionStats = useMemo(() => {
@@ -1256,7 +1257,7 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
     }
   }, []);
 
-  const addNotice = useCallback((notice: { id?: string; message: string; type?: NoticeType }) => {
+  const addNotice = useCallback((notice: { id?: string; message: string; type?: NoticeType; durationMs?: number }) => {
     const message = notice.message.trim();
     if (!message) return;
     dispatchNotice({
@@ -1265,9 +1266,23 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
         id: notice.id ?? createNoticeId(),
         message,
         type: notice.type ?? "info",
+        ...(notice.durationMs !== undefined ? { durationMs: notice.durationMs } : {}),
       },
     });
   }, []);
+
+  const handleEditContent = useCallback((message: UserMessage, entryId: string) => {
+    if (!session?.id) return;
+    const input = opts.chatInputRef?.current;
+    if (!input) return;
+    // Only mark history as editing after the composer accepts restoration.
+    // A draft/pending attachment blocks replacement without losing user input.
+    if (!input.replaceMessage(message)) {
+      addNotice({ id: "edit-draft-not-empty", type: "warning", durationMs: 3000, message: t("chat.editDraftNotEmpty") });
+      return;
+    }
+    setEdit(entryId);
+  }, [addNotice, opts.chatInputRef, session?.id, setEdit, t]);
 
   const { branchSummarySessionIdRef, branchSummaryPending, summarizeAndNavigate, handleAbortBranchSummary } = useBranchSummary({
     sessionId: session?.id ?? null, sessionIdRef, loadSession, addNotice, t,
@@ -2985,7 +3000,7 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
     // Oldest visible notice changed; restart the countdown
     if (noticeOldestIdRef.current !== oldest.id) {
       noticeOldestIdRef.current = oldest.id;
-      noticeRemainingMsRef.current = NOTICE_VISIBLE_MS;
+      noticeRemainingMsRef.current = oldest.durationMs ?? NOTICE_VISIBLE_MS;
     }
     if (noticeState.visible.some((notice) => notice.id === pausedNoticeId)) return;
     noticeTimerStartedAtRef.current = Date.now();

@@ -1,5 +1,15 @@
 # Sessions, events and the chat client — fork notes
 
+## Generated session titles
+
+Generate title makes a separate bounded request with the current conversation's
+model and credentials. A stored key is not proof that the provider accepts it.
+AppShell keeps progress and results in the global notice shelf after More closes;
+authentication errors explain that the key/model needs attention and link to Models.
+It never silently switches providers. A synchronous per-session guard prevents
+duplicate submissions; results refresh the sidebar but only update the active
+header when they still belong to that conversation.
+
 ## Editable composer outbox
 
 `lib/composer-queue.ts` owns individually identified pending composer messages, including images.
@@ -41,6 +51,12 @@ Pi delays the first flush of a new session until an assistant message exists, so
 - Per-agent SSE goes through `createAgentEventStream(req, id, sessionPromise)`: the session starts **asynchronously** (the route never `await`s `startRpcSession`), the stream filters events through `toClientAgentEvent()` and forwards them with one shared `TextEncoder`. Cancellation is `cancelStream(closeController)`; closing with `false` keeps the session's own listeners alive.
 - The sidebar's running-id stream (`/api/agent/running/events`) keeps the older inline `dispose` pattern and must stay registered in `app/api/agent/events-route.test.mjs`.
 - `subscribeRunningSessions()`/`notifyRunningChange()` in `rpc-manager.ts` broadcast the running-id set; `SessionSidebar` treats the stream as authoritative for running state (`sseAuthoritativeRef`) once connected, and a `sessionListVersion` bump on any SSE frame triggers a cache-reusing list refetch.
+
+## Opening very large session files (`lib/session-slim-load.ts`)
+`openSessionManager()` (read-only, non-`mutable`) opens files of 16 MiB or more through `openSlimSessionManager()` instead of `SessionManager.open()`. Browser-automation tools store a DOM outline in a tool result's `details` (120 of 129 MB in one real file) that the UI never reads (`lib/tool-result-details.ts`); the loader cuts that span out of oversized (≥256 KiB) `toolResult` lines as bytes before decoding, so it is never turned into a string or object graph. Measured on a 129 MB session: 654 ms → 93 ms.
+- Every shortcut is verified and falls back to a full parse of the line: no `details` anchor, a `patch`/`diff`/`preview`/`result` key or a `pi-web-subagent` marker inside the span, unknown message keys after the strip.
+- The manager is built with `persist=false` through the SDK's private constructor, so slimmed entries can never be written over the real file. Mutable opens (`{ mutable: true }`, live wrappers) still use the SDK. `session-slim-load.test.mjs` pins the constructor shape against `SessionManager.open()`; after an SDK bump, a failure there means the constructor changed.
+- `KEPT_DETAIL_MARKERS` must stay in step with `KEPT_DETAIL_KEYS` in `lib/tool-result-details.ts`.
 
 ## Session listing: incremental scanner vs upstream catalogue
 - `lib/session-list-scanner.ts` is the live scanner behind `SessionManager.listAll()`'s replacement: per-file info minus `allMessagesText`, re-parsed only when a file's size/mtime fingerprint changes; `invalidateSessionListCache()` drops the merged list cache. `lib/session-scan.ts` (with its `__piSessionScanCache` and `invalidateScannedSession`) is the fork's older scanner, kept only as a tested utility — nothing in the app reads its cache, so invalidating it does not refresh the sidebar.

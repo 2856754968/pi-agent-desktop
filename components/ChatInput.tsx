@@ -67,6 +67,8 @@ export interface AttachedImage {
 }
 
 interface Props {
+  /** Explicit user draft clearing also leaves history-edit mode; never called on send. */
+  onClearDraft?: () => void;
   onSend: (message: string, images?: AttachedImage[]) => void;
   /** Files picked with "+": images and other files. Without it the picker takes images only. */
   onAttachFiles?: (files: File[]) => void;
@@ -173,7 +175,7 @@ interface Props {
 export interface ChatInputHandle {
   insertText: (text: string) => void;
   insertIfEmpty: (text: string) => void;
-  replaceMessage: (message: UserMessage) => void;
+  replaceMessage: (message: UserMessage) => boolean;
   prependText: (text: string) => void;
   addImages: (files: File[]) => void;
   /** Chats only: read text files into chips that travel inside the next message. */
@@ -797,7 +799,7 @@ export function ModelScopeWarningBanner({
 }
 
 export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
-  onSend, onAttachFiles, onAbort, onSteer, onFollowUp, isStreaming, model, isAutoModelSelection, modelNames, modelList, modelError, workspaceUnavailable, onRecheckWorkspace, modelScopeWarnings, onDismissModelScopeWarnings, onOpenModelsConfig, onModelChange, modelSwitching,
+  onClearDraft, onSend, onAttachFiles, onAbort, onSteer, onFollowUp, isStreaming, model, isAutoModelSelection, modelNames, modelList, modelError, workspaceUnavailable, onRecheckWorkspace, modelScopeWarnings, onDismissModelScopeWarnings, onOpenModelsConfig, onModelChange, modelSwitching,
   defaultModel, onSetDefaultModel,
   onCompact, onAbortCompaction, isCompacting, compactError, compactNotice, compactResult, summarizationRetry, toolPreset, onToolPresetChange,
   thinkingLevel, isAutoThinkingSelection = false, onThinkingLevelChange, availableThinkingLevels, thinkingLevelMap,
@@ -922,6 +924,9 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
   const valueRef = useRef(value);
   const attachedImagesRef = useRef(attachedImages);
   const pendingImageCountRef = useRef(0);
+  // Explicit clearing invalidates attachment reads already in flight, so a late
+  // image conversion/Word import cannot repopulate the cleared draft.
+  const attachmentClearVersionRef = useRef(0);
   const {
     hashQuery, setHashQuery, hashMenuOpen, setHashMenuOpen, hashActiveIndex, setHashActiveIndex,
     hashMatches, hashItemRefs, sessionIndex, sessionMentionTargetsRef, updateHashQuery, applyHashCompletion,
@@ -955,7 +960,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
     replaceMessage(message: UserMessage) {
       const ta = textareaRef.current;
       const current = ta ? ta.value : value;
-      if (!canRestoreUserMessage(current, attachedImagesRef.current.length + attachedFilesRef.current.length, pendingImageCountRef.current)) return;
+      if (!canRestoreUserMessage(current, attachedImagesRef.current.length + attachedFilesRef.current.length, pendingImageCountRef.current)) return false;
 
       // The message's attached files come back as attachments, not as markup in the text.
       const split = splitMessageForComposer(getUserMessageText(message));
@@ -979,6 +984,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
         ta.style.height = "auto";
         ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
       });
+      return true;
     },
     prependText(text: string) {
       if (!text.trim()) return;
@@ -1137,7 +1143,9 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
       // Reading a Word file asks the server, so the user may have moved to another chat by
       // the time it answers: the files belong to the chat they were attached in.
       const startedIn = draftKeyRef.current;
+      const clearVersion = attachmentClearVersionRef.current;
       const { accepted, rejected } = await readChatTextAttachments(files, attachedFilesRef.current, extractDocxText);
+      if (clearVersion !== attachmentClearVersionRef.current) return rejected;
       if (accepted.length > 0) {
         if (draftKeyRef.current === startedIn) {
           const next = [...attachedFilesRef.current, ...accepted];
@@ -1184,6 +1192,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
       .filter((f) => f.type.startsWith("image/") && f.size <= MAX_ATTACHED_IMAGE_BYTES)
       .slice(0, remaining);
     if (!imageFiles.length) return;
+    const clearVersion = attachmentClearVersionRef.current;
     pendingImageCountRef.current += imageFiles.length;
     try {
       const newImages = await Promise.all(
@@ -1192,7 +1201,8 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
           previewUrl: URL.createObjectURL(file),
         }))
       );
-      appendAttachedImages(newImages);
+      if (clearVersion !== attachmentClearVersionRef.current) newImages.forEach(revokeImagePreview);
+      else appendAttachedImages(newImages);
     } finally {
       pendingImageCountRef.current -= imageFiles.length;
     }
@@ -2791,6 +2801,20 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
             </span>
           )}
 
+          {(value.length > 0 || attachedImages.length > 0 || attachedFiles.length > 0) && (
+            <button type="button" className="composer-clear-button"
+              title={t("chat.clearDraft")} aria-label={t("chat.clearDraft")}
+              onClick={() => {
+                attachmentClearVersionRef.current += 1;
+                clearInput();
+                onClearDraft?.();
+                textareaRef.current?.focus();
+              }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
+              </svg>
+            </button>
+          )}
           <button
             type="button"
             className={compact ? "native-primary-button" : "native-primary-button composer-send-button"}

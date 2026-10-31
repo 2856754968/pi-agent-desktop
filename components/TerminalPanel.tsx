@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { useI18n } from "@/hooks/useI18n";
+import { FONT_CHANGE_EVENT } from "@/lib/font-preferences";
+import { terminalTheme } from "@/lib/terminal-theme";
 import { createTerminalWriter, terminalRequest } from "@/lib/terminal-client";
 import type { TerminalEvent } from "@/lib/terminal-manager";
 import type { TerminalTab } from "./terminal-tab-state";
@@ -51,20 +53,18 @@ export function TerminalPanel({ tab, active, onRestart, onClosed, onCloseError }
       scrollback: 8000,
       screenReaderMode: true,
       disableStdin: true,
-      theme: {
-        background: "#111318", foreground: "#d7dce5", cursor: "#60a5fa",
-        selectionBackground: "#365b8a",
-        black: "#1d222b", red: "#f87171", green: "#4ade80", yellow: "#facc15",
-        blue: "#60a5fa", magenta: "#c084fc", cyan: "#22d3ee", white: "#e5e7eb",
-        brightBlack: "#6b7280", brightRed: "#fca5a5", brightGreen: "#86efac",
-        brightYellow: "#fde047", brightBlue: "#93c5fd", brightMagenta: "#d8b4fe",
-        brightCyan: "#67e8f9", brightWhite: "#ffffff",
-      },
+      minimumContrastRatio: 4.5,
+      theme: terminalTheme(container),
     });
     terminalRef.current = terminal;
     const fit = new FitAddon();
     terminal.loadAddon(fit);
     terminal.open(container);
+    // Update the existing renderer, never restart the PTY on a theme change.
+    const themeObserver = new MutationObserver(() => {
+      terminal.options.theme = terminalTheme(container);
+    });
+    themeObserver.observe(document.documentElement, { attributes: true });
     terminal.attachCustomKeyEventHandler((event) => {
       if (event.type !== "keydown") return true;
       const key = event.key.toLowerCase();
@@ -88,6 +88,17 @@ export function TerminalPanel({ tab, active, onRestart, onClosed, onCloseError }
       if (!container.offsetWidth || !container.offsetHeight) return;
       fit.fit();
     };
+    // Changing a family must update xterm's measured cells without replacing
+    // the terminal, reconnecting its session or losing its scrollback.
+    let fontFrame = 0;
+    const updateFont = () => {
+      if (disposed) return;
+      terminal.options.fontFamily = getComputedStyle(container).getPropertyValue("--font-mono").trim() || "monospace";
+      cancelAnimationFrame(fontFrame);
+      fontFrame = requestAnimationFrame(fitAndResize);
+    };
+    window.addEventListener(FONT_CHANGE_EVENT, updateFont);
+    document.fonts.addEventListener("loadingdone", updateFont);
     const onResize = terminal.onResize(({ cols, rows }) => {
       if (connected && !exited && !inputFailed) writer.resize(cols, rows);
     });
@@ -133,7 +144,7 @@ export function TerminalPanel({ tab, active, onRestart, onClosed, onCloseError }
 
     startRef.current = (async () => {
       fitAndResize();
-      if (restored || reconnectKey > 0) {
+      if (restored && reconnectKey === 0) {
         // Restoring a tab must never silently launch a replacement shell.
         await terminalRequest(`/api/terminal/${encodeURIComponent(id)}`);
       } else {
@@ -166,6 +177,10 @@ export function TerminalPanel({ tab, active, onRestart, onClosed, onCloseError }
       events?.close();
       void writer.stop();
       resizeObserver.disconnect();
+      themeObserver.disconnect();
+      cancelAnimationFrame(fontFrame);
+      window.removeEventListener(FONT_CHANGE_EVENT, updateFont);
+      document.fonts.removeEventListener("loadingdone", updateFont);
       onData.dispose();
       onResize.dispose();
       window.removeEventListener("pagehide", pageHide);

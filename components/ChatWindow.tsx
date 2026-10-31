@@ -7,6 +7,7 @@ import type { AgentMessage, AssistantContentBlock, AssistantMessage, BashExecuti
 import { normalizeCustomPanelLines } from "@/lib/ansi";
 import { asBracketedPaste, toTerminalKeyData } from "@/lib/terminal-input";
 import { countToolCallBlocks, getAssistantErrorMessage, getDisplayableAssistantBlocks, hasAssistantAnswer, isAssistantTruncated, isMessageGroupAnchor, splitFinalAssistantBlocks } from "@/lib/message-display";
+import { ConversationFind } from "./ConversationFind";
 import { extractTurnWrittenFiles, type WrittenFile } from "@/lib/turn-written-files";
 import { buildQuotedSelection } from "@/lib/quoted-selection";
 import { MessageView } from "./MessageView";
@@ -41,8 +42,6 @@ import {
 import { sessionVisibleCounts } from "@/lib/scroll-memory";
 import { isImeComposing } from "@/lib/ime";
 import { useChatAccess } from "@/hooks/useChatAccess";
-import { openPathNative } from "@/lib/desktop-native";
-import { isTauriDesktop } from "@/lib/desktop-updater";
 import { ChatShellPrompt } from "./ChatShellPrompt";
 import { lastTurnHitChatShellBlock } from "@/lib/chat-shell-block";
 import { assignMessageKeys, createMessageKeyTracker } from "@/lib/message-keys";
@@ -88,6 +87,7 @@ interface Props {
   onOpenSession?: (sessionId: string) => void;
   onAskInNewChat?: (prompt: string, sourceSessionId: string, sourceEntryId: string) => Promise<void>;
   quoteSelectionEnabled?: boolean;
+  conversationNavigatorEnabled?: boolean;
   initialPrompt?: string;
   onInitialPromptConsumed?: () => void;
   /** Completion sound state + controls, owned by AppShell so tasks finishing in
@@ -265,7 +265,7 @@ function ProcessDetailsGroup({ messageCount, toolCallCount, defaultExpanded = fa
   );
 }
 
-export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTargetHandled, initialScrollPosition, onScrollPositionChange, sessionRunning, newSessionCwd, newSessionDraftKey, onAgentEnd, onAttentionNeeded, onSessionCreated, onSessionForked, modelsRefreshKey, workspaceUnavailable, onRecheckWorkspace, chatInputRef, onBranchDataChange, onSystemPromptChange, onSystemToolsChange, onSystemInfoLoaderChange, onSessionStatsChange, onSessionStatsPanelOpen, onOpenSettings, onOpenModelsConfig, onContextUsageChange, onOpenFile, onOpenSession, onAskInNewChat, onSelectProject, projectOptions, onProjectChange, onProjectFilesImported, quoteSelectionEnabled = true, initialPrompt, onInitialPromptConsumed, soundEnabled = true, playDoneSound = () => {}, unlockAudio }: Props) {
+export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTargetHandled, initialScrollPosition, onScrollPositionChange, sessionRunning, newSessionCwd, newSessionDraftKey, onAgentEnd, onAttentionNeeded, onSessionCreated, onSessionForked, modelsRefreshKey, workspaceUnavailable, onRecheckWorkspace, chatInputRef, onBranchDataChange, onSystemPromptChange, onSystemToolsChange, onSystemInfoLoaderChange, onSessionStatsChange, onSessionStatsPanelOpen, onOpenSettings, onOpenModelsConfig, onContextUsageChange, onOpenFile, onOpenSession, onAskInNewChat, onSelectProject, projectOptions, onProjectChange, onProjectFilesImported, quoteSelectionEnabled = true, conversationNavigatorEnabled = true, initialPrompt, onInitialPromptConsumed, soundEnabled = true, playDoneSound = () => {}, unlockAudio }: Props) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
   const chatOnly = workspaceKind === "chat" || session?.workspaceKind === "chat";
@@ -814,7 +814,11 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
   useEffect(() => () => { onContextUsageChange?.(null); }, [onContextUsageChange]);
 
   const cwd = chatOnly ? undefined : session?.cwd ?? newSessionCwd;
-  const openFile = chatOnly ? undefined : onOpenFile;
+  // A chat with its own folder opens what it made in the right panel; a legacy
+  // chat (shared hidden cwd) has no folder to show. The browser takes the folder
+  // from the server-classified session, never from a path it builds itself.
+  const chatFolderCwd = chatOnly && session?.chatFolder ? session.cwd : undefined;
+  const openFile = chatOnly ? (chatFolderCwd ? onOpenFile : undefined) : onOpenFile;
   const projectImportBusyRef = useRef(false);
 
   // Documents/other files are copied into the project root and @mentioned so
@@ -998,21 +1002,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
   }, [isEmptyNew, scrollContainerRef]);
 
   const hasStreamingContent = Boolean(streamState.streamingMessage?.content.length);
-  const messageCwd = chatOnly ? undefined : session?.cwd ?? newSessionCwd ?? undefined;
-  // A chat's files live in its own folder: relative paths in write/edit calls start there, and
-  // a row of the written-files card opens the file (desktop) or shows the folder (browser).
-  const chatFolder = chatOnly ? chatAccess?.state.folder ?? undefined : undefined;
-  const writtenFilesCwd = chatOnly ? chatFolder : messageCwd;
-  const chatRevealFolder = chatAccess?.reveal;
-  const openChatFile = useCallback((filePath: string) => {
-    if (isTauriDesktop()) {
-      void openPathNative(filePath).catch((e: unknown) => {
-        addNotice({ type: "error", message: e instanceof Error ? e.message : String(e) });
-      });
-    } else {
-      void chatRevealFolder?.();
-    }
-  }, [addNotice, chatRevealFolder]);
+  const messageCwd = chatOnly ? chatFolderCwd : session?.cwd ?? newSessionCwd ?? undefined;
   // Keys that do not change when a sent or streamed message gets its entry id
   // on the post-run reload; keying by the id remounted the sent bubble.
   const messageKeyTrackerRef = useRef<{ sessionId: string | null; tracker: ReturnType<typeof createMessageKeyTracker> } | null>(null);
@@ -1168,6 +1158,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
     <ChatInput
       ref={chatInputRef}
       onSend={handleSend}
+      onClearDraft={cancelEdit}
       onAttachFiles={onAttachFiles}
       onAbort={handleAbort}
       onSteer={agentRunning ? handleSteer : undefined}
@@ -1266,6 +1257,28 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      {/* Search owns only rendered transcript text. Reveal the local window on
+          open, but keep server history paging explicit and reuse loadContext's
+          session/request guards. A leaf switch is a new search scope too. */}
+      <ConversationFind
+        contentRef={messageContentRef}
+        scopeKey={`${lazyLoadSessionKey}:${activeLeafId}`}
+        onReveal={() => setVisibleCount((count) => Math.max(count, messages.length))}
+        hasEarlier={hasEarlierMessages}
+        busy={sessionBusy || loading}
+        onLoadEarlier={async () => {
+          if (!session?.id || !historyCursor || loadingOlderRef.current || sessionBusy) return;
+          // Share the sentinel's paging lock so search and scroll cannot prepend
+          // the same page concurrently. Do not fetch older pages during a run.
+          loadingOlderRef.current = true;
+          try {
+            const context = await loadContext(session.id, activeLeafId, historyCursor, { tail: 200 });
+            if (context) setVisibleCount((count) => count + context.messages.length);
+          } finally {
+            loadingOlderRef.current = false;
+          }
+        }}
+      />
       {/* Zero-content twin of the message scrollport: same scrollbar styling and
           a forced track, so it reports the exact width the real scrollbar takes
           before any content renders one. */}
@@ -1436,7 +1449,6 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
                     prevTimestamp={idx > 0 ? (messages[idx - 1] as AgentMessage & { timestamp?: number }).timestamp : undefined}
                     sessionId={session?.id ?? sessionIdRef.current ?? undefined}
                     writtenFiles={options.writtenFiles}
-                    onOpenWrittenFile={chatFolder ? openChatFile : undefined}
                     onCompact={options.recoverTruncation ? handleCompact : undefined}
                     isCompacting={options.recoverTruncation ? isCompacting : undefined}
                     compactError={options.recoverTruncation ? compactError : undefined}
@@ -1546,7 +1558,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
                   // final answer alone carries no record of what the turn wrote.
                   // Gather the turn's assistant blocks and derive the file list
                   // from the write/edit calls among them.
-                  const writtenFiles = getTurnWrittenFiles(finalAssistant, messages.slice(userIdx + 1, finalAssistantIdx + 1), toolResultsMap, writtenFilesCwd);
+                  const writtenFiles = getTurnWrittenFiles(finalAssistant, messages.slice(userIdx + 1, finalAssistantIdx + 1), toolResultsMap, messageCwd);
                   rendered.push(renderMessage(finalAssistantIdx, {
                     messageOverride: finalAnswerMessage,
                     writtenFiles,
@@ -1608,6 +1620,8 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
           <ConversationNavigator
             turns={conversationTurns}
             scrollContainerRef={scrollContainerRef}
+            contentRef={messageContentRef}
+            enabled={conversationNavigatorEnabled}
             onSelect={selectConversationTurn}
           />
         </>

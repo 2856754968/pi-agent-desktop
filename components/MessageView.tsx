@@ -12,13 +12,14 @@ import { parseCompactionSummary } from "@/lib/compaction-summary";
 import { getAssistantErrorMessage, getThinkingPreview, hasAssistantAnswer, isAssistantTruncated, isEmptyThinkingBlock } from "@/lib/message-display";
 import { parseUnifiedPatch, type SplitDiffCell, type SplitDiffFile } from "@/lib/patch";
 import { applyPatchPreviewToFiles, applyPatchResultHasFailures, extractApplyPatchPaths, getApplyPatchInputText, parseApplyPatchInput } from "@/lib/apply-patch";
-import { isApplyPatchToolName, isEditToolName } from "@/lib/tool-names";
+import { isApplyPatchToolName, isEditToolName, isWriteToolName } from "@/lib/tool-names";
 import { isToolCallExpanded, setToolCallExpanded } from "@/lib/tool-call-expansion";
 import { isThinkingExpandedByDefault, THINKING_EXPANDED_EVENT } from "@/lib/thinking-expansion-preference";
 import { TurnWrittenFiles } from "./TurnWrittenFiles";
 import type { WrittenFile } from "@/lib/turn-written-files";
 import { skillExpansionToCommand } from "@/lib/slash-display";
 import { splitAttachedFiles } from "@/lib/chat-attachments";
+import { userImageDisplayText } from "@/lib/user-image-display";
 import { AttachedFileList } from "./AttachedFileList";
 import { SavedFileCard, isSavedFileInfo } from "./SavedFileCard";
 import type { SubagentToolDetails } from "@/lib/subagent-extension";
@@ -216,8 +217,6 @@ interface Props {
    * final answer text-only.
    */
   writtenFiles?: WrittenFile[];
-  /** What a row of the written-files card does, when it should not open the preview pane (a chat has none). */
-  onOpenWrittenFile?: (filePath: string) => void;
   onCompact?: () => void;
   isCompacting?: boolean;
   compactError?: string | null;
@@ -288,12 +287,12 @@ function haveSameRelevantToolResults(
   return true;
 }
 
-export const MessageView = memo(function MessageView({ message, isStreaming, toolResults, modelNames, cwd, onOpenFile, onOpenSession, entryId, searchBlock, onFork, forking, onEditContent, editDisabled, onCancelEdit, isEditing, showTimestamp, prevTimestamp, sessionId, writtenFiles, onOpenWrittenFile, onCompact, isCompacting, compactError }: Props) {
+export const MessageView = memo(function MessageView({ message, isStreaming, toolResults, modelNames, cwd, onOpenFile, onOpenSession, entryId, searchBlock, onFork, forking, onEditContent, editDisabled, onCancelEdit, isEditing, showTimestamp, prevTimestamp, sessionId, writtenFiles, onCompact, isCompacting, compactError }: Props) {
   if (message.role === "user") {
     return <UserMessageView message={message as UserMessage} cwd={cwd} onOpenFile={onOpenFile} entryId={entryId} onFork={onFork} forking={forking} onEditContent={onEditContent} editDisabled={editDisabled} onCancelEdit={onCancelEdit} isEditing={isEditing} />;
   }
   if (message.role === "assistant") {
-    return <AssistantMessageView message={message as AssistantMessage} isStreaming={isStreaming} toolResults={toolResults} modelNames={modelNames} cwd={cwd} onOpenFile={onOpenFile} onOpenSession={onOpenSession} showTimestamp={showTimestamp} prevTimestamp={prevTimestamp} sessionId={sessionId} entryId={entryId} searchBlock={searchBlock} writtenFiles={writtenFiles} onOpenWrittenFile={onOpenWrittenFile} onCompact={onCompact} isCompacting={isCompacting} compactError={compactError} />;
+    return <AssistantMessageView message={message as AssistantMessage} isStreaming={isStreaming} toolResults={toolResults} modelNames={modelNames} cwd={cwd} onOpenFile={onOpenFile} onOpenSession={onOpenSession} showTimestamp={showTimestamp} prevTimestamp={prevTimestamp} sessionId={sessionId} entryId={entryId} searchBlock={searchBlock} writtenFiles={writtenFiles} onCompact={onCompact} isCompacting={isCompacting} compactError={compactError} />;
   }
   if (message.role === "toolResult") {
     // Rendered inline under its toolCall — skip standalone rendering if paired
@@ -330,7 +329,6 @@ export const MessageView = memo(function MessageView({ message, isStreaming, too
     && prev.showTimestamp === next.showTimestamp
     && prev.prevTimestamp === next.prevTimestamp
     && prev.writtenFiles === next.writtenFiles
-    && prev.onOpenWrittenFile === next.onOpenWrittenFile
     && prev.sessionId === next.sessionId
     && prev.onCompact === next.onCompact
     && prev.isCompacting === next.isCompacting
@@ -356,19 +354,22 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
   // Session files can hold `\r\n` or lone `\r` line endings (#680). Chrome renders
   // a lone `\r` as a space even in the pre-wrap command-args and raw-text views.
   // Copy uses this text too; the session file keeps the original endings.
-  const content = (
+  const imageBlocks: ImageContent[] =
+    typeof message.content === "string"
+      ? []
+      : message.content.filter((b): b is ImageContent => b.type === "image");
+
+  // SDK image normalization appends coordinate hints to persisted user text.
+  // Project those out of display/copy and newly created edit drafts. The source
+  // message and existing model context retain the exact original data.
+  const content = userImageDisplayText((
     typeof message.content === "string"
       ? message.content
       : message.content
           .filter((b): b is TextContent => b.type === "text")
           .map((b) => b.text)
           .join("\n")
-  ).replace(/\r\n?/g, "\n");
-
-  const imageBlocks: ImageContent[] =
-    typeof message.content === "string"
-      ? []
-      : message.content.filter((b): b is ImageContent => b.type === "image");
+  ).replace(/\r\n?/g, "\n"), imageBlocks.length);
 
   // Files attached in a chat travel inside the text; show them as chips, not a wall of text.
   const { text: bodyText, files: attachedFiles } = splitAttachedFiles(content);
@@ -385,7 +386,12 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
   const time = formatTime(message.timestamp);
   const canFork = !!entryId && !!onFork;
   const copyTarget = commandText ?? content;
-  const editTarget = commandText ? replaceUserMessageText(message, commandText) : message;
+  // Editing is a new user submission, not a replay of SDK transport metadata.
+  // Build a copy with cleaned text while preserving every non-text attachment;
+  // otherwise each edit/resend can accumulate another generated image hint.
+  const editTarget = commandText || imageBlocks.length > 0
+    ? replaceUserMessageText(message, commandText ?? content)
+    : message;
 
   const imageBlocksNode = imageBlocks.length > 0 && (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: content ? 8 : 0 }}>
@@ -647,7 +653,6 @@ function AssistantMessageView({
   entryId,
   searchBlock,
   writtenFiles,
-  onOpenWrittenFile,
   onCompact,
   isCompacting,
   compactError,
@@ -665,7 +670,6 @@ function AssistantMessageView({
   entryId?: string;
   searchBlock?: AssistantContentBlock;
   writtenFiles?: WrittenFile[];
-  onOpenWrittenFile?: (filePath: string) => void;
   onCompact?: () => void;
   isCompacting?: boolean;
   compactError?: string | null;
@@ -919,7 +923,7 @@ function AssistantMessageView({
       )}
 
       {writtenFiles && writtenFiles.length > 0 && (
-        <TurnWrittenFiles files={writtenFiles} onOpenFile={onOpenWrittenFile ?? onOpenFile} />
+        <TurnWrittenFiles files={writtenFiles} onOpenFile={onOpenFile} />
       )}
 
       <div className="message-assistant-footer" style={{
@@ -1124,7 +1128,7 @@ function ToolCallBlock({ block, result, duration, aborted, defaultExpanded, onOp
     setToolCallExpanded(block.toolCallId, next);
     setExpanded(next);
   };
-  const inputStr = getToolCallInputText(block);
+  const inputStr = getWrittenFileText(block) ?? getToolCallInputText(block);
   const isStreamingInput = block.rawInput !== undefined;
   const isEditTool = isEditToolName(block.toolName);
   const resultDiff = result && !result.isError ? getResultDiff(result) : null;
@@ -2090,6 +2094,24 @@ function safeJson(value: unknown): string {
 
 export function getToolCallInputText(block: ToolCallContent): string {
   return block.rawInput ?? JSON.stringify(block.input, null, 2);
+}
+
+const WRITE_VIEW_KEYS = new Set(["path", "file_path", "content"]);
+
+// A write's file text in place of its JSON. Streamed input is still incomplete
+// JSON, and any other argument (a mode, a title) would vanish from this view,
+// so those calls, and an empty file, keep the generic view.
+function getWrittenFileText(block: ToolCallContent): string | null {
+  if (block.rawInput !== undefined || !isWriteToolName(block.toolName)) return null;
+  const { content } = block.input;
+  if (typeof content !== "string" || content === "") return null;
+  const paths = ["path", "file_path"].filter((key) => Object.hasOwn(block.input, key));
+  // The header shows only one path, truncated to 120 characters. Keep JSON when
+  // replacing it with content would hide any path information.
+  if (paths.length !== 1) return null;
+  const path = block.input[paths[0]];
+  if (typeof path !== "string" || path.length > 120) return null;
+  return Object.keys(block.input).every((key) => WRITE_VIEW_KEYS.has(key)) ? content : null;
 }
 
 function formatCustomType(type: string): string {

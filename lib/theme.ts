@@ -1,7 +1,7 @@
 export const THEME_OPTIONS = [
+  { id: "auto", label: "settings.themeSystem" },
   { id: "light", label: "settings.themeLight" },
   { id: "dark", label: "settings.themeDark" },
-  { id: "auto", label: "settings.themeSystem" },
 ] as const;
 
 export type ThemePreference = (typeof THEME_OPTIONS)[number]["id"];

@@ -72,7 +72,7 @@ try {
         });
         await page.waitForTimeout(300);
       }
-      await openSettingsSection(page, "General");
+      await openSettingsSection(page, "Appearance");
     };
     const expectTheme = async (theme) => {
       await page.waitForFunction((value) => document.documentElement.dataset.theme === value, theme);
@@ -144,15 +144,16 @@ try {
       await expectTheme("dark");
       await page.reload();
       await expectTheme("dark");
-      for (const key of ["bg", "bg-panel", "bg-hover", "bg-selected", "border", "text", "text-muted", "text-dim", "user-bg", "tool-bg"]) {
-        const hex = await page.locator("html").evaluate((root, token) => getComputedStyle(root).getPropertyValue(`--${token}`).trim(), key);
-        // The fork's dark palette follows Apple's system grays (#1c1c1e is faintly
-        // cool), so require "no visible tint" rather than exactly equal channels.
-        // Translucent tokens (rgba) are overlays, not surfaces; skip them.
-        if (!hex.startsWith("#")) continue;
-        const channels = (hex.length === 4 ? hex.slice(1).match(/./g).map((c) => c + c) : hex.slice(1).match(/../g)).map((c) => parseInt(c, 16));
-        assert.ok(Math.max(...channels) - Math.min(...channels) <= 4, `Dark ${key} (${hex}) must stay near neutral gray`);
-      }
+      const darkSurfaces = await page.locator("html").evaluate((root) => {
+        const style = getComputedStyle(root);
+        return Object.fromEntries(["bg", "workbench-bg", "surface-elevated", "menu-selection-color"]
+          .map((key) => [key, style.getPropertyValue(`--${key}`).trim()]));
+      });
+      assert.deepEqual(darkSurfaces, {
+        bg: "#19191a", "workbench-bg": "#242424",
+        "surface-elevated": "#262626", "menu-selection-color": darkSurfaces["menu-selection-color"],
+      }, "The palette keeps its neutral graphite surfaces in dark mode");
+      assert.ok(["#6b93ff", "AccentColor"].includes(darkSurfaces["menu-selection-color"]), "Selection colour is the system accent or its blue fallback");
     }
     assert.deepEqual(errors, []);
     console.log(`PASS ${width}px: palettes, contrast, persistence, system preference, keyboard navigation`);
