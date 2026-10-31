@@ -6,14 +6,19 @@
 // branches that are not checked out, and from chats (which have no side panel).
 //
 // It is derived, never authoritative: each file is re-parsed when its size or
-// mtime changes, and nothing is written to disk. A cold pass is cheap: a file
-// whose bytes never mention `:::artifact` is not parsed, and in one that does,
-// only the lines that mention it go through JSON.parse.
+// mtime changes. A file whose bytes never mention `:::artifact` is not parsed,
+// and in one that does, only the lines that mention it go through JSON.parse.
+// Even so, a cold pass reads every session file (hundreds of MB), so the index
+// is also kept in pi-web/artifact-index.json and reloaded after a restart; only
+// files whose fingerprint moved since then are read again.
 
 import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
+import { createReadStream, mkdirSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
+import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { writePrivateFileAtomicSync } from "./atomic-file.ts";
 import { artifactHasActiveContent, splitArtifacts, type ArtifactType } from "./artifacts.ts";
 import type { SessionInfo, SessionWorkspaceKind } from "./types";
 
@@ -26,6 +31,9 @@ const MAX_RESULTS = 500;
 const SNIPPET_CONTEXT = 80;
 // The SDK writes `type`, `id`, `parentId` first; enough for the branch walk.
 const ENTRY_PREFIX_RE = /^\{"type":"([^"\\]+)","id":"([^"\\]+)","parentId":(?:null|"([^"\\]*)")/;
+/** Bump when IndexedArtifact or the parser's output changes; older files are ignored. */
+const PERSIST_VERSION = 1;
+const PERSIST_DELAY_MS = 2_000;
 
 export interface IndexedArtifactVersion {
   entryId: string;
@@ -56,13 +64,69 @@ interface FileIndex {
   artifacts: IndexedArtifact[];
 }
 
+interface PersistState {
+  /** null turns persistence off (tests). */
+  path: string | null;
+  loaded: Promise<void> | null;
+  dirty: boolean;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
 declare global {
   var __piWebArtifactIndex: Map<string, FileIndex> | undefined;
+  var __piWebArtifactIndexPersist: PersistState | undefined;
 }
 
 function cache(): Map<string, FileIndex> {
   if (!globalThis.__piWebArtifactIndex) globalThis.__piWebArtifactIndex = new Map();
   return globalThis.__piWebArtifactIndex;
+}
+
+function persistState(): PersistState {
+  if (!globalThis.__piWebArtifactIndexPersist) {
+    globalThis.__piWebArtifactIndexPersist = { path: join(getAgentDir(), "pi-web", "artifact-index.json"), loaded: null, dirty: false, timer: null };
+  }
+  return globalThis.__piWebArtifactIndexPersist;
+}
+
+/** Seeds the in-memory cache from disk once per process. A bad file is ignored and rewritten. */
+function loadPersisted(): Promise<void> {
+  const state = persistState();
+  if (!state.loaded) {
+    const path = state.path;
+    state.loaded = path
+      ? readFile(path, "utf8").then((text) => {
+        const data = JSON.parse(text) as { version?: unknown; files?: unknown };
+        if (data.version !== PERSIST_VERSION || !data.files || typeof data.files !== "object") return;
+        const map = cache();
+        for (const [file, entry] of Object.entries(data.files as Record<string, FileIndex>)) {
+          if (!map.has(file) && entry?.fp && Array.isArray(entry.artifacts)) map.set(file, entry);
+        }
+      }).catch(() => undefined)
+      : Promise.resolve();
+  }
+  return state.loaded;
+}
+
+function writePersisted(): void {
+  const state = persistState();
+  state.timer = null;
+  if (!state.path || !state.dirty) return;
+  state.dirty = false;
+  try {
+    mkdirSync(dirname(state.path), { recursive: true });
+    writePrivateFileAtomicSync(state.path, JSON.stringify({ version: PERSIST_VERSION, files: Object.fromEntries(cache()) }));
+  } catch {
+    // Only a cache: the next change tries again, and a missing file means one cold pass.
+  }
+}
+
+function schedulePersist(): void {
+  const state = persistState();
+  state.dirty = true;
+  if (!state.path || state.timer) return;
+  state.timer = setTimeout(writePersisted, PERSIST_DELAY_MS);
+  state.timer.unref?.();
 }
 
 function hashVersion(identifier: string, content: string): string {
@@ -161,6 +225,7 @@ async function parseLargeFile(path: string): Promise<IndexedArtifact[]> {
 }
 
 async function indexFile(path: string): Promise<FileIndex | null> {
+  await loadPersisted();
   let fp: Fingerprint;
   try {
     const stats = await stat(path);
@@ -183,6 +248,7 @@ async function indexFile(path: string): Promise<FileIndex | null> {
   }
   const next = { fp, artifacts };
   cache().set(path, next);
+  schedulePersist();
   return next;
 }
 
@@ -200,8 +266,18 @@ async function indexSessions(sessions: readonly SessionInfo[], signal?: AbortSig
   };
   await Promise.all(Array.from({ length: Math.min(READ_CONCURRENCY, queue.length) }, worker));
   // Forget deleted files so the cache does not grow with every session ever opened.
-  const live = new Set(queue.map((session) => session.path));
-  for (const path of cache().keys()) if (!live.has(path)) cache().delete(path);
+  // Only after a complete pass: an aborted one has not seen every live file.
+  if (!signal?.aborted) {
+    const live = new Set(queue.map((session) => session.path));
+    let removed = false;
+    for (const path of cache().keys()) {
+      if (!live.has(path)) {
+        cache().delete(path);
+        removed = true;
+      }
+    }
+    if (removed) schedulePersist();
+  }
   return files;
 }
 
@@ -329,7 +405,17 @@ export async function getArtifact(session: SessionInfo, identifier: string): Pro
   return file?.artifacts.find((artifact) => artifact.identifier === identifier) ?? null;
 }
 
-/** Test hook. */
-export function resetArtifactIndexForTests(): void {
+/** Test hook. Persistence stays off unless a test passes a path. */
+export function resetArtifactIndexForTests(persistPath: string | null = null): void {
+  const timer = globalThis.__piWebArtifactIndexPersist?.timer;
+  if (timer) clearTimeout(timer);
   globalThis.__piWebArtifactIndex = undefined;
+  globalThis.__piWebArtifactIndexPersist = { path: persistPath, loaded: null, dirty: false, timer: null };
+}
+
+/** Test hook: writes a pending index file now. */
+export function flushArtifactIndexForTests(): void {
+  const timer = globalThis.__piWebArtifactIndexPersist?.timer;
+  if (timer) clearTimeout(timer);
+  writePersisted();
 }

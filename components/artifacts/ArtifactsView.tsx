@@ -28,6 +28,20 @@ type Detail =
   | { key: string; status: "missing" | "error"; error?: string };
 
 const SEARCH_DEBOUNCE_MS = 250;
+/** Focusing the window refreshes the list at most this often. */
+const FOCUS_REFRESH_MIN_MS = 10_000;
+const LIST_CACHE_MAX = 10;
+
+// The last lists by search text, kept while the app runs: reopening the page
+// shows them at once and refreshes in the background instead of starting empty.
+const listCache = new Map<string, { data: ArtifactListResponse; json: string }>();
+let lastListLoadAt = 0;
+
+function cacheList(search: string, data: ArtifactListResponse, json: string) {
+  listCache.delete(search);
+  listCache.set(search, { data, json });
+  if (listCache.size > LIST_CACHE_MAX) listCache.delete(listCache.keys().next().value!);
+}
 
 /**
  * The Artifacts page: every artifact from every conversation, searchable, with
@@ -40,7 +54,9 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [scope, setScope] = useState("");
-  const [list, setList] = useState<ArtifactListResponse | null>(null);
+  const [list, setList] = useState<ArtifactListResponse | null>(() => listCache.get("")?.data ?? null);
+  /** The search the shown list answers; it lags `search` while a new one loads. */
+  const [listSearch, setListSearch] = useState<string | null>(() => (listCache.has("") ? "" : null));
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reload, setReload] = useState(0);
@@ -69,7 +85,9 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
     runningRef.current = runningCount;
   }, [runningCount]);
   useEffect(() => {
-    const onFocus = () => setReload((n) => n + 1);
+    const onFocus = () => {
+      if (Date.now() - lastListLoadAt >= FOCUS_REFRESH_MIN_MS) setReload((n) => n + 1);
+    };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
@@ -77,11 +95,23 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
+    const cached = listCache.get(search);
+    if (cached) {
+      setList(cached.data);
+      setListSearch(search);
+    }
     fetch(`/api/artifacts?q=${encodeURIComponent(search)}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
-        const data = await response.json() as ArtifactListResponse & { error?: string };
+        const json = await response.text();
+        const data = JSON.parse(json) as ArtifactListResponse & { error?: string };
         if (!response.ok) throw new Error(data.error ?? `HTTP ${response.status}`);
-        setList(data);
+        lastListLoadAt = Date.now();
+        // An unchanged answer keeps the list's identity, so no row re-renders.
+        const previous = listCache.get(search);
+        const next = previous?.json === json ? previous.data : data;
+        cacheList(search, next, json);
+        setList(next);
+        setListSearch(search);
         setListError(null);
       })
       .catch((error: unknown) => {
@@ -230,7 +260,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
         {list && (items.length > 0 || search) && visible.length === 0 && (
           <p className="scheduled-hint artifacts-status">{t("artifacts.page.noMatches")}</p>
         )}
-        <ul className={`artifacts-list${loading && list ? " is-loading" : ""}`}>
+        <ul className={`artifacts-list${loading && list && listSearch !== search ? " is-loading" : ""}`}>
           {visible.map((item) => {
             const key = artifactKey(item);
             const meta = [

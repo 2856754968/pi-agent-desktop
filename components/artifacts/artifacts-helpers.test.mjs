@@ -64,3 +64,11 @@ test("an SVG image gets the namespace it needs", () => {
   const namespaced = '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
   assert.equal(decodeURIComponent(svgImageSource(namespaced).split(",")[1]), namespaced);
 });
+
+test("a page thumbnail is an SVG image wrapping the document", async () => {
+  const { pageImageSvg, PAGE_THUMBNAIL_WIDTH } = await jiti.import("./artifacts-helpers.ts");
+  const svg = pageImageSvg('<html xmlns="http://www.w3.org/1999/xhtml"><body>Hi</body></html>');
+  assert.match(svg, /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+  assert.match(svg, new RegExp(`<foreignObject x="0" y="0" width="${PAGE_THUMBNAIL_WIDTH}"`));
+  assert.match(svg, /<body>Hi<\/body><\/html><\/foreignObject><\/svg>$/);
+});

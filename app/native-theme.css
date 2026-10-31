@@ -8309,6 +8309,13 @@ span.linenumber {
 
 .artifacts-list.is-loading { opacity: 0.6; }
 
+/* Rows off screen skip layout and paint; the remembered height keeps the
+   scrollbar steady while they do. */
+.artifacts-list > li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 66px;
+}
+
 .artifacts-item {
   display: flex;
   align-items: flex-start;
@@ -8332,8 +8339,8 @@ span.linenumber {
   outline-offset: -2px;
 }
 
-/* Thumbnail box: the newest version as an image, a static frame scaled from
-   800x600, or a text excerpt (components/artifacts/ArtifactThumbnail.tsx). */
+/* Thumbnail box: the newest version as an image (HTML pages too, drawn from
+   800x600) or a text excerpt (components/artifacts/ArtifactThumbnail.tsx). */
 .artifacts-thumb {
   position: relative;
   display: inline-flex;
@@ -8359,15 +8366,26 @@ span.linenumber {
   box-sizing: border-box;
 }
 
-.artifacts-thumb-frame {
-  position: absolute;
-  top: 0;
-  left: 0;
-  border: 0;
-  background: #fff;
-  transform: scale(0.08);
-  transform-origin: 0 0;
-  pointer-events: none;
+.artifacts-thumb-image.is-page {
+  object-fit: cover;
+  object-position: 0 0;
+  padding: 0;
+}
+
+/* Only a thumbnail drawn while the page is open fades in; cached ones paint
+   with their row. */
+.artifacts-thumb-image.is-fresh,
+.artifacts-thumb-text.is-fresh {
+  animation: artifacts-thumb-in 160ms ease-out;
+}
+
+@keyframes artifacts-thumb-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .artifacts-thumb-image.is-fresh,
+  .artifacts-thumb-text.is-fresh { animation: none; }
 }
 
 .artifacts-thumb-text {
