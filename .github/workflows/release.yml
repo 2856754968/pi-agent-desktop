@@ -114,49 +114,43 @@ jobs:
           tagName: v__VERSION__
           releaseName: pi-agent-desktop v__VERSION__
           releaseBody: |
-            ## Pi Agent Desktop 0.7.9
+            ## Pi Agent Desktop 0.7.10
 
             ### New
 
-            - **Artifacts page.** A new Artifacts entry in the sidebar lists the artifacts from every conversation, chats included, newest first with thumbnails. Search titles and content, filter by type or project, preview any version, copy or download it, jump to it in its conversation, or continue from it in a new chat.
-            - **Clear the composer.** A new button clears the draft text and attachments in one click.
+            - **Artifacts page lists files too.** Besides artifacts, the Artifacts page now lists the files the agent wrote or edited, so coding sessions show their real output. Open one to see its content and the calls that changed it.
 
             ### Improved
 
-            - **Chats ask for the computer where they need it.** When a chat needs to run a command, a prompt appears above the composer. One click lets that chat use your computer and carries on. The chat's access menu is shorter, and the "ask before saving to Downloads" switch is gone.
-            - Editing a previous message no longer overwrites a draft you are still writing. Your draft is kept and a short notice explains why.
-            - The file preview in the right panel uses the conversation background, and code-block headers in dark mode are lighter.
+            - **Faster Artifacts page.** The page opens with the previous list straight away and refreshes it in the background, the index survives restarts (the first list after a restart is about ten times faster), and scrolling through thumbnails is smoother.
+            - **Faster session switching.** Switching to a conversation no longer waits for the model list to load, which could add up to about a second, especially between chats.
+            - **Drag the window from the sidebar.** The top of the sidebar now moves the window like the title bar does, and on macOS a drag works on the first press even when the window is not focused.
 
             ### Fixed
 
-            - **Settings survive updates on macOS.** Updating the app no longer resets Settings switches, the sidebar layout and drafts.
-            - **Windows: Clear cache keeps your settings.** Settings › General › Clear cache no longer removes your settings and logs, and the cache clear after an update now works.
-            - **Windows: one window at a time.** Launching the app again, for example by clicking the icon while it is still starting, brings back the running window instead of starting a second copy.
-            - Image attachments no longer show the internal size note in messages, titles and the sidebar, and editing a message with images no longer adds that note again.
+            - **Windows: no more stuck black window.** When the WebView2 render, GPU or browser process crashes or hangs, the window now reloads or rebuilds itself instead of staying black, and the failure is written to the log.
+            - The desktop log now records startup timing for the first few minutes, to help diagnose slow sign-in starts.
 
             Bundled components: pi 1.4.0, pi-web 0.10.0.
 
             ---
 
-            ## Pi Agent Desktop 0.7.9
+            ## Pi Agent Desktop 0.7.10
 
             ### 新增
 
-            - **Artifacts 页面。** 侧栏新增 Artifacts 入口，按时间倒序列出所有对话（含 Chats）里的 artifact，并显示缩略图。可以搜索标题和内容，按类型或项目筛选，预览任意版本，复制或下载，跳转到所在对话，或者从它开一个新对话接着做。
-            - **一键清空输入框。** 新增按钮，一次清空草稿文字和附件。
+            - **Artifacts 页面也列出文件。** 除了 artifact，Artifacts 页面现在还会列出 agent 写入或编辑过的文件，编程类对话的实际产出也能在这里找到。打开文件可以查看内容以及修改它的调用。
 
             ### 改进
 
-            - **Chats 需要执行命令时就地询问。** Chat 需要执行命令时，输入框上方会出现提示，点一下就允许这个 Chat 使用你的电脑并继续执行。Chat 的权限菜单更精简，“保存到下载前询问”开关已移除。
-            - 编辑历史消息时，不再覆盖你正在写的草稿：草稿会保留，并有简短提示说明原因。
-            - 右侧面板的文件预览使用对话背景色，深色模式下代码块标题栏更亮。
+            - **Artifacts 页面更快。** 打开页面时立即显示上次的列表并在后台刷新；索引在重启后保留（重启后首次加载快约十倍）；滚动缩略图更流畅。
+            - **切换会话更快。** 切换对话不再等待模型列表加载，之前这可能多花近一秒，在 Chats 之间切换时尤其明显。
+            - **可以从侧栏拖动窗口。** 侧栏顶部现在和标题栏一样可以拖动窗口；macOS 上窗口未激活时，第一次按下就能拖动。
 
             ### 修复
 
-            - **macOS 升级后不再丢设置。** 升级应用后，设置开关、侧栏布局和草稿都会保留。
-            - **Windows：清除缓存不再清掉设置。** 设置 › 通用 › 清除缓存不再删除你的设置和日志；升级后的自动缓存清理也恢复生效。
-            - **Windows：只保留一个窗口。** 再次打开应用（比如启动中又点了图标）会切回已运行的窗口，不会再启动第二个。
-            - 图片附件不再在消息、标题和侧栏里显示内部尺寸说明，编辑带图片的消息也不会再重复添加这段说明。
+            - **Windows：不再卡在黑屏。** WebView2 的渲染、GPU 或浏览器进程崩溃或无响应时，窗口会自动重新加载或重建，不再一直黑屏，并在日志中记录原因。
+            - 桌面日志会记录启动后前几分钟的时间信息，便于排查登录启动缓慢的问题。
 
             内置组件版本：pi 1.4.0、pi-web 0.10.0。
           releaseDraft: true
