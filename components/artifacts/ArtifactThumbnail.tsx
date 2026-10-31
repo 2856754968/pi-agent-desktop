@@ -3,14 +3,17 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { readThemeColors } from "@/hooks/useHtmlPreviewFrame";
-import type { ArtifactSummary } from "@/lib/artifact-index";
+import type { ArtifactSummary, FileOutputSummary, OutputSummary } from "@/lib/artifact-index";
+import { encodeFilePathForApi } from "@/lib/file-paths";
 import { buildHtmlPreviewDocument } from "@/lib/html-preview";
 import { ArtifactTypeIcon } from "../ArtifactCard";
+import { getFileIcon } from "../FileIcons";
 import { renderMermaidSvg } from "../MermaidBlock";
 import {
   PAGE_THUMBNAIL_HEIGHT,
   PAGE_THUMBNAIL_WIDTH,
   THUMBNAIL_MAX_CHARS,
+  fileThumbnailKind,
   pageImageSvg,
   svgImageSource,
   textExcerpt,
@@ -34,7 +37,7 @@ const SCROLL_IDLE_MS = 150;
 const RASTER_WIDTH = 128;
 const RASTER_HEIGHT = 96;
 
-type Thumb = { kind: "image"; src: string; page: boolean } | { kind: "text"; text: string } | null;
+type Thumb = { kind: "image"; src: string; page: boolean } | { kind: "text"; text: string; code: boolean } | null;
 
 const thumbCache = new Map<string, Thumb>();
 
@@ -204,11 +207,44 @@ async function rasterise(src: string, width: number, height: number, fit: "conta
 }
 
 /** Mermaid keeps global configuration; the queue already runs one job at a time. */
-async function renderThumb(item: ArtifactSummary, isDark: boolean): Promise<Thumb> {
-  const kind = thumbnailKind(item.type);
-  const source = await fetchLatestContent(item);
+/** A file through /api/files, which the session's own write/edit call authorizes. */
+function fileApiUrl(item: FileOutputSummary): string {
+  return `/api/files/${encodeFilePathForApi(item.path)}?${new URLSearchParams({ type: "read", sessionId: item.sessionId })}`;
+}
+
+async function fetchFileText(item: FileOutputSummary): Promise<string | null> {
+  const response = await fetch(fileApiUrl(item), { cache: "no-store" });
+  if (!response.ok) {
+    if (response.status === 403 || response.status === 404) return null;
+    throw new Error(`HTTP ${response.status}`);
+  }
+  const data = await response.json() as { content?: unknown };
+  return typeof data.content === "string" ? data.content.slice(0, THUMBNAIL_MAX_CHARS) : null;
+}
+
+type RenderKind = "image" | "mermaid" | "frame" | "text" | "code";
+
+function rowKind(item: OutputSummary): RenderKind | "file-image" | "icon" {
+  if (item.kind === "artifact") return thumbnailKind(item.type);
+  return item.missing ? "icon" : fileThumbnailKind(item.path);
+}
+
+async function renderThumb(item: OutputSummary, isDark: boolean): Promise<Thumb> {
+  const kind = rowKind(item);
+  if (kind === "icon") return null;
+  if (kind === "file-image") {
+    // A photo can be large; drawn once into the small PNG, it is never decoded again.
+    const src = fileApiUrl(item as FileOutputSummary);
+    const vector = /\.svg$/i.test((item as FileOutputSummary).path);
+    const raster = await rasterise(src, RASTER_WIDTH, RASTER_HEIGHT, vector ? "contain" : "cover");
+    return raster === src ? null : { kind: "image", src: raster, page: !vector };
+  }
+  const source = item.kind === "artifact" ? await fetchLatestContent(item) : await fetchFileText(item);
   if (!source) return null;
-  if (kind === "text") return { kind: "text", text: textExcerpt(source, item.type) };
+  if (kind === "text" || kind === "code") {
+    const textType = item.kind === "artifact" ? item.type : kind === "code" ? "code" : "markdown";
+    return { kind: "text", text: textExcerpt(source, textType), code: textType === "code" };
+  }
   if (kind === "frame") {
     const src = await rasterise(svgImageSource(pageSvg(source, isDark)), PAGE_THUMBNAIL_WIDTH, PAGE_THUMBNAIL_HEIGHT, "cover");
     return { kind: "image", src, page: true };
@@ -219,18 +255,23 @@ async function renderThumb(item: ArtifactSummary, isDark: boolean): Promise<Thum
 }
 
 interface Props {
-  item: ArtifactSummary;
+  item: OutputSummary;
   /** The scrolling list, so rows just below the fold load ahead of time. */
   scrollRoot: RefObject<HTMLElement | null>;
 }
 
+function itemKey(item: OutputSummary): string {
+  const id = item.kind === "file" ? `file\u0000${item.path}\u0000${item.missing}` : `${item.sessionId}\u0000${item.identifier}`;
+  return `${id}\u0000${item.versionCount}\u0000${item.updated}`;
+}
+
 export function ArtifactThumbnail({ item, scrollRoot }: Props) {
-  const kind = thumbnailKind(item.type);
+  const kind = rowKind(item);
   const ref = useRef<HTMLSpanElement>(null);
   const { isDark } = useTheme();
   // Only Mermaid and pages that follow the app theme depend on it.
   const themed = kind === "mermaid" || kind === "frame";
-  const key = `${item.sessionId}\u0000${item.identifier}\u0000${item.versionCount}\u0000${item.updated}${themed ? `\u0000${isDark ? "dark" : "light"}` : ""}`;
+  const key = `${itemKey(item)}${themed ? `\u0000${isDark ? "dark" : "light"}` : ""}`;
   // Read synchronously, so a cached thumbnail paints with the row instead of after it.
   const [thumb, setThumb] = useState<{ key: string; value: Thumb; fresh: boolean } | null>(() => (
     thumbCache.has(key) ? { key, value: thumbCache.get(key)!, fresh: false } : null
@@ -264,13 +305,13 @@ export function ArtifactThumbnail({ item, scrollRoot }: Props) {
 
   const value = shown?.value;
   const fresh = shown?.fresh ? " is-fresh" : "";
-  let body = <ArtifactTypeIcon type={item.type} size={18} />;
+  let body = item.kind === "file" ? getFileIcon(item.title, 18) : <ArtifactTypeIcon type={item.type} size={18} />;
   if (value?.kind === "image") {
     // A data: URL; next/image has nothing to optimise.
     // eslint-disable-next-line @next/next/no-img-element
     body = <img className={`artifacts-thumb-image${value.page ? " is-page" : ""}${fresh}`} src={value.src} alt="" draggable={false} decoding="async" />;
   } else if (value?.kind === "text") {
-    body = <span className={`artifacts-thumb-text${item.type === "code" ? " is-code" : ""}${fresh}`}>{value.text}</span>;
+    body = <span className={`artifacts-thumb-text${value.code ? " is-code" : ""}${fresh}`}>{value.text}</span>;
   }
 
   return (

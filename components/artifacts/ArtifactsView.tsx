@@ -5,12 +5,22 @@ import { useI18n } from "@/hooks/useI18n";
 import { isImeComposing } from "@/lib/ime";
 import { formatRelativeTime } from "@/lib/i18n/format";
 import { ARTIFACT_TYPES } from "@/lib/artifacts";
-import type { ArtifactListResponse, ArtifactSummary, IndexedArtifactVersion } from "@/lib/artifact-index";
+import type { ArtifactListResponse, IndexedArtifactVersion, OutputSummary } from "@/lib/artifact-index";
+import { getFileDirectory } from "@/lib/file-paths";
 import { AppSelect } from "../AppSelect";
 import { ARTIFACT_TYPE_LABEL } from "../ArtifactCard";
 import { ARTIFACT_TOOLBAR_ICON, ArtifactView } from "../ArtifactView";
 import { ArtifactThumbnail } from "./ArtifactThumbnail";
-import { artifactKey, filterArtifacts, scopeOptions } from "./artifacts-helpers";
+import { FileOutputView } from "./FileOutputView";
+import {
+  TYPE_ALL_ARTIFACTS,
+  TYPE_ALL_FILES,
+  TYPE_CREATED_FILES,
+  TYPE_EDITED_FILES,
+  artifactKey,
+  filterArtifacts,
+  scopeOptions,
+} from "./artifacts-helpers";
 
 interface Props {
   /** How many sessions are running; the list reloads when one finishes. */
@@ -60,7 +70,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reload, setReload] = useState(0);
-  const [selected, setSelected] = useState<ArtifactSummary | null>(null);
+  const [selected, setSelected] = useState<OutputSummary | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   /** The version a "continue in new chat" request is being written for. */
@@ -134,16 +144,18 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   // new version also refreshes the preview.
   const selectedKey = selected ? artifactKey(selected) : null;
   const current = selectedKey ? items.find((item) => artifactKey(item) === selectedKey) ?? selected : null;
-  const revision = current ? `${current.versionCount}:${current.updated}` : "";
+  // Files load their own detail (FileOutputView); this effect is for artifacts.
+  const currentArtifact = current?.kind === "artifact" ? current : null;
+  const revision = currentArtifact ? `${currentArtifact.versionCount}:${currentArtifact.updated}` : "";
 
   useEffect(() => {
-    if (!current || !selectedKey) {
+    if (!currentArtifact || !selectedKey) {
       setDetail(null);
       return;
     }
     const controller = new AbortController();
     setDetail((previous) => (previous?.key === selectedKey && previous.status === "ready" ? previous : { key: selectedKey, status: "loading" }));
-    const params = new URLSearchParams({ session: current.sessionId, identifier: current.identifier });
+    const params = new URLSearchParams({ session: currentArtifact.sessionId, identifier: currentArtifact.identifier });
     fetch(`/api/artifacts/item?${params}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const data = await response.json() as { versions?: ItemVersion[]; error?: string };
@@ -159,13 +171,13 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
         setDetail({ key: selectedKey, status: "error", error: error instanceof Error ? error.message : String(error) });
       });
     return () => controller.abort();
-    // `current` is read for its ids, which `selectedKey` covers; `revision` refetches.
+    // `currentArtifact` is read for its ids, which `selectedKey` covers; `revision` refetches.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedKey, revision]);
 
   const versions = detail?.key === selectedKey && detail.status === "ready" ? detail.versions : undefined;
 
-  function selectItem(item: ArtifactSummary | null) {
+  function selectItem(item: OutputSummary | null) {
     setActionError(null);
     setContinueIndex(null);
     setContinueText("");
@@ -177,13 +189,13 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   async function submitContinue(event?: FormEvent) {
     event?.preventDefault();
     const request = continueText.trim();
-    if (!current || !continueVersion || continueIndex === null || !request || continueBusy) return;
+    if (!currentArtifact || !continueVersion || continueIndex === null || !request || continueBusy) return;
     setContinueBusy(true);
     setActionError(null);
     try {
-      await onContinueInNewChat(current.sessionId, continueVersion.entryId, t("artifacts.page.continuePrompt", {
+      await onContinueInNewChat(currentArtifact.sessionId, continueVersion.entryId, t("artifacts.page.continuePrompt", {
         title: continueVersion.title,
-        identifier: current.identifier,
+        identifier: currentArtifact.identifier,
         version: continueIndex + 1,
         request,
       }));
@@ -195,14 +207,18 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   }
 
   async function openInConversation(version: ItemVersion) {
-    if (!current) return;
+    if (!currentArtifact) return;
     setActionError(null);
-    if (!(await onOpenInConversation(current.sessionId, version.entryId))) setActionError(t("artifacts.page.sessionMissing"));
+    if (!(await onOpenInConversation(currentArtifact.sessionId, version.entryId))) setActionError(t("artifacts.page.sessionMissing"));
   }
 
   const typeOptions = [
     { value: "", label: t("artifacts.page.allTypes") },
+    { value: TYPE_ALL_ARTIFACTS, label: t("artifacts.page.allArtifacts") },
     ...ARTIFACT_TYPES.map((value) => ({ value, label: ARTIFACT_TYPE_LABEL[value] })),
+    { value: TYPE_ALL_FILES, label: t("artifacts.page.allFiles") },
+    { value: TYPE_CREATED_FILES, label: t("artifacts.page.createdFiles") },
+    { value: TYPE_EDITED_FILES, label: t("artifacts.page.editedFiles") },
   ];
   const scopeSelectOptions = [{ value: "", label: t("artifacts.page.allProjects") }, ...scopes];
 
@@ -264,10 +280,12 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
           {visible.map((item) => {
             const key = artifactKey(item);
             const meta = [
-              ARTIFACT_TYPE_LABEL[item.type],
+              item.kind === "file" ? (item.created ? t("artifacts.page.fileCreated") : t("artifacts.page.fileEdited")) : ARTIFACT_TYPE_LABEL[item.type],
+              ...(item.kind === "file" ? [getFileDirectory(item.displayPath) || "."] : []),
               item.sessionTitle,
               formatRelativeTime(item.updated, locale),
             ].join(" · ");
+            const snippet = item.kind === "artifact" ? item.snippet : undefined;
             return (
               <li key={key}>
                 <button
@@ -280,15 +298,20 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                   <span className="artifacts-item-main">
                     <span className="artifacts-item-title">{item.title}</span>
                     <span className="artifacts-item-meta" title={meta}>{meta}</span>
-                    {item.snippet && (
+                    {snippet && (
                       <span className="artifacts-item-snippet">
-                        {item.snippet.before}<mark>{item.snippet.match}</mark>{item.snippet.after}
+                        {snippet.before}<mark>{snippet.match}</mark>{snippet.after}
                       </span>
                     )}
                   </span>
                   <span className="artifacts-item-tags">
                     {item.scheduled && <span className="scheduled-tag">{t("artifacts.page.scheduled")}</span>}
-                    {item.versionCount > 1 && <span className="scheduled-tag">{t("artifacts.page.versionCount", { count: item.versionCount })}</span>}
+                    {item.kind === "file" && item.missing && <span className="scheduled-tag">{t("artifacts.page.fileMissing")}</span>}
+                    {item.versionCount > 1 && (
+                      <span className="scheduled-tag">
+                        {t(item.kind === "file" ? "artifacts.page.changeCount" : "artifacts.page.versionCount", { count: item.versionCount })}
+                      </span>
+                    )}
                   </span>
                 </button>
               </li>
@@ -308,7 +331,10 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                 {current.sessionTitle} · {formatRelativeTime(current.updated, locale)}
               </span>
             </div>
-            {continueVersion && (
+            {current.kind === "file" && (
+              <FileOutputView key={selectedKey} item={current} onOpenInConversation={onOpenInConversation} />
+            )}
+            {currentArtifact && continueVersion && (
               <form className="artifacts-continue" onSubmit={(event) => void submitContinue(event)}>
                 <label className="scheduled-hint" htmlFor="artifacts-continue-input">
                   {t("artifacts.page.continueLabel", { title: continueVersion.title, version: (continueIndex ?? 0) + 1 })}
@@ -341,12 +367,12 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                 </div>
               </form>
             )}
-            {actionError && <p className="scheduled-error artifacts-detail-error" role="alert">{actionError}</p>}
-            <div className="artifacts-detail-body">
+            {currentArtifact && actionError && <p className="scheduled-error artifacts-detail-error" role="alert">{actionError}</p>}
+            {currentArtifact && <div className="artifacts-detail-body">
               <ArtifactView
                 key={selectedKey}
-                identifier={current.identifier}
-                title={current.title}
+                identifier={currentArtifact.identifier}
+                title={currentArtifact.title}
                 versions={versions}
                 holdActiveContent
                 emptyMessage={detailMessage}
@@ -389,7 +415,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                   );
                 }}
               />
-            </div>
+            </div>}
           </>
         ) : (
           <div className="artifacts-detail-empty">

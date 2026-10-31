@@ -98,6 +98,7 @@ app/api/
   artifacts/settings/route.ts     GET/PUT the "artifacts in the side panel" prompt switch
   artifacts/route.ts              GET ?q= artifacts across all sessions (Artifacts page)
   artifacts/item/route.ts         GET ?session=&identifier= one artifact with every version
+  artifacts/file/route.ts         GET ?path= one written/edited file's calls | ?session=&toolCallId= a write's content
 
 lib/
   agent-client.ts      typed fetch helper for /api/agent commands

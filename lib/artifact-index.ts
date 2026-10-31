@@ -1,4 +1,6 @@
-// Artifacts across every session, for the Artifacts page.
+// Artifacts across every session, for the Artifacts page: `:::artifact`
+// blocks in assistant text, and files the model wrote or edited with the
+// `write` / `edit` tools.
 //
 // The chat's artifact store (lib/artifact-store.ts) only knows the loaded
 // window of the open conversation. This index reads session files instead, so
@@ -15,24 +17,29 @@
 import { createHash } from "node:crypto";
 import { createReadStream, mkdirSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { createInterface } from "node:readline";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { writePrivateFileAtomicSync } from "./atomic-file.ts";
+import { userHome } from "./user-home.ts";
 import { artifactHasActiveContent, splitArtifacts, type ArtifactType } from "./artifacts.ts";
 import type { SessionInfo, SessionWorkspaceKind } from "./types";
 
 const MARKER = ":::artifact";
-const MARKER_BYTES = Buffer.from(MARKER);
+// How the SDK writes a write/edit call and its result. Only lines holding one
+// of these are parsed for files; the bytes check skips files with none.
+const FILE_TOOLS = ["write", "edit"] as const;
+const FILE_TOOL_MARKERS = FILE_TOOLS.flatMap((tool) => [`"name":"${tool}"`, `"toolName":"${tool}"`]);
+const FILE_MARKERS = [MARKER, ...FILE_TOOL_MARKERS].map((marker) => Buffer.from(marker));
 /** Larger files are streamed by line instead of read whole. */
 const WHOLE_READ_MAX_BYTES = 16 * 1024 * 1024;
 const READ_CONCURRENCY = 8;
-const MAX_RESULTS = 500;
+const MAX_RESULTS = 1000;
 const SNIPPET_CONTEXT = 80;
 // The SDK writes `type`, `id`, `parentId` first; enough for the branch walk.
 const ENTRY_PREFIX_RE = /^\{"type":"([^"\\]+)","id":"([^"\\]+)","parentId":(?:null|"([^"\\]*)")/;
 /** Bump when IndexedArtifact or the parser's output changes; older files are ignored. */
-const PERSIST_VERSION = 1;
+const PERSIST_VERSION = 2;
 const PERSIST_DELAY_MS = 2_000;
 
 export interface IndexedArtifactVersion {
@@ -54,6 +61,23 @@ export interface IndexedArtifact {
   versions: IndexedArtifactVersion[];
 }
 
+export type FileTool = (typeof FILE_TOOLS)[number];
+
+/**
+ * One successful write/edit call. Only where and when: contents are never
+ * kept here (the index is persisted, and files may hold secrets). The page
+ * reads the file itself through /api/files.
+ */
+export interface IndexedFileOp {
+  /** As the model wrote it; relative paths resolve against the session cwd. */
+  path: string;
+  tool: FileTool;
+  toolCallId: string;
+  entryId: string;
+  timestamp: string;
+  onActiveBranch: boolean;
+}
+
 interface Fingerprint {
   size: number;
   mtimeMs: number;
@@ -62,6 +86,12 @@ interface Fingerprint {
 interface FileIndex {
   fp: Fingerprint;
   artifacts: IndexedArtifact[];
+  files: IndexedFileOp[];
+}
+
+export interface ParsedSession {
+  artifacts: IndexedArtifact[];
+  files: IndexedFileOp[];
 }
 
 interface PersistState {
@@ -100,7 +130,7 @@ function loadPersisted(): Promise<void> {
         if (data.version !== PERSIST_VERSION || !data.files || typeof data.files !== "object") return;
         const map = cache();
         for (const [file, entry] of Object.entries(data.files as Record<string, FileIndex>)) {
-          if (!map.has(file) && entry?.fp && Array.isArray(entry.artifacts)) map.set(file, entry);
+          if (!map.has(file) && entry?.fp && Array.isArray(entry.artifacts) && Array.isArray(entry.files)) map.set(file, entry);
         }
       }).catch(() => undefined)
       : Promise.resolve();
@@ -135,15 +165,21 @@ function hashVersion(identifier: string, content: string): string {
 
 type FoundVersion = { identifier: string; version: Omit<IndexedArtifactVersion, "onActiveBranch"> };
 
-/** Feeds a session file line by line; `finish()` returns its artifacts. */
+function mentionsFileTool(text: string): boolean {
+  return FILE_TOOL_MARKERS.some((marker) => text.includes(marker));
+}
+
+/** Feeds a session file line by line; `finish()` returns its artifacts and file writes. */
 function createArtifactParser() {
   const parents = new Map<string, string | null>();
   let leafId: string | null = null;
   const found: FoundVersion[] = [];
+  const calls = new Map<string, Omit<IndexedFileOp, "onActiveBranch">>();
+  const succeeded = new Set<string>();
 
   const line = (text: string) => {
     if (!text.trim()) return;
-    if (!text.includes(MARKER)) {
+    if (!text.includes(MARKER) && !mentionsFileTool(text)) {
       const prefix = ENTRY_PREFIX_RE.exec(text);
       if (prefix) {
         if (prefix[1] === "session") return;
@@ -162,9 +198,27 @@ function createArtifactParser() {
     if (!entry || typeof entry !== "object" || entry.type === "session" || typeof entry.id !== "string") return;
     parents.set(entry.id, typeof entry.parentId === "string" ? entry.parentId : null);
     leafId = entry.id;
-    if (entry.type !== "message" || !text.includes(MARKER)) return;
-    const message = entry.message as { role?: unknown; content?: unknown } | undefined;
+    if (entry.type !== "message") return;
+    const message = entry.message as { role?: unknown; content?: unknown; toolName?: unknown; toolCallId?: unknown; isError?: unknown } | undefined;
+    const timestamp = typeof entry.timestamp === "string" ? entry.timestamp : "";
+    // A call counts once its result says it worked; an interrupted one has none.
+    if (message?.role === "toolResult") {
+      if (FILE_TOOLS.includes(message.toolName as FileTool) && typeof message.toolCallId === "string" && message.isError !== true) {
+        succeeded.add(message.toolCallId);
+      }
+      return;
+    }
     if (message?.role !== "assistant") return;
+    if (Array.isArray(message.content) && mentionsFileTool(text)) {
+      for (const block of message.content) {
+        if (!block || typeof block !== "object" || block.type !== "toolCall" || typeof block.id !== "string") continue;
+        if (!FILE_TOOLS.includes(block.name)) continue;
+        const path = (block.arguments as { path?: unknown } | undefined)?.path;
+        if (typeof path !== "string" || !path.trim()) continue;
+        calls.set(block.id, { path, tool: block.name as FileTool, toolCallId: block.id, entryId: entry.id, timestamp });
+      }
+    }
+    if (!text.includes(MARKER)) return;
     const texts = typeof message.content === "string"
       ? [message.content]
       : Array.isArray(message.content)
@@ -172,7 +226,6 @@ function createArtifactParser() {
           block && typeof block === "object" && block.type === "text" && typeof block.text === "string" ? [block.text as string] : []
         ))
         : [];
-    const timestamp = typeof entry.timestamp === "string" ? entry.timestamp : "";
     for (const body of texts) {
       if (!body.includes(MARKER)) continue;
       for (const segment of splitArtifacts(body)) {
@@ -186,7 +239,7 @@ function createArtifactParser() {
     }
   };
 
-  const finish = (): IndexedArtifact[] => {
+  const finish = (): ParsedSession => {
     const active = new Set<string>();
     for (let id = leafId; id && !active.has(id); id = parents.get(id) ?? null) active.add(id);
     const byIdentifier = new Map<string, IndexedArtifact>();
@@ -198,20 +251,28 @@ function createArtifactParser() {
       }
       artifact.versions.push({ ...version, onActiveBranch: active.has(version.entryId) });
     }
-    return [...byIdentifier.values()];
+    const files = [...calls.values()]
+      .filter((call) => succeeded.has(call.toolCallId))
+      .map((call) => ({ ...call, onActiveBranch: active.has(call.entryId) }));
+    return { artifacts: [...byIdentifier.values()], files };
   };
 
   return { line, finish };
 }
 
 /** Parses one session file's text. Exported for tests. */
-export function parseSessionArtifacts(text: string): IndexedArtifact[] {
+export function parseSession(text: string): ParsedSession {
   const parser = createArtifactParser();
   for (const line of text.split("\n")) parser.line(line);
   return parser.finish();
 }
 
-async function parseLargeFile(path: string): Promise<IndexedArtifact[]> {
+/** Parses one session file's text for its artifacts. Exported for tests. */
+export function parseSessionArtifacts(text: string): IndexedArtifact[] {
+  return parseSession(text).artifacts;
+}
+
+async function parseLargeFile(path: string): Promise<ParsedSession> {
   const parser = createArtifactParser();
   const stream = createReadStream(path, { encoding: "utf8" });
   const lines = createInterface({ input: stream, crlfDelay: Infinity });
@@ -235,18 +296,18 @@ async function indexFile(path: string): Promise<FileIndex | null> {
   }
   const cached = cache().get(path);
   if (cached && cached.fp.size === fp.size && cached.fp.mtimeMs === fp.mtimeMs) return cached;
-  let artifacts: IndexedArtifact[];
+  let parsed: ParsedSession;
   try {
     if (fp.size > WHOLE_READ_MAX_BYTES) {
-      artifacts = await parseLargeFile(path);
+      parsed = await parseLargeFile(path);
     } else {
       const bytes = await readFile(path);
-      artifacts = bytes.includes(MARKER_BYTES) ? parseSessionArtifacts(bytes.toString("utf8")) : [];
+      parsed = FILE_MARKERS.some((marker) => bytes.includes(marker)) ? parseSession(bytes.toString("utf8")) : { artifacts: [], files: [] };
     }
   } catch {
     return null;
   }
-  const next = { fp, artifacts };
+  const next = { fp, ...parsed };
   cache().set(path, next);
   schedulePersist();
   return next;
@@ -287,7 +348,8 @@ export interface ArtifactSnippet {
   after: string;
 }
 
-export interface ArtifactSummary {
+/** The conversation an output came from (for a file, the latest write or edit). */
+interface OutputSource {
   sessionId: string;
   sessionTitle: string;
   cwd: string;
@@ -296,6 +358,10 @@ export interface ArtifactSummary {
   workspaceKind?: SessionWorkspaceKind;
   /** Output of a scheduled task's run. */
   scheduled: boolean;
+}
+
+export interface ArtifactSummary extends OutputSource {
+  kind: "artifact";
   identifier: string;
   title: string;
   type: ArtifactType;
@@ -307,14 +373,105 @@ export interface ArtifactSummary {
   snippet?: ArtifactSnippet;
 }
 
+/** A file the model wrote or edited, merged across every conversation that touched it. */
+export interface FileOutputSummary extends OutputSource {
+  kind: "file";
+  /** Absolute. */
+  path: string;
+  /** Relative to the project, else `~/…` under the home folder, else absolute. */
+  displayPath: string;
+  title: string;
+  /** Some call wrote the whole file; otherwise it was only edited. */
+  created: boolean;
+  /** Successful write/edit calls. */
+  versionCount: number;
+  updated: string;
+  /** Gone from disk (deleted or moved since). */
+  missing: boolean;
+}
+
+export type OutputSummary = ArtifactSummary | FileOutputSummary;
+
 export interface ArtifactListResponse {
-  artifacts: ArtifactSummary[];
+  artifacts: OutputSummary[];
   /** More matched than were returned. */
   truncated: boolean;
 }
 
+/** A row's subtitle; the first message can be a whole pasted document. */
+const SESSION_TITLE_MAX = 120;
+
 function sessionTitle(session: SessionInfo): string {
-  return session.name || session.firstMessage || session.id;
+  const title = (session.name || session.firstMessage || session.id).replace(/\s+/g, " ").trim();
+  return title.length > SESSION_TITLE_MAX ? `${title.slice(0, SESSION_TITLE_MAX - 1)}…` : title;
+}
+
+function outputSource(session: SessionInfo): OutputSource {
+  return {
+    sessionId: session.id,
+    sessionTitle: sessionTitle(session),
+    cwd: session.cwd,
+    projectRoot: session.projectRoot,
+    projectKey: session.projectKey,
+    workspaceKind: session.workspaceKind,
+    scheduled: session.relation?.kind === "scheduled",
+  };
+}
+
+/** Where a call's path points: `~` is the home folder, relative paths start at the session cwd. */
+export function resolveFileOpPath(path: string, cwd: string): string {
+  if (path === "~") return userHome();
+  if (path.startsWith("~/") || path.startsWith("~\\")) return join(userHome(), path.slice(2));
+  return isAbsolute(path) ? path : resolve(cwd, path);
+}
+
+interface FileOutputOp extends IndexedFileOp {
+  session: SessionInfo;
+}
+
+/**
+ * Every file's successful calls, by absolute path. A fork repeats its
+ * source's calls under the same tool-call ids; each call counts once.
+ */
+function collectFileOps(sessions: readonly SessionInfo[], files: Map<string, FileIndex>): Map<string, FileOutputOp[]> {
+  const byPath = new Map<string, FileOutputOp[]>();
+  const seen = new Set<string>();
+  for (const session of sessions) {
+    for (const op of files.get(session.id)?.files ?? []) {
+      if (seen.has(op.toolCallId)) continue;
+      seen.add(op.toolCallId);
+      const path = resolveFileOpPath(op.path, session.cwd);
+      let ops = byPath.get(path);
+      if (!ops) {
+        ops = [];
+        byPath.set(path, ops);
+      }
+      ops.push({ ...op, session });
+    }
+  }
+  for (const ops of byPath.values()) ops.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  return byPath;
+}
+
+function within(parent: string, path: string): string | null {
+  const rest = relative(parent, path);
+  return rest && !rest.startsWith("..") && !isAbsolute(rest) ? rest : null;
+}
+
+export function displayFilePath(path: string, root: string): string {
+  const inRoot = within(root, path);
+  if (inRoot) return inRoot;
+  const inHome = within(userHome(), path);
+  return inHome ? `~${sep}${inHome}` : path;
+}
+
+async function isMissing(path: string): Promise<boolean> {
+  try {
+    await stat(path);
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 /**
@@ -366,7 +523,7 @@ export async function listArtifacts(
   const candidates = sessions.filter((session) => session.relation?.kind !== "subagent");
   const files = await indexSessions(candidates, signal);
   const needle = query.trim().toLowerCase();
-  const all: ArtifactSummary[] = [];
+  const all: OutputSummary[] = [];
   for (const session of candidates) {
     const file = files.get(session.id);
     if (!file?.artifacts.length) continue;
@@ -377,13 +534,8 @@ export async function listArtifacts(
       const matched = matchArtifact(artifact, needle);
       if (!matched) continue;
       all.push({
-        sessionId: session.id,
-        sessionTitle: sessionTitle(session),
-        cwd: session.cwd,
-        projectRoot: session.projectRoot,
-        projectKey: session.projectKey,
-        workspaceKind: session.workspaceKind,
-        scheduled: session.relation?.kind === "scheduled",
+        ...outputSource(session),
+        kind: "artifact",
         identifier: artifact.identifier,
         title: latest.title,
         type: latest.type,
@@ -394,8 +546,97 @@ export async function listArtifacts(
       });
     }
   }
+  // Files match on their path; their contents are not indexed.
+  for (const [path, ops] of collectFileOps(candidates, files)) {
+    if (needle && !path.toLowerCase().includes(needle)) continue;
+    const latest = ops.at(-1)!;
+    all.push({
+      ...outputSource(latest.session),
+      kind: "file",
+      path,
+      displayPath: displayFilePath(path, latest.session.projectRoot ?? latest.session.cwd),
+      title: basename(path),
+      created: ops.some((op) => op.tool === "write"),
+      versionCount: ops.length,
+      updated: latest.timestamp || latest.session.modified,
+      missing: false,
+    });
+  }
   all.sort((a, b) => b.updated.localeCompare(a.updated) || a.title.localeCompare(b.title));
-  return { artifacts: all.slice(0, MAX_RESULTS), truncated: all.length > MAX_RESULTS };
+  const shown = all.slice(0, MAX_RESULTS);
+  await Promise.all(shown.map(async (item) => {
+    if (item.kind === "file") item.missing = await isMissing(item.path);
+  }));
+  return { artifacts: shown, truncated: all.length > MAX_RESULTS };
+}
+
+export interface FileOutputOpInfo {
+  sessionId: string;
+  sessionTitle: string;
+  tool: FileTool;
+  toolCallId: string;
+  entryId: string;
+  timestamp: string;
+  onActiveBranch: boolean;
+}
+
+export interface FileOutputDetail {
+  path: string;
+  missing: boolean;
+  /** Oldest first. */
+  ops: FileOutputOpInfo[];
+}
+
+/** Every recorded write/edit of one file, or null when no conversation touched it. */
+export async function getFileOutput(sessions: readonly SessionInfo[], path: string): Promise<FileOutputDetail | null> {
+  const candidates = sessions.filter((session) => session.relation?.kind !== "subagent");
+  const ops = collectFileOps(candidates, await indexSessions(candidates)).get(path);
+  if (!ops) return null;
+  return {
+    path,
+    missing: await isMissing(path),
+    ops: ops.map((op) => ({
+      sessionId: op.session.id,
+      sessionTitle: sessionTitle(op.session),
+      tool: op.tool,
+      toolCallId: op.toolCallId,
+      entryId: op.entryId,
+      timestamp: op.timestamp,
+      onActiveBranch: op.onActiveBranch,
+    })),
+  };
+}
+
+/**
+ * What one `write` call put in the file, read back from the transcript (the
+ * index keeps no contents). Lets the page show a file that is gone from disk.
+ */
+export async function getWrittenContent(session: SessionInfo, toolCallId: string): Promise<{ path: string; content: string } | null> {
+  if (!session.path || session.transient) return null;
+  const needle = `"id":${JSON.stringify(toolCallId)}`;
+  const stream = createReadStream(session.path, { encoding: "utf8" });
+  const lines = createInterface({ input: stream, crlfDelay: Infinity });
+  try {
+    for await (const line of lines) {
+      if (!line.includes(needle) || !line.includes('"name":"write"')) continue;
+      let entry: { message?: { role?: unknown; content?: unknown } };
+      try {
+        entry = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      if (entry.message?.role !== "assistant" || !Array.isArray(entry.message.content)) continue;
+      for (const block of entry.message.content) {
+        if (block?.type !== "toolCall" || block.id !== toolCallId || block.name !== "write") continue;
+        const { path, content } = (block.arguments ?? {}) as { path?: unknown; content?: unknown };
+        if (typeof path === "string" && typeof content === "string") return { path, content };
+      }
+    }
+  } finally {
+    lines.close();
+    stream.destroy();
+  }
+  return null;
 }
 
 /** One artifact with every version's content, or null when it is gone. */

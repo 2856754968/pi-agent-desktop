@@ -8485,6 +8485,75 @@ span.linenumber {
   padding: 8px 14px 0;
 }
 
+/* A file the agent wrote: its path, then its write/edit history
+   (components/artifacts/FileOutputView.tsx). */
+.artifacts-file-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: var(--hairline) solid var(--border);
+}
+
+.artifacts-file-header p { margin: 0; }
+
+.artifacts-file-path {
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifacts-file-history summary {
+  width: fit-content;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+
+.artifacts-file-history ol {
+  max-height: 180px;
+  margin: 6px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.artifacts-file-history li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  font-size: var(--fs-small);
+}
+
+.artifacts-file-op {
+  flex-shrink: 0;
+  min-width: 3.5em;
+  color: var(--text);
+}
+
+.artifacts-file-op-session {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifacts-file-op-time {
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.artifacts-file-note {
+  margin: 0;
+  padding: 8px 14px 0;
+}
+
 .artifacts-continue {
   display: flex;
   flex-direction: column;

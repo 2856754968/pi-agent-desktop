@@ -1,4 +1,5 @@
-import type { ArtifactSummary } from "@/lib/artifact-index";
+import type { ArtifactSummary, OutputSummary } from "@/lib/artifact-index";
+import { isImagePath } from "@/lib/file-types";
 import { getFileName } from "@/lib/file-paths";
 
 /** Chats are one scope; each project (by its stable key) is another. */
@@ -8,8 +9,9 @@ export function artifactScope(item: Pick<ArtifactSummary, "workspaceKind" | "pro
   return item.workspaceKind === "chat" ? CHATS_SCOPE : `project:${item.projectKey ?? item.projectRoot ?? item.cwd}`;
 }
 
-export function artifactKey(item: Pick<ArtifactSummary, "sessionId" | "identifier">): string {
-  return `${item.sessionId}\u0000${item.identifier}`;
+/** A file is one row however many conversations touched it, so it is keyed by path alone. */
+export function artifactKey(item: OutputSummary): string {
+  return item.kind === "file" ? `file\u0000${item.path}` : `${item.sessionId}\u0000${item.identifier}`;
 }
 
 export interface ScopeOption {
@@ -18,7 +20,7 @@ export interface ScopeOption {
 }
 
 /** Projects in the list by name, then Chats when any are present. */
-export function scopeOptions(items: readonly ArtifactSummary[], chatsLabel: string): ScopeOption[] {
+export function scopeOptions(items: readonly OutputSummary[], chatsLabel: string): ScopeOption[] {
   const projects = new Map<string, string>();
   let chats = false;
   for (const item of items) {
@@ -37,9 +39,36 @@ export function scopeOptions(items: readonly ArtifactSummary[], chatsLabel: stri
   return chats ? [...options, { value: CHATS_SCOPE, label: chatsLabel }] : options;
 }
 
+/** Type filter values beyond the artifact types. */
+export const TYPE_ALL_ARTIFACTS = "artifacts";
+export const TYPE_ALL_FILES = "files";
+export const TYPE_CREATED_FILES = "files:created";
+export const TYPE_EDITED_FILES = "files:edited";
+
+function matchesType(item: OutputSummary, type: string): boolean {
+  if (!type) return true;
+  if (item.kind === "file") {
+    return type === TYPE_ALL_FILES || type === (item.created ? TYPE_CREATED_FILES : TYPE_EDITED_FILES);
+  }
+  return type === TYPE_ALL_ARTIFACTS || item.type === type;
+}
+
 /** Empty `type` / `scope` means every type / everywhere. */
-export function filterArtifacts(items: readonly ArtifactSummary[], type: string, scope: string): ArtifactSummary[] {
-  return items.filter((item) => (!type || item.type === type) && (!scope || artifactScope(item) === scope));
+export function filterArtifacts(items: readonly OutputSummary[], type: string, scope: string): OutputSummary[] {
+  return items.filter((item) => matchesType(item, type) && (!scope || artifactScope(item) === scope));
+}
+
+export type FileThumbnailKind = "file-image" | "frame" | "mermaid" | "text" | "code" | "icon";
+
+/** How a file row previews: images (SVG too, which /api/files serves as one) and the text formats artifacts already preview. */
+export function fileThumbnailKind(path: string): FileThumbnailKind {
+  const lower = path.toLowerCase();
+  if (isImagePath(lower)) return "file-image";
+  if (/\.html?$/.test(lower)) return "frame";
+  if (/\.(mmd|mermaid)$/.test(lower)) return "mermaid";
+  if (/\.(md|markdown|txt)$/.test(lower)) return "text";
+  if (/\.(js|jsx|ts|tsx|mjs|cjs|py|rb|go|rs|java|kt|swift|c|h|cpp|cs|php|sh|zsh|ps1|sql|css|scss|json|ya?ml|toml|xml|ini)$/.test(lower)) return "code";
+  return "icon";
 }
 
 /**
