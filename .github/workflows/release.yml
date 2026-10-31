@@ -114,49 +114,49 @@ jobs:
           tagName: v__VERSION__
           releaseName: pi-agent-desktop v__VERSION__
           releaseBody: |
-            ## Pi Agent Desktop 0.7.8
+            ## Pi Agent Desktop 0.7.9
 
             ### New
 
-            - **Find in conversation.** Press Ctrl/Cmd+F to search the loaded part of a conversation, with match highlighting, a counter, Enter / Shift+Enter to step through matches and Esc to return to the composer. Matches stay put while a reply is streaming.
-            - **Choose the terminal shell.** General settings now lets you pick the shell used by "Open in terminal". Windows prefers PowerShell 7, then Windows PowerShell, then CMD; macOS and Linux keep your login shell. The choice applies to new or restarted terminals.
-            - **Richer replies.** A leading YAML block is shown as a code block instead of disappearing, GitHub alerts (`> [!NOTE]`) render as callouts, long code blocks fold, and code blocks that the reply says were saved to a file get an Open button.
-            - **Conversation titles.** Title generation shows its progress and gives an actionable message when it fails.
+            - **Artifacts page.** A new Artifacts entry in the sidebar lists the artifacts from every conversation, chats included, newest first with thumbnails. Search titles and content, filter by type or project, preview any version, copy or download it, jump to it in its conversation, or continue from it in a new chat.
+            - **Clear the composer.** A new button clears the draft text and attachments in one click.
 
             ### Improved
 
-            - **A calmer look.** Neutral grays, a flat window and sidebar canvas, thinner two-tier borders that stay visible on Retina screens, softer code colors and consistent corner radii. The accent color follows the system. The background presets from 0.7.7 are gone, replaced by this neutral canvas; light, dark and system modes remain.
-            - Terminals use the workbench's light and dark colors and start faster, and closing a terminal on Windows no longer errors.
-            - Project and session menus stay inside the window, and delete confirmations are shared and keyboard friendly.
-            - Line numbers are excluded when you select code.
+            - **Chats ask for the computer where they need it.** When a chat needs to run a command, a prompt appears above the composer. One click lets that chat use your computer and carries on. The chat's access menu is shorter, and the "ask before saving to Downloads" switch is gone.
+            - Editing a previous message no longer overwrites a draft you are still writing. Your draft is kept and a short notice explains why.
+            - The file preview in the right panel uses the conversation background, and code-block headers in dark mode are lighter.
 
             ### Fixed
 
-            - A project that is a subfolder of a Git repository no longer shows the parent repository's worktrees in the sidebar.
+            - **Settings survive updates on macOS.** Updating the app no longer resets Settings switches, the sidebar layout and drafts.
+            - **Windows: Clear cache keeps your settings.** Settings › General › Clear cache no longer removes your settings and logs, and the cache clear after an update now works.
+            - **Windows: one window at a time.** Launching the app again, for example by clicking the icon while it is still starting, brings back the running window instead of starting a second copy.
+            - Image attachments no longer show the internal size note in messages, titles and the sidebar, and editing a message with images no longer adds that note again.
 
             Bundled components: pi 1.4.0, pi-web 0.10.0.
 
             ---
 
-            ## Pi Agent Desktop 0.7.8
+            ## Pi Agent Desktop 0.7.9
 
             ### 新增
 
-            - **对话内查找。** 按 Ctrl/Cmd+F 搜索已加载的对话内容：高亮匹配、显示计数，Enter / Shift+Enter 在匹配间跳转，Esc 回到输入框。回复流式输出时，当前匹配位置保持不动。
-            - **选择终端 Shell。** “通用”设置可选择“在终端中打开”使用的 Shell。Windows 优先 PowerShell 7，其次 Windows PowerShell，再次 CMD；macOS 和 Linux 沿用登录 Shell。新建或重启的终端会使用该选择。
-            - **更丰富的回复渲染。** 开头的 YAML 块现在以代码块显示而不是消失；支持 GitHub 提示块（`> [!NOTE]`）；长代码块可折叠；回复中说明已保存到文件的代码块会出现“打开”按钮。
-            - **对话标题生成。** 标题生成会显示进度，失败时给出可操作的提示。
+            - **Artifacts 页面。** 侧栏新增 Artifacts 入口，按时间倒序列出所有对话（含 Chats）里的 artifact，并显示缩略图。可以搜索标题和内容，按类型或项目筛选，预览任意版本，复制或下载，跳转到所在对话，或者从它开一个新对话接着做。
+            - **一键清空输入框。** 新增按钮，一次清空草稿文字和附件。
 
             ### 改进
 
-            - **更平静的外观。** 中性灰、统一的窗口与侧栏纯色底、更细的两档边线（在 Retina 屏上依然清晰）、更柔和的代码配色和统一圆角；强调色跟随系统。0.7.7 的背景预设已移除，由中性底色取代；浅色、深色与跟随系统模式保留。
-            - 终端使用工作台的明暗配色且启动更快；Windows 上关闭终端不再报错。
-            - 项目和会话菜单不会超出窗口，删除确认改为共用组件并支持键盘操作。
-            - 选择代码时不再选中行号。
+            - **Chats 需要执行命令时就地询问。** Chat 需要执行命令时，输入框上方会出现提示，点一下就允许这个 Chat 使用你的电脑并继续执行。Chat 的权限菜单更精简，“保存到下载前询问”开关已移除。
+            - 编辑历史消息时，不再覆盖你正在写的草稿：草稿会保留，并有简短提示说明原因。
+            - 右侧面板的文件预览使用对话背景色，深色模式下代码块标题栏更亮。
 
             ### 修复
 
-            - 位于 Git 仓库子目录的项目，侧栏不再显示父仓库的 worktree。
+            - **macOS 升级后不再丢设置。** 升级应用后，设置开关、侧栏布局和草稿都会保留。
+            - **Windows：清除缓存不再清掉设置。** 设置 › 通用 › 清除缓存不再删除你的设置和日志；升级后的自动缓存清理也恢复生效。
+            - **Windows：只保留一个窗口。** 再次打开应用（比如启动中又点了图标）会切回已运行的窗口，不会再启动第二个。
+            - 图片附件不再在消息、标题和侧栏里显示内部尺寸说明，编辑带图片的消息也不会再重复添加这段说明。
 
             内置组件版本：pi 1.4.0、pi-web 0.10.0。
           releaseDraft: true
