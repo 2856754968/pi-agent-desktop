@@ -1014,7 +1014,7 @@
   --bg-panel: #f0f0f1;
   --bg-hover: rgba(0, 0, 0, 0.04);
   --bg-selected: rgba(0, 0, 0, 0.07);
-  --sidebar-selected: #ffffff;
+  --sidebar-selected: rgba(0, 0, 0, 0.08);
   /* Two edge tiers: --border outlines a surface (cards, inputs, code blocks);
      --separator divides rows inside one. A hairline is 0.5px on retina, so
      both sit well above the 7% a full pixel would need. */
@@ -5395,7 +5395,9 @@ html.dark {
 }
 .markdown-code-header {
   padding: 5px 10px;
-  background: var(--bg-panel);
+  /* A solid step off the block body. --bg-panel is the recessed sidebar tone
+     (darker than the chat canvas in dark mode), so derive from --bg instead. */
+  background: color-mix(in srgb, var(--bg) 94%, var(--text));
   border-bottom: var(--hairline) solid var(--separator);
   color: var(--text-dim);
   font-size: var(--fs-caption);
@@ -7113,7 +7115,10 @@ span.linenumber {
 
 /* Final workbench pass: keep these rules after the responsive shell rules. */
 
+/* The panel is a sibling of .app-main-column, so it misses that column's --bg
+   re-point; without this the file viewer falls back to the sidebar tone. */
 .right-panel-container {
+  --bg: var(--workbench-bg);
   background: var(--workbench-bg) !important;
 }
 
