@@ -1376,6 +1376,9 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             if window.label() == WINDOW_LABEL {
+                if let tauri::WindowEvent::Destroyed = event {
+                    shell::on_main_window_destroyed(window.app_handle());
+                }
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     let quit = window
                         .app_handle()
@@ -1395,6 +1398,13 @@ pub fn run() {
         .expect("failed to build Pi Agent desktop app");
 
     app.run(|app_handle, event| match event {
+        // The main window is being replaced after its WebView died; the
+        // moment with no window is not a request to quit.
+        RunEvent::ExitRequested {
+            code: None, api, ..
+        } if shell::is_rebuilding_main_window() => {
+            api.prevent_exit();
+        }
         RunEvent::Exit => {
             desktop_log(app_handle, "exit");
             #[cfg(target_os = "linux")]
