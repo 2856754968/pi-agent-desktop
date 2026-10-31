@@ -852,3 +852,20 @@ test("keeps the compaction control reachable while a turn is auto-compacting", (
   // Starting one is offered only when nothing is running.
   assert.match(chatInputSource, /const canCompactNow = Boolean\(onCompact && !isStreaming && !isCompacting\)/);
 });
+
+test("the model list is requested after the session's opening read, with a bounded wait", () => {
+  const openSource = source.slice(
+    source.indexOf("// Load session on mount and whenever the stable ChatWindow changes identity."),
+    source.indexOf("// Load the model list with bounded retries"),
+  );
+  const modelsSource = source.slice(
+    source.indexOf("// Load the model list with bounded retries"),
+    source.indexOf("}, [loadModels, modelsRefreshKey]);"),
+  );
+  // The load effect must come first: both run in the same commit, in declaration order.
+  assert.ok(openSource.includes("sessionOpenLoadRef.current = openLoad;"));
+  assert.ok(openSource.indexOf("sessionOpenLoadRef.current = null;") < openSource.indexOf("if (session) {"));
+  assert.match(modelsSource, /const openLoad = sessionOpenLoadRef\.current;/);
+  assert.match(modelsSource, /Promise\.race\(\[openLoad\.catch\(\(\) => \{\}\), delay\(MODELS_AFTER_SESSION_MAX_WAIT_MS\)\]\)/);
+  assert.ok(modelsSource.indexOf("Promise.race") < modelsSource.indexOf("await loadModels(controller.signal)"));
+});

@@ -241,6 +241,8 @@ const EVENT_STREAM_RECONNECT_DELAY_MS = 1_000;
 const SESSION_LEASE_RENEW_INTERVAL_MS = 30_000;
 // Retry temporary model-list failures without requiring a page refresh.
 const MODELS_RETRY_DELAYS_MS = [2_000, 5_000, 10_000];
+/** Longest the model list waits for the session read before it is requested anyway. */
+const MODELS_AFTER_SESSION_MAX_WAIT_MS = 1_500;
 const MAX_NOTICES = 5;
 const NOTICE_VISIBLE_MS = 5000;
 const NOTICE_EXIT_ANIMATION_MS = 180;
@@ -467,6 +469,8 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
   // id) is the same live conversation, not a session switch.
   const promotedIdentityRef = useRef<{ from: string; to: string } | null>(null);
   const promotedLoadRef = useRef(false);
+  /** The opening read of the current session; the model list is requested after it. */
+  const sessionOpenLoadRef = useRef<Promise<unknown> | null>(null);
   const newSessionModelOverrideRef = useRef<SelectedModel | null>(null);
   const thinkingLevelOverrideRef = useRef<ConcreteThinkingLevel | null>(null);
   const thinkingLevelPinsRef = useRef<Record<string, string>>({});
@@ -2774,6 +2778,7 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
   // AppShell deliberately keeps the component mounted so the composer does not flash.
   useEffect(() => {
     sessionHookMountedRef.current = true;
+    sessionOpenLoadRef.current = null;
     if (session) {
       sessionIdRef.current = session.id;
       // Snapshot fast path: show the cached history window immediately, then
@@ -2809,7 +2814,9 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
         setError(null);
         setLoading(false);
       }
-      loadSession(session.id, !cached && !promoted, true, { force: true }).then((loadedAgentState) => {
+      const openLoad = loadSession(session.id, !cached && !promoted, true, { force: true });
+      sessionOpenLoadRef.current = openLoad;
+      openLoad.then((loadedAgentState) => {
         const agentState = loadedAgentState as { running: boolean; state?: AgentStateResponse } | null;
         if (agentState?.running) {
           loadTools(session.id);
@@ -2951,9 +2958,17 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
   }, [messages.length, agentRunning, scrollToBottom, scrollUserMsgToTop]);
 
   // Load the model list with bounded retries; loadModels exposes each failure.
+  // It waits for the session's opening read (set by the load effect above, which runs
+  // first in the same commit): a cold /api/models builds the SDK services and blocks
+  // the server, so sent alongside it could hold the conversation back by up to a second.
   useEffect(() => {
     const controller = new AbortController();
+    const openLoad = sessionOpenLoadRef.current;
     (async () => {
+      if (openLoad) {
+        await Promise.race([openLoad.catch(() => {}), delay(MODELS_AFTER_SESSION_MAX_WAIT_MS)]);
+        if (controller.signal.aborted) return;
+      }
       for (let attempt = 0; ; attempt++) {
         try {
           await loadModels(controller.signal);
