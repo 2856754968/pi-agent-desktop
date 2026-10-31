@@ -133,6 +133,10 @@ pub fn build_window(app: &tauri::AppHandle, app_url: Url) -> tauri::Result<Webvi
             // `native-vibrancy` class tells native-theme.css to let the sidebar
             // show through; without it the page paints opaque as before.
             .transparent(true)
+            // Without this WKWebView swallows the click that activates an
+            // inactive window, so the first press on the title bar never
+            // starts a drag and has to be repeated.
+            .accept_first_mouse(true)
             .initialization_script(window_appkit::VIBRANCY_MARKER_SCRIPT);
     }
 

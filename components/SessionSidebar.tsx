@@ -1734,7 +1734,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
       {/* Header */}
       <div
         className={`session-sidebar-header${desktopPlatform === "macos" ? " session-sidebar-header--mac-inset" : ""}`}
-        data-tauri-drag-region={desktopPlatform ? true : undefined}
+        data-tauri-drag-region={desktopPlatform ? "deep" : undefined}
         {...windowDrag}
         style={{
           padding: "12px 10px 10px",
@@ -1782,7 +1782,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
           the confirmation for the server-side content search across every
           session; there is no mode button, so Escape (or the clear button) is
           the way back to the title filter. */}
-      <div className="sidebar-search-wrap" data-no-drag>
+      <div className="sidebar-search-wrap" data-no-drag data-tauri-drag-region={desktopPlatform ? "false" : undefined}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="sidebar-search-icon">
           <circle cx="11" cy="11" r="7" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
