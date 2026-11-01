@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useLayoutEffect, useState, useCallback, useRef, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useState, useCallback, useRef, useSyncExternalStore, type ReactNode } from "react";
 import type { SessionInfo, SessionWorkspaceKind } from "@/lib/types";
 import { listSessionFamilies } from "@/lib/session-family";
 import { dispatchSessionRowContextMenu } from "@/lib/session-row-context-menu";
@@ -264,6 +264,23 @@ function buildSessionTree(sessions: SessionInfo[]): SessionTreeNode[] {
   return roots;
 }
 
+// The Chats fold lives in localStorage, which the server cannot read. Reading it
+// in a useState initializer made the first client render differ from the
+// server HTML (hydration error on the Chats header); useSyncExternalStore
+// hydrates with the server value and then switches to the stored one.
+const chatsCollapsedListeners = new Set<() => void>();
+function subscribeChatsCollapsed(cb: () => void): () => void {
+  chatsCollapsedListeners.add(cb);
+  return () => { chatsCollapsedListeners.delete(cb); };
+}
+const readChatsCollapsed = () => getPref(APP_PREF_KEYS.collapsedChats) === "1";
+const serverChatsCollapsed = () => false;
+function writeChatsCollapsed(collapsed: boolean): void {
+  if (collapsed) setPref(APP_PREF_KEYS.collapsedChats, "1");
+  else removePref(APP_PREF_KEYS.collapsedChats);
+  chatsCollapsedListeners.forEach((cb) => cb());
+}
+
 function readIdSetPref(key: Parameters<typeof getPrefJson>[0]): Set<string> {
   const stored = getPrefJson<unknown>(key);
   return Array.isArray(stored)
@@ -277,7 +294,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   const [chatWorkspaceCwd, setChatWorkspaceCwd] = useState<string | null>(null);
   // Same fold model as a project: folding drops the extra pages, so the next
   // unfold starts again from the first five chats.
-  const [chatsCollapsed, setChatsCollapsed] = useState(() => getPref(APP_PREF_KEYS.collapsedChats) === "1");
+  const chatsCollapsed = useSyncExternalStore(subscribeChatsCollapsed, readChatsCollapsed, serverChatsCollapsed);
   const [chatSessionPages, setChatSessionPages] = useState(() => {
     const stored = getPrefJson<unknown>(APP_PREF_KEYS.chatSessionPages);
     return typeof stored === "number" && Number.isInteger(stored) && stored > 0 ? stored : 0;
@@ -578,11 +595,6 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     if (collapsedProjects.size === 0) removePref(APP_PREF_KEYS.collapsedProjects);
     else setPrefJson(APP_PREF_KEYS.collapsedProjects, [...collapsedProjects]);
   }, [collapsedProjects]);
-
-  useEffect(() => {
-    if (chatsCollapsed) setPref(APP_PREF_KEYS.collapsedChats, "1");
-    else removePref(APP_PREF_KEYS.collapsedChats);
-  }, [chatsCollapsed]);
 
   useEffect(() => {
     if (pinnedChats.size === 0) removePref(APP_PREF_KEYS.pinnedChats);
@@ -1348,7 +1360,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     [family.root, ...family.subagents].some((session) => unreadSessionIds.has(session.id))
   )).length;
   const setChatsFolded = (folded: boolean) => {
-    setChatsCollapsed(folded);
+    writeChatsCollapsed(folded);
     if (folded) setChatSessionPages(0);
   };
 
