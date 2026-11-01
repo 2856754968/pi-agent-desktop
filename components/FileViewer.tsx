@@ -209,6 +209,15 @@ function SourceCodeRenderer({ rows, stylesheet, useInlineStyles, wrapLines }: So
   });
 }
 
+/**
+ * The files API answers a path that is gone with a bare "Not found". A file
+ * can be opened from history (a turn's written-files card, an old link) after
+ * a later command removed it, so say that instead of echoing the server text.
+ */
+function describeFileError(error: string, t: ReturnType<typeof useI18n>["t"]): string {
+  return error === "Not found" ? t("files.notFound") : error;
+}
+
 function getFileApiUrl(
   filePath: string,
   type: "read" | "download" | "meta" | "preview" | "serve" | "watch",
@@ -531,6 +540,7 @@ function DiffView({ patch }: { patch: string }) {
 }
 
 function ImageViewer({ filePath, cwd, sourceSessionId, watchEnabled = true }: Props) {
+  const { t } = useI18n();
   const [watching, setWatching] = useState(false);
   const [bust, setBust] = useState(0);
   const [size, setSize] = useState<number | null>(null);
@@ -632,7 +642,7 @@ function ImageViewer({ filePath, cwd, sourceSessionId, watchEnabled = true }: Pr
         className="file-viewer-image-stage"
       >
         {error ? (
-          <div style={{ color: "var(--danger)", fontSize: 13 }}>{error}</div>
+          <div style={{ color: "var(--danger)", fontSize: 13 }}>{describeFileError(error, t)}</div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -665,6 +675,7 @@ function formatDuration(seconds: number): string {
 }
 
 function AudioViewer({ filePath, cwd, sourceSessionId, watchEnabled = true }: Props) {
+  const { t } = useI18n();
   const [watching, setWatching] = useState(false);
   const [bust, setBust] = useState(0);
   const [size, setSize] = useState<number | null>(null);
@@ -747,7 +758,7 @@ function AudioViewer({ filePath, cwd, sourceSessionId, watchEnabled = true }: Pr
         <div style={{ width: "min(680px, 100%)" }}>
           {error && (
             <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 12, textAlign: "center" }}>
-              {error}
+              {describeFileError(error, t)}
             </div>
           )}
           <audio
@@ -901,7 +912,7 @@ function VideoViewer({ filePath, cwd, sourceSessionId, watchEnabled = true }: Pr
         <div style={{ width: "min(960px, 100%)", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
           {error && (
             <div style={{ color: "#f87171", fontSize: 13, marginBottom: 12, textAlign: "center" }}>
-              {error}
+              {describeFileError(error, t)}
             </div>
           )}
           <video
@@ -1010,7 +1021,7 @@ function DocumentViewer({ filePath, cwd, sourceSessionId, initialPage, watchEnab
       <div className="file-viewer-document-stage">
         {error ? (
           <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, color: "var(--danger)", fontSize: 13, textAlign: "center" }}>
-            {error}
+            {describeFileError(error, t)}
           </div>
         ) : (
           <iframe
@@ -1464,7 +1475,7 @@ function TextFileViewer({
   if (error && !isDeletedDiff) {
     return (
       <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#f87171", fontSize: 13 }}>
-        {error}
+        {describeFileError(error, t)}
       </div>
     );
   }

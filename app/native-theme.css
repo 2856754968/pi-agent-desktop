@@ -9020,6 +9020,21 @@ html.native-desktop :is(
 .turn-files-removed {
   color: var(--danger);
 }
+/* A written file a later step removed: dimmed name, struck through, with a
+   label, so the row reads as history rather than a live link. */
+.turn-files-row.is-missing .turn-files-name,
+.turn-files-row.is-missing .turn-files-icon,
+.turn-files-row.is-missing .turn-files-stats {
+  opacity: 0.55;
+}
+.turn-files-row.is-missing .turn-files-name {
+  text-decoration: line-through;
+}
+.turn-files-missing {
+  flex-shrink: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-small);
+}
 
 /* Right panel with nothing open: the message and, while the file list is
    hidden, the way to show it. */
