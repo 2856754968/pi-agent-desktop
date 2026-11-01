@@ -179,6 +179,21 @@
   border-radius: var(--radius-md);
 }
 .sidebar-project-tree.is-scrolling::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* The Artifacts list scrolls the same way (`is-scrolling` from ArtifactsView). */
+.artifacts-list-pane {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.artifacts-list-pane.is-scrolling {
+  scrollbar-color: var(--border) transparent;
+}
+.artifacts-list-pane::-webkit-scrollbar { width: 7px; }
+.artifacts-list-pane::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: var(--radius-md);
+}
+.artifacts-list-pane.is-scrolling::-webkit-scrollbar-thumb { background: var(--border); }
  .sidebar-project-tree-header {
   display: flex;
   align-items: center;
@@ -8250,10 +8265,19 @@ span.linenumber {
   inset: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  /* List, its resize handle (a zero-width track it overhangs), preview. */
+  grid-template-columns: var(--artifacts-list-width, 360px) 0 minmax(0, 1fr);
   background: var(--bg);
   color: var(--text);
   outline: none;
+}
+
+/* Drag handle between the list and the preview (ArtifactsView); the list's
+   own border stays the visible line. */
+.artifacts-resize-handle {
+  z-index: 3;
+  width: 12px;
+  margin: 0 -6px;
 }
 
 .artifacts-list-pane {
@@ -8265,10 +8289,6 @@ span.linenumber {
   padding: 24px 12px 32px 16px;
   border-right: var(--hairline) solid var(--border);
   box-sizing: border-box;
-}
-
-.artifacts-header {
-  padding: 0 4px;
 }
 
 .artifacts-filters {
@@ -8293,9 +8313,58 @@ span.linenumber {
   min-width: 0;
 }
 
+/* Star toggle after the project picker: same height and surface as the pickers. */
+.artifacts-favorite-filter {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.artifacts-favorite-filter:hover { background: var(--bg-hover); color: var(--text); }
+.artifacts-favorite-filter[aria-pressed="true"] { color: var(--warning); }
+.artifacts-favorite-filter:focus-visible {
+  outline: 2px solid var(--menu-focus-ring) !important;
+  outline-offset: 2px;
+}
+
+/* A starred row, before its title; the detail pane's star toggles it. */
+.artifacts-item-star {
+  display: inline-flex;
+  margin-right: 4px;
+  color: var(--warning);
+  vertical-align: -1px;
+}
+.artifacts-favorite-toggle { margin-left: auto; flex: none; }
+.artifacts-favorite-toggle[aria-pressed="true"] { color: var(--warning); }
+
 .artifacts-status {
   padding: 0 4px;
 }
+
+/* Below the outputs: how many process files the default view leaves out. */
+.artifacts-process-note {
+  margin-top: 8px;
+}
+
+.artifacts-link-button {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.artifacts-link-button:hover { text-decoration: underline; }
 
 .artifacts-list {
   list-style: none;
@@ -8497,6 +8566,12 @@ span.linenumber {
 
 .artifacts-file-header p { margin: 0; }
 
+.artifacts-file-role {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .artifacts-file-path {
   overflow: hidden;
   color: var(--text);
@@ -8590,6 +8665,7 @@ span.linenumber {
 /* Narrow: the list and the preview take turns. */
 @media (max-width: 640px) {
   .artifacts-view { grid-template-columns: minmax(0, 1fr); }
+  .artifacts-resize-handle { display: none; }
   .artifacts-list-pane { padding: 20px 12px 32px; border-right: 0; }
   .artifacts-view.has-selection .artifacts-list-pane,
   .artifacts-view:not(.has-selection) .artifacts-detail-pane { display: none; }
