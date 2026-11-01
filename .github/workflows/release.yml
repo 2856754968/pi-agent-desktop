@@ -114,49 +114,43 @@ jobs:
           tagName: v__VERSION__
           releaseName: pi-agent-desktop v__VERSION__
           releaseBody: |
-            ## Pi Agent Desktop 0.7.8
+            ## Pi Agent Desktop 0.7.10
 
             ### New
 
-            - **Find in conversation.** Press Ctrl/Cmd+F to search the loaded part of a conversation, with match highlighting, a counter, Enter / Shift+Enter to step through matches and Esc to return to the composer. Matches stay put while a reply is streaming.
-            - **Choose the terminal shell.** General settings now lets you pick the shell used by "Open in terminal". Windows prefers PowerShell 7, then Windows PowerShell, then CMD; macOS and Linux keep your login shell. The choice applies to new or restarted terminals.
-            - **Richer replies.** A leading YAML block is shown as a code block instead of disappearing, GitHub alerts (`> [!NOTE]`) render as callouts, long code blocks fold, and code blocks that the reply says were saved to a file get an Open button.
-            - **Conversation titles.** Title generation shows its progress and gives an actionable message when it fails.
+            - **Artifacts page lists files too.** Besides artifacts, the Artifacts page now lists the files the agent wrote or edited, so coding sessions show their real output. Open one to see its content and the calls that changed it.
 
             ### Improved
 
-            - **A calmer look.** Neutral grays, a flat window and sidebar canvas, thinner two-tier borders that stay visible on Retina screens, softer code colors and consistent corner radii. The accent color follows the system. The background presets from 0.7.7 are gone, replaced by this neutral canvas; light, dark and system modes remain.
-            - Terminals use the workbench's light and dark colors and start faster, and closing a terminal on Windows no longer errors.
-            - Project and session menus stay inside the window, and delete confirmations are shared and keyboard friendly.
-            - Line numbers are excluded when you select code.
+            - **Faster Artifacts page.** The page opens with the previous list straight away and refreshes it in the background, the index survives restarts (the first list after a restart is about ten times faster), and scrolling through thumbnails is smoother.
+            - **Faster session switching.** Switching to a conversation no longer waits for the model list to load, which could add up to about a second, especially between chats.
+            - **Drag the window from the sidebar.** The top of the sidebar now moves the window like the title bar does, and on macOS a drag works on the first press even when the window is not focused.
 
             ### Fixed
 
-            - A project that is a subfolder of a Git repository no longer shows the parent repository's worktrees in the sidebar.
+            - **Windows: no more stuck black window.** When the WebView2 render, GPU or browser process crashes or hangs, the window now reloads or rebuilds itself instead of staying black, and the failure is written to the log.
+            - The desktop log now records startup timing for the first few minutes, to help diagnose slow sign-in starts.
 
             Bundled components: pi 1.4.0, pi-web 0.10.0.
 
             ---
 
-            ## Pi Agent Desktop 0.7.8
+            ## Pi Agent Desktop 0.7.10
 
             ### 新增
 
-            - **对话内查找。** 按 Ctrl/Cmd+F 搜索已加载的对话内容：高亮匹配、显示计数，Enter / Shift+Enter 在匹配间跳转，Esc 回到输入框。回复流式输出时，当前匹配位置保持不动。
-            - **选择终端 Shell。** “通用”设置可选择“在终端中打开”使用的 Shell。Windows 优先 PowerShell 7，其次 Windows PowerShell，再次 CMD；macOS 和 Linux 沿用登录 Shell。新建或重启的终端会使用该选择。
-            - **更丰富的回复渲染。** 开头的 YAML 块现在以代码块显示而不是消失；支持 GitHub 提示块（`> [!NOTE]`）；长代码块可折叠；回复中说明已保存到文件的代码块会出现“打开”按钮。
-            - **对话标题生成。** 标题生成会显示进度，失败时给出可操作的提示。
+            - **Artifacts 页面也列出文件。** 除了 artifact，Artifacts 页面现在还会列出 agent 写入或编辑过的文件，编程类对话的实际产出也能在这里找到。打开文件可以查看内容以及修改它的调用。
 
             ### 改进
 
-            - **更平静的外观。** 中性灰、统一的窗口与侧栏纯色底、更细的两档边线（在 Retina 屏上依然清晰）、更柔和的代码配色和统一圆角；强调色跟随系统。0.7.7 的背景预设已移除，由中性底色取代；浅色、深色与跟随系统模式保留。
-            - 终端使用工作台的明暗配色且启动更快；Windows 上关闭终端不再报错。
-            - 项目和会话菜单不会超出窗口，删除确认改为共用组件并支持键盘操作。
-            - 选择代码时不再选中行号。
+            - **Artifacts 页面更快。** 打开页面时立即显示上次的列表并在后台刷新；索引在重启后保留（重启后首次加载快约十倍）；滚动缩略图更流畅。
+            - **切换会话更快。** 切换对话不再等待模型列表加载，之前这可能多花近一秒，在 Chats 之间切换时尤其明显。
+            - **可以从侧栏拖动窗口。** 侧栏顶部现在和标题栏一样可以拖动窗口；macOS 上窗口未激活时，第一次按下就能拖动。
 
             ### 修复
 
-            - 位于 Git 仓库子目录的项目，侧栏不再显示父仓库的 worktree。
+            - **Windows：不再卡在黑屏。** WebView2 的渲染、GPU 或浏览器进程崩溃或无响应时，窗口会自动重新加载或重建，不再一直黑屏，并在日志中记录原因。
+            - 桌面日志会记录启动后前几分钟的时间信息，便于排查登录启动缓慢的问题。
 
             内置组件版本：pi 1.4.0、pi-web 0.10.0。
           releaseDraft: true

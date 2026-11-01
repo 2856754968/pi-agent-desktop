@@ -48,7 +48,9 @@ try {
     assert.equal(await input.getAttribute("data-animated-caret"), null);
     await input.dispatchEvent("compositionend");
     await page.waitForFunction(() => document.querySelector(".chat-input-textarea")?.hasAttribute("data-animated-caret"));
-    await input.fill("Follow the animated caret");
+    // Keep this single-line at 320px too: wrapped text can scroll the caret
+    // out of view, where the component deliberately falls back to native input.
+    await input.fill("Caret");
     await page.waitForTimeout(180);
     assert.equal(await page.locator(".composer-animated-caret").evaluate((el) => getComputedStyle(el).width), "3px");
     await input.press("Home");
@@ -73,7 +75,6 @@ try {
     await page.getByRole("button", { name: "Append stream", exact: true }).click();
     await page.waitForFunction(() => [...CSS.highlights.keys()].some((key) => key.startsWith("pi-stream-reveal-")));
     assert.equal(await page.locator("#stream .stream-char").evaluateAll((els) => els.every((el) => getComputedStyle(el).animationName === "none")), true);
-    await page.screenshot({ path: out + "/reveal-" + theme + "-" + width + ".png" });
     await page.waitForFunction(() => document.querySelector("#stream")?.textContent?.includes("新到的文字"));
     assert.equal(await page.locator("#stream strong").textContent(), "Markdown");
     // The renderer retires its word spans at 180ms. The longer reveal must
@@ -82,6 +83,9 @@ try {
     assert.ok(await page.evaluate(() => [...CSS.highlights.entries()]
       .filter(([name]) => name.startsWith("pi-stream-reveal-"))
       .some(([, highlight]) => [...highlight].some((range) => range.startContainer.isConnected && range.toString().length > 0))));
+    // Capture after the timing assertion so screenshot latency cannot consume
+    // the 480ms reveal window before the 220ms DOM-retirement check.
+    await page.screenshot({ path: out + "/reveal-" + theme + "-" + width + ".png" });
     await page.getByRole("switch", { name: "流式文字淡入", exact: true }).click();
     await page.waitForFunction(() => ![...CSS.highlights.keys()].some((key) => key.startsWith("pi-stream-reveal-")));
     await page.getByRole("button", { name: "Append stream", exact: true }).click();

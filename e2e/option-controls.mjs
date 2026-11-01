@@ -108,6 +108,8 @@ try{
   await slider.press('Home');await slider.press('ArrowRight');await slider.press('ArrowUp');await slider.press('ArrowRight');
   assert.match(await slider.getAttribute('aria-valuetext'),/^low:/,'arrows select supported levels inside the popup');
   const star=reasoningPanel.locator('button.app-default-star');await star.hover();
+  // Read the settled hover state after the shared button transition.
+  await page.waitForTimeout(250);
   const starStyle=await star.evaluate(el=>{const s=getComputedStyle(el);return {border:s.borderTopWidth,bg:s.backgroundColor,shadow:s.boxShadow};});
   assert.equal(starStyle.border,'0px');assert.equal(starStyle.bg,'rgba(0, 0, 0, 0)');assert.equal(starStyle.shadow,'none');
   await star.click();await reasoningPanel.locator('.app-default-star.is-default').waitFor();
