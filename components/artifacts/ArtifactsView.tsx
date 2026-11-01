@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { isImeComposing } from "@/lib/ime";
 import { formatRelativeTime } from "@/lib/i18n/format";
 import { ARTIFACT_TYPES } from "@/lib/artifacts";
 import type { ArtifactListResponse, IndexedArtifactVersion, OutputSummary } from "@/lib/artifact-index";
+import type { NativeMenuEntry } from "@/lib/desktop-menu-model";
 import { getFileDirectory } from "@/lib/file-paths";
+import { showMenu } from "@/hooks/useFileContextMenu";
+import { openPathNative, revealItemInDirNative } from "@/lib/desktop-native";
+import { isTauriDesktop } from "@/lib/desktop-updater";
+import { getDesktopPlatform } from "@/lib/desktop-window";
+import { revealLabelKey } from "@/lib/file-context-menu";
 import { AppSelect } from "../AppSelect";
 import { ARTIFACT_TYPE_LABEL } from "../ArtifactCard";
 import { ARTIFACT_TOOLBAR_ICON, ArtifactView } from "../ArtifactView";
@@ -76,6 +82,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
+  const [rowMenuError, setRowMenuError] = useState<string | null>(null);
   const [list, setList] = useState<ArtifactListResponse | null>(() => listCache.get("")?.data ?? null);
   /** The search the shown list answers; it lags `search` while a new one loads. */
   const [listSearch, setListSearch] = useState<string | null>(() => (listCache.has("") ? "" : null));
@@ -217,6 +224,37 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
 
   const continueVersion = continueIndex !== null ? versions?.[continueIndex] : undefined;
 
+  /**
+   * Right-click on a row, in the desktop app: open the conversation that
+   * produced it; for a file also open it with the system's default app and
+   * show it in its folder. In a browser the browser's own menu stays.
+   */
+  function showRowMenu(event: MouseEvent, item: OutputSummary) {
+    if (!isTauriDesktop()) return;
+    event.preventDefault();
+    setRowMenuError(null);
+    const fail = (error: unknown) => setRowMenuError(t("artifacts.page.menuFailed", { error: error instanceof Error ? error.message : String(error) }));
+    const conversation = item.conversation;
+    const entries: NativeMenuEntry[] = [{
+      label: t("artifacts.page.menuOpenConversation"),
+      disabled: !conversation,
+      onSelect: () => {
+        if (!conversation) return;
+        onOpenInConversation(conversation.sessionId, conversation.entryId)
+          .then((opened) => { if (!opened) setRowMenuError(t("artifacts.page.sessionMissing")); })
+          .catch(fail);
+      },
+    }];
+    if (item.kind === "file") {
+      entries.push(
+        { kind: "separator" },
+        { label: t("artifacts.page.menuOpenDefault"), onSelect: () => { openPathNative(item.path).catch(fail); } },
+        { label: t(revealLabelKey(getDesktopPlatform())), onSelect: () => { revealItemInDirNative(item.path).catch(fail); } },
+      );
+    }
+    void showMenu(entries, { x: event.clientX, y: event.clientY });
+  }
+
   async function toggleFavorite(item: OutputSummary) {
     const favorite = !item.favorite;
     const key = artifactKey(item);
@@ -343,6 +381,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
             <p>{t("artifacts.page.emptyBody")}</p>
           </div>
         )}
+        {rowMenuError && <p className="scheduled-error artifacts-status" role="alert">{rowMenuError}</p>}
         {list && (items.length > 0 || search) && visible.length === 0 && (
           <p className="scheduled-hint artifacts-status">{t(favoritesOnly ? "artifacts.page.noFavorites" : "artifacts.page.noMatches")}</p>
         )}
@@ -363,6 +402,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                   className="artifacts-item"
                   aria-current={key === selectedKey ? "true" : undefined}
                   onClick={() => selectItem(item)}
+                  onContextMenu={(event) => showRowMenu(event, item)}
                 >
                   <ArtifactThumbnail item={item} scrollRoot={listPaneRef} />
                   <span className="artifacts-item-main">

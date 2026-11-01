@@ -429,6 +429,8 @@ interface OutputSource {
   scheduled: boolean;
   /** Starred by the user. */
   favorite: boolean;
+  /** The newest entry that produced it on a branch its conversation shows; what "open the conversation" scrolls to. */
+  conversation?: { sessionId: string; entryId: string };
 }
 
 export interface ArtifactSummary extends OutputSource {
@@ -598,6 +600,19 @@ async function bornWhileMentioned(path: string, mentions: readonly FileMention[]
   return null;
 }
 
+function conversationOf(session: SessionInfo, entries: readonly { entryId: string; onActiveBranch: boolean }[]): Pick<OutputSource, "conversation"> {
+  const shown = entries.findLast((entry) => entry.onActiveBranch);
+  return shown ? { conversation: { sessionId: session.id, entryId: shown.entryId } } : {};
+}
+
+/** The newest call (else reply naming the file) on a branch its conversation shows. */
+function newestOnActiveBranch(record: FileRecord): Pick<OutputSource, "conversation"> {
+  const op = record.ops.findLast((entry) => entry.onActiveBranch);
+  if (op) return { conversation: { sessionId: op.session.id, entryId: op.entryId } };
+  const mention = record.mentions.findLast((entry) => entry.by === "assistant" && entry.onActiveBranch);
+  return mention ? { conversation: { sessionId: mention.session.id, entryId: mention.entryId } } : {};
+}
+
 interface ClassifiedFile {
   path: string;
   record: FileRecord;
@@ -730,6 +745,7 @@ export async function listArtifacts(
         versionCount: artifact.versions.length,
         updated: latest.timestamp || session.modified,
         activeContent: artifactHasActiveContent(latest),
+        ...conversationOf(session, artifact.versions),
         ...matched,
       });
     }
@@ -753,6 +769,7 @@ export async function listArtifacts(
       role: file.role,
       reasons: file.reasons,
       ...(file.override ? { override: file.override } : {}),
+      ...newestOnActiveBranch(file.record),
     });
   }
   // A file gone from disk (deleted, or its folder moved) cannot be opened, so it is not listed.
