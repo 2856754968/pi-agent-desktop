@@ -925,7 +925,7 @@ function AssistantMessageView({
       )}
 
       {writtenFiles && writtenFiles.length > 0 && (
-        <TurnWrittenFiles files={writtenFiles} onOpenFile={onOpenFile} />
+        <TurnWrittenFiles files={writtenFiles} onOpenFile={onOpenFile} sessionId={sessionId} />
       )}
 
       <div className="message-assistant-footer" style={{
