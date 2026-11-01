@@ -2245,7 +2245,8 @@ export function AppShell() {
           )}
           {showChat && !pageOpen && (
             <div className="app-topbar-actions" style={{ display: "flex", alignItems: "stretch", height: "100%" }}>
-              <button
+              {/* An unsaved new session has no history or branches yet; hide both rather than show them disabled. */}
+              {selectedSession && <button
                 className="native-toolbar-button"
                 onClick={handleViewFullHistory}
                 disabled={!selectedSession}
@@ -2282,8 +2283,8 @@ export function AppShell() {
                   <path d="M12 7v5l3 2" />
                 </svg>
                  {!isMobile && <span>{translate("history.label")}</span>}
-              </button>
-              {!isChatWorkspaceActive && (
+              </button>}
+              {!isChatWorkspaceActive && selectedSession && (
                 <BranchNavigator
                   tree={branchTree}
                   activeLeafId={branchActiveLeafId}

@@ -602,7 +602,7 @@ function QueuedMessageRow({ kind, label, text }: { kind: "steer" | "follow-up"; 
       <span
         style={{
           flexShrink: 0,
-          fontSize: 10,
+          fontSize: 11,
           fontFamily: "var(--font-mono)",
           padding: "1px 7px",
           borderRadius: 999,
@@ -2149,7 +2149,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
               padding: "2px 8px 4px 10px",
             }}>
               <span style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontFamily: "var(--font-mono)",
                 color: "var(--text-dim)",
                 textTransform: "uppercase",
@@ -2489,7 +2489,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                           padding: "4px 0 6px",
                           background: "var(--bg)",
                           color: "var(--text-dim)",
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: 600,
                           textTransform: "uppercase",
                         }}
@@ -2552,7 +2552,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                                     padding: "0 4px",
                                     border: "var(--hairline) solid var(--border)",
                                     borderRadius: 3,
-                                    fontSize: 10,
+                                    fontSize: 11,
                                     color: "var(--text-dim)",
                                     whiteSpace: "nowrap",
                                   }}>
@@ -3043,7 +3043,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                           >
                             <span style={{ flex: 1 }}>
                               {displayLabel}
-                              {showOriginal && <span style={{ fontSize: 10, color: "var(--text-dim)", fontFamily: "var(--font-mono)", marginLeft: 5 }}>({lvl})</span>}
+                              {showOriginal && <span style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "var(--font-mono)", marginLeft: 5 }}>({lvl})</span>}
                             </span>
                             <span style={{ fontSize: 11, color: "var(--text-dim)", marginLeft: 8 }}>{desc}</span>
                           </SelectorRow>

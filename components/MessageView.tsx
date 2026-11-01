@@ -241,16 +241,18 @@ export function getModelDisplayName(
     ?? `${provider}/${responseModel}`;
 }
 
-function formatTime(ts?: number): string | null {
+// Dates follow the app language, not the OS locale, so an English UI never
+// shows "10月31日" (and vice versa).
+function formatTime(ts?: number, locale?: string): string | null {
   if (!ts) return null;
   const d = new Date(ts);
   const now = new Date();
   const isToday = d.getFullYear() === now.getFullYear() &&
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate();
-  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const time = d.toLocaleTimeString(locale ?? [], { hour: "2-digit", minute: "2-digit" });
   if (isToday) return time;
-  const date = d.toLocaleDateString([], { month: "short", day: "numeric", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+  const date = d.toLocaleDateString(locale ?? [], { month: "short", day: "numeric", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
   return `${date} ${time}`;
 }
 
@@ -347,7 +349,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
   onCancelEdit?: () => void;
   isEditing?: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -383,7 +385,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
     ? commandText.slice(commandSeparator + 1)
     : "";
 
-  const time = formatTime(message.timestamp);
+  const time = formatTime(message.timestamp, locale);
   const canFork = !!entryId && !!onFork;
   const copyTarget = commandText ?? content;
   // Editing is a new user submission, not a replay of SDK transport metadata.
@@ -632,7 +634,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
               )}
             </div>
           )}
-          {time && <span className="message-meta" style={{ fontSize: 10, color: "var(--text-dim)" }}>{time}</span>}
+          {time && <span className="message-meta" style={{ fontSize: 11, color: "var(--text-dim)" }}>{time}</span>}
         </div>
       )}
     </div>
@@ -674,8 +676,8 @@ function AssistantMessageView({
   isCompacting?: boolean;
   compactError?: string | null;
 }) {
-  const { t } = useI18n();
-  const time = showTimestamp ? formatTime(message.timestamp) : null;
+  const { t, locale } = useI18n();
+  const time = showTimestamp ? formatTime(message.timestamp, locale) : null;
   const blockItems = useMemo(() => (message.content ?? [])
     .map((block, originalIndex) => ({ block, originalIndex }))
     .filter(({ block }) => !isEmptyThinkingBlock(block, { isStreaming })), [message.content, isStreaming]);
@@ -929,11 +931,16 @@ function AssistantMessageView({
       <div className="message-assistant-footer" style={{
         display: "flex", alignItems: "center", gap: 8, marginTop: 4,
       }}>
-        {message.usage && !isStreaming && (
-          <div className="message-meta" style={{ fontSize: 11, color: "var(--text-dim)" }}>
-            {formatUsage(message.usage)}
-          </div>
-        )}
+        {message.usage && !isStreaming && (() => {
+          const usage = formatUsage(message.usage);
+          // Cost only at rest; token counts appear while the footer is hovered.
+          return (
+            <div className="message-meta" style={{ fontSize: 11, color: "var(--text-dim)" }} title={usage.full}>
+              <span className="message-meta-summary">{usage.summary}</span>
+              {usage.detail && <span className="message-meta-detail"> · {usage.detail}</span>}
+            </div>
+          );
+        })()}
         {textContent && !isStreaming && (
           <button
             onClick={copyContent}
@@ -968,7 +975,7 @@ function AssistantMessageView({
           </button>
         )}
         {time && !isStreaming && (
-          <span className="message-meta" style={{ fontSize: 10, color: "var(--text-dim)", marginLeft: "auto" }}>{time}</span>
+          <span className="message-meta" style={{ fontSize: 11, color: "var(--text-dim)", marginLeft: "auto" }}>{time}</span>
         )}
       </div>
     </div>
@@ -1211,7 +1218,7 @@ function ToolCallBlock({ block, result, duration, aborted, defaultExpanded, onOp
             ) : block.toolName}
           </span>
           {aborted && (
-            <span title={t("chat.toolCancelled")} style={{ flexShrink: 0, fontSize: 10, color: "var(--text-dim)", border: "var(--hairline) solid var(--border)", borderRadius: 4, padding: "1px 5px" }}>
+            <span title={t("chat.toolCancelled")} style={{ flexShrink: 0, fontSize: 11, color: "var(--text-dim)", border: "var(--hairline) solid var(--border)", borderRadius: 4, padding: "1px 5px" }}>
               {t("chat.toolCancelled")}
             </span>
           )}
@@ -1821,10 +1828,10 @@ function CollapsibleUserText({ text, cwd, onOpenFile }: {
 }
 
 function CompactionMessageView({ message, kind = "compaction" }: { message: CustomMessage; kind?: "compaction" | "branch_summary" }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const summary = getMessageText(message.content);
   const parsedSummary = useMemo(() => parseCompactionSummary(summary), [summary]);
-  const time = formatTime(message.timestamp);
+  const time = formatTime(message.timestamp, locale);
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -1847,10 +1854,10 @@ function CompactionMessageView({ message, kind = "compaction" }: { message: Cust
             color: "var(--text-muted)",
           }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 650 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600 }}>
             {kind === "branch_summary" ? "branch summary" : "compaction"}
           </span>
-          {time && <span className="message-meta" style={{ marginLeft: "auto", color: "var(--text-dim)", fontSize: 10 }}>{time}</span>}
+          {time && <span className="message-meta" style={{ marginLeft: "auto", color: "var(--text-dim)", fontSize: 11 }}>{time}</span>}
         </div>
 
         <div style={{ padding: "11px 13px 12px" }}>
@@ -1904,7 +1911,7 @@ function CompactionFileList({ title, files }: { title: string; files: string[] }
 }
 
 function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessage; cwd?: string; onOpenFile?: (filePath: string, page?: number) => void }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isHiddenDisplay = message.display === false;
   const [contentExpanded, setContentExpanded] = useState(!isHiddenDisplay);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
@@ -1914,7 +1921,7 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
   const hasDetails = message.details !== undefined;
   const detailsText = hasDetails ? safeJson(message.details) : "";
   const title = formatCustomType(message.customType);
-  const time = formatTime(message.timestamp);
+  const time = formatTime(message.timestamp, locale);
 
   const copyContent = () => {
     copyText(text || detailsText).then(() => {
@@ -1946,11 +1953,11 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
             fontSize: 12,
           }}
         >
-          <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 650 }}>
+          <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600 }}>
             {title}
           </span>
           {isHiddenDisplay && <span style={{ color: "var(--text-dim)", fontSize: 11 }}>{t("i18n.hiddenExtensionMessage")}</span>}
-          {time && <span className="message-meta" style={{ marginLeft: "auto", color: "var(--text-dim)", fontSize: 10 }}>{time}</span>}
+          {time && <span className="message-meta" style={{ marginLeft: "auto", color: "var(--text-dim)", fontSize: 11 }}>{time}</span>}
         </div>
 
         {contentExpanded ? (
@@ -2148,14 +2155,19 @@ function formatUsage(usage: {
   cacheRead: number;
   cacheWrite: number;
   cost: { total: number };
-}): string {
-  const parts = [];
+}): { summary: string; detail: string; full: string } {
+  const parts: string[] = [];
   if (usage.input) parts.push(`${usage.input.toLocaleString()} in`);
   if (usage.output) parts.push(`${usage.output.toLocaleString()} out`);
   if (usage.cacheRead) parts.push(`${usage.cacheRead.toLocaleString()} cache R`);
   if (usage.cacheWrite) parts.push(`${usage.cacheWrite.toLocaleString()} cache W`);
-  if (usage.cost?.total) parts.push(`$${usage.cost.total.toFixed(4)}`);
-  return parts.join(" · ");
+  const cost = usage.cost?.total ? `$${usage.cost.total.toFixed(4)}` : "";
+  const tokens = parts.join(" · ");
+  return {
+    summary: cost || tokens,
+    detail: cost ? tokens : "",
+    full: [tokens, cost].filter(Boolean).join(" · "),
+  };
 }
 
 function BashExecutionView({ message, sessionId }: { message: BashExecutionMessage; sessionId?: string }) {
