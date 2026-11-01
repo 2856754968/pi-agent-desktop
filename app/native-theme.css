@@ -8297,6 +8297,23 @@ span.linenumber {
   padding: 0 4px;
 }
 
+/* Below the outputs: how many process files the default view leaves out. */
+.artifacts-process-note {
+  margin-top: 8px;
+}
+
+.artifacts-link-button {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.artifacts-link-button:hover { text-decoration: underline; }
+
 .artifacts-list {
   list-style: none;
   margin: 0;
@@ -8496,6 +8513,12 @@ span.linenumber {
 }
 
 .artifacts-file-header p { margin: 0; }
+
+.artifacts-file-role {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 .artifacts-file-path {
   overflow: hidden;

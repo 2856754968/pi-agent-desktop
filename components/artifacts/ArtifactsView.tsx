@@ -14,10 +14,11 @@ import { ArtifactThumbnail } from "./ArtifactThumbnail";
 import { FileOutputView } from "./FileOutputView";
 import {
   TYPE_ALL_ARTIFACTS,
-  TYPE_ALL_FILES,
-  TYPE_CREATED_FILES,
-  TYPE_EDITED_FILES,
+  TYPE_EVERYTHING,
+  TYPE_OUTPUT_FILES,
+  TYPE_PROCESS_FILES,
   artifactKey,
+  countProcessFiles,
   filterArtifacts,
   scopeOptions,
 } from "./artifacts-helpers";
@@ -139,6 +140,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   // A scope that left the list (search narrowed it away) stops filtering.
   const effectiveScope = scopes.some((option) => option.value === scope) ? scope : "";
   const visible = useMemo(() => filterArtifacts(items, type, effectiveScope), [items, type, effectiveScope]);
+  const hiddenProcess = useMemo(() => (type ? 0 : countProcessFiles(items, effectiveScope)), [items, type, effectiveScope]);
 
   // Follow the selected artifact's newest summary, so a reload that brought a
   // new version also refreshes the preview.
@@ -216,9 +218,9 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
     { value: "", label: t("artifacts.page.allTypes") },
     { value: TYPE_ALL_ARTIFACTS, label: t("artifacts.page.allArtifacts") },
     ...ARTIFACT_TYPES.map((value) => ({ value, label: ARTIFACT_TYPE_LABEL[value] })),
-    { value: TYPE_ALL_FILES, label: t("artifacts.page.allFiles") },
-    { value: TYPE_CREATED_FILES, label: t("artifacts.page.createdFiles") },
-    { value: TYPE_EDITED_FILES, label: t("artifacts.page.editedFiles") },
+    { value: TYPE_OUTPUT_FILES, label: t("artifacts.page.outputFiles") },
+    { value: TYPE_PROCESS_FILES, label: t("artifacts.page.processFiles") },
+    { value: TYPE_EVERYTHING, label: t("artifacts.page.everything") },
   ];
   const scopeSelectOptions = [{ value: "", label: t("artifacts.page.allProjects") }, ...scopes];
 
@@ -305,6 +307,9 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                     )}
                   </span>
                   <span className="artifacts-item-tags">
+                    {item.kind === "file" && item.role === "output" && item.reasons[0] && (
+                      <span className="scheduled-tag">{t(`artifacts.page.reason.${item.reasons[0]}`)}</span>
+                    )}
                     {item.scheduled && <span className="scheduled-tag">{t("artifacts.page.scheduled")}</span>}
                     {item.kind === "file" && item.missing && <span className="scheduled-tag">{t("artifacts.page.fileMissing")}</span>}
                     {item.versionCount > 1 && (
@@ -318,6 +323,14 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
             );
           })}
         </ul>
+        {list && hiddenProcess > 0 && (
+          <p className="scheduled-hint artifacts-status artifacts-process-note">
+            {t("artifacts.page.processHidden", { count: hiddenProcess })}
+            <button type="button" className="artifacts-link-button" onClick={() => setType(TYPE_PROCESS_FILES)}>
+              {t("artifacts.page.showProcess")}
+            </button>
+          </p>
+        )}
       </div>
 
       <div className="artifacts-detail-pane">
@@ -332,7 +345,12 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
               </span>
             </div>
             {current.kind === "file" && (
-              <FileOutputView key={selectedKey} item={current} onOpenInConversation={onOpenInConversation} />
+              <FileOutputView
+                key={selectedKey}
+                item={current}
+                onOpenInConversation={onOpenInConversation}
+                onRoleChange={() => setReload((n) => n + 1)}
+              />
             )}
             {currentArtifact && continueVersion && (
               <form className="artifacts-continue" onSubmit={(event) => void submitContinue(event)}>
