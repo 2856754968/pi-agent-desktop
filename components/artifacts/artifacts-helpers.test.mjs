@@ -91,3 +91,14 @@ test("files are keyed by path; the default view hides process files", async () =
   assert.equal(countProcessFiles([page, output, processFile], CHATS_SCOPE), 0);
   assert.deepEqual(["a.PNG", "d.svg", "b.html", "c.md", "e.ts", "f.bin"].map(fileThumbnailKind), ["file-image", "file-image", "frame", "text", "code", "icon"]);
 });
+
+test("the favorites filter keeps starred rows, process files included", async () => {
+  const { filterArtifacts, TYPE_ALL_ARTIFACTS } = await jiti.import("./artifacts-helpers.ts");
+  const page = item({ kind: "artifact", identifier: "page", favorite: true });
+  const other = item({ kind: "artifact", identifier: "other", favorite: false });
+  const script = item({ kind: "file", path: "/w/build.py", role: "process", reasons: [], favorite: true });
+  const names = (type, favoritesOnly) => filterArtifacts([page, other, script], type, "", favoritesOnly).map((entry) => (entry.kind === "file" ? entry.path : entry.identifier));
+  assert.deepEqual(names("", false), ["page", "other"]);
+  assert.deepEqual(names("", true), ["page", "/w/build.py"]);
+  assert.deepEqual(names(TYPE_ALL_ARTIFACTS, true), ["page"]);
+});

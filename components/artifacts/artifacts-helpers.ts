@@ -62,9 +62,16 @@ function matchesType(item: OutputSummary, type: string): boolean {
   return type === TYPE_ALL_ARTIFACTS || item.type === type;
 }
 
-/** Empty `type` means the outputs, empty `scope` everywhere. */
-export function filterArtifacts(items: readonly OutputSummary[], type: string, scope: string): OutputSummary[] {
-  return items.filter((item) => matchesType(item, type) && (!scope || artifactScope(item) === scope));
+/**
+ * Empty `type` means the outputs, empty `scope` everywhere. With
+ * `favoritesOnly`, only starred rows; the outputs default then also keeps
+ * starred process files, since the user picked them.
+ */
+export function filterArtifacts(items: readonly OutputSummary[], type: string, scope: string, favoritesOnly = false): OutputSummary[] {
+  return items.filter((item) => (
+    (favoritesOnly ? item.favorite && (!type || matchesType(item, type)) : matchesType(item, type))
+    && (!scope || artifactScope(item) === scope)
+  ));
 }
 
 /** Process files in `scope` that the outputs view leaves out, for its "N more" line. */

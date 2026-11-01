@@ -26,6 +26,7 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { writePrivateFileAtomicSync } from "./atomic-file.ts";
 import { userHome } from "./user-home.ts";
 import { artifactHasActiveContent, splitArtifacts, type ArtifactType } from "./artifacts.ts";
+import { favoriteKey, getFavoritesPath, readFavorites } from "./artifact-favorites.ts";
 import { getFileRolesPath, readFileRoleOverrides } from "./artifact-file-roles.ts";
 import {
   DELIVERABLE_EXTENSION_MARKERS,
@@ -135,6 +136,8 @@ interface PersistState {
   path: string | null;
   /** The user's file role overrides; null means none (tests). */
   rolesPath: string | null;
+  /** The user's starred outputs; null means none (tests). */
+  favoritesPath: string | null;
   loaded: Promise<void> | null;
   dirty: boolean;
   timer: ReturnType<typeof setTimeout> | null;
@@ -155,6 +158,7 @@ function persistState(): PersistState {
     globalThis.__piWebArtifactIndexPersist = {
       path: join(getAgentDir(), "pi-web", "artifact-index.json"),
       rolesPath: getFileRolesPath(),
+      favoritesPath: getFavoritesPath(),
       loaded: null,
       dirty: false,
       timer: null,
@@ -423,6 +427,8 @@ interface OutputSource {
   workspaceKind?: SessionWorkspaceKind;
   /** Output of a scheduled task's run. */
   scheduled: boolean;
+  /** Starred by the user. */
+  favorite: boolean;
 }
 
 export interface ArtifactSummary extends OutputSource {
@@ -489,6 +495,7 @@ function outputSource(session: SessionInfo): OutputSource {
     projectKey: session.projectKey,
     workspaceKind: session.workspaceKind,
     scheduled: session.relation?.kind === "scheduled",
+    favorite: false,
   };
 }
 
@@ -754,6 +761,10 @@ export async function listArtifacts(
     if (item.kind === "file" && await isMissing(item.path)) gone.add(item);
   }));
   const present = all.filter((item) => !gone.has(item));
+  const favorites = readFavorites(persistState().favoritesPath);
+  for (const item of present) {
+    item.favorite = favorites.has(favoriteKey(item.kind === "file" ? item : { kind: "artifact", sessionId: item.sessionId, identifier: item.identifier }));
+  }
   present.sort((a, b) => b.updated.localeCompare(a.updated) || a.title.localeCompare(b.title));
   return { artifacts: present.slice(0, MAX_RESULTS), truncated: present.length > MAX_RESULTS };
 }
@@ -857,11 +868,15 @@ export async function getArtifact(session: SessionInfo, identifier: string): Pro
 }
 
 /** Test hook. Persistence stays off unless a test passes a path. */
-export function resetArtifactIndexForTests(persistPath: string | null = null, rolesPath: string | null = null): void {
+export function resetArtifactIndexForTests(
+  persistPath: string | null = null,
+  rolesPath: string | null = null,
+  favoritesPath: string | null = null,
+): void {
   const timer = globalThis.__piWebArtifactIndexPersist?.timer;
   if (timer) clearTimeout(timer);
   globalThis.__piWebArtifactIndex = undefined;
-  globalThis.__piWebArtifactIndexPersist = { path: persistPath, rolesPath, loaded: null, dirty: false, timer: null };
+  globalThis.__piWebArtifactIndexPersist = { path: persistPath, rolesPath, favoritesPath, loaded: null, dirty: false, timer: null };
 }
 
 /** Test hook: writes a pending index file now. */

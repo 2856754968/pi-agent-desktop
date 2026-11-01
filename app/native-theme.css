@@ -8304,6 +8304,38 @@ span.linenumber {
   min-width: 0;
 }
 
+/* Star toggle after the project picker: same height and surface as the pickers. */
+.artifacts-favorite-filter {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.artifacts-favorite-filter:hover { background: var(--bg-hover); color: var(--text); }
+.artifacts-favorite-filter[aria-pressed="true"] { color: var(--warning); }
+.artifacts-favorite-filter:focus-visible {
+  outline: 2px solid var(--menu-focus-ring) !important;
+  outline-offset: 2px;
+}
+
+/* A starred row, before its title; the detail pane's star toggles it. */
+.artifacts-item-star {
+  display: inline-flex;
+  margin-right: 4px;
+  color: var(--warning);
+  vertical-align: -1px;
+}
+.artifacts-favorite-toggle { margin-left: auto; flex: none; }
+.artifacts-favorite-toggle[aria-pressed="true"] { color: var(--warning); }
+
 .artifacts-status {
   padding: 0 4px;
 }

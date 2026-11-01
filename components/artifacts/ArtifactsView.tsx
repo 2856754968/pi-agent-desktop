@@ -43,6 +43,14 @@ const SEARCH_DEBOUNCE_MS = 250;
 const FOCUS_REFRESH_MIN_MS = 10_000;
 const LIST_CACHE_MAX = 10;
 
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95L12 2.5z" />
+    </svg>
+  );
+}
+
 // The last lists by search text, kept while the app runs: reopening the page
 // shows them at once and refreshes in the background instead of starting empty.
 const listCache = new Map<string, { data: ArtifactListResponse; json: string }>();
@@ -65,6 +73,9 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [scope, setScope] = useState("");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favoriteError, setFavoriteError] = useState<string | null>(null);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [list, setList] = useState<ArtifactListResponse | null>(() => listCache.get("")?.data ?? null);
   /** The search the shown list answers; it lags `search` while a new one loads. */
   const [listSearch, setListSearch] = useState<string | null>(() => (listCache.has("") ? "" : null));
@@ -153,8 +164,11 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   const scopes = useMemo(() => scopeOptions(items, t("artifacts.page.chats")), [items, t]);
   // A scope that left the list (search narrowed it away) stops filtering.
   const effectiveScope = scopes.some((option) => option.value === scope) ? scope : "";
-  const visible = useMemo(() => filterArtifacts(items, type, effectiveScope), [items, type, effectiveScope]);
-  const hiddenProcess = useMemo(() => (type ? 0 : countProcessFiles(items, effectiveScope)), [items, type, effectiveScope]);
+  const visible = useMemo(() => filterArtifacts(items, type, effectiveScope, favoritesOnly), [items, type, effectiveScope, favoritesOnly]);
+  const hiddenProcess = useMemo(
+    () => (type || favoritesOnly ? 0 : countProcessFiles(items, effectiveScope)),
+    [items, type, effectiveScope, favoritesOnly],
+  );
 
   // Follow the selected artifact's newest summary, so a reload that brought a
   // new version also refreshes the preview.
@@ -195,12 +209,46 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
 
   function selectItem(item: OutputSummary | null) {
     setActionError(null);
+    setFavoriteError(null);
     setContinueIndex(null);
     setContinueText("");
     setSelected(item);
   }
 
   const continueVersion = continueIndex !== null ? versions?.[continueIndex] : undefined;
+
+  async function toggleFavorite(item: OutputSummary) {
+    const favorite = !item.favorite;
+    const key = artifactKey(item);
+    setFavoriteError(null);
+    setFavoriteBusy(true);
+    try {
+      const target = item.kind === "file"
+        ? { kind: "file", path: item.path }
+        : { kind: "artifact", sessionId: item.sessionId, identifier: item.identifier };
+      const response = await fetch("/api/artifacts/favorite", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...target, favorite }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error ?? `HTTP ${response.status}`);
+      }
+      // Every remembered list shows the star at once; the next load confirms it.
+      const mark = (data: ArtifactListResponse): ArtifactListResponse => ({
+        ...data,
+        artifacts: data.artifacts.map((entry) => (artifactKey(entry) === key ? { ...entry, favorite } : entry)),
+      });
+      for (const [search, cached] of listCache) listCache.set(search, { ...cached, data: mark(cached.data) });
+      setList((current) => (current ? mark(current) : current));
+      setSelected((current) => (current && artifactKey(current) === key ? { ...current, favorite } : current));
+    } catch (error) {
+      setFavoriteError(t("artifacts.page.favoriteFailed", { error: error instanceof Error ? error.message : String(error) }));
+    } finally {
+      setFavoriteBusy(false);
+    }
+  }
 
   async function submitContinue(event?: FormEvent) {
     event?.preventDefault();
@@ -270,6 +318,16 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
           <div className="artifacts-filter-row">
             <AppSelect value={type} onValueChange={setType} options={typeOptions} aria-label={t("artifacts.page.typeLabel")} className="artifacts-filter" />
             <AppSelect value={effectiveScope} onValueChange={setScope} options={scopeSelectOptions} aria-label={t("artifacts.page.scopeLabel")} className="artifacts-filter" />
+            <button
+              type="button"
+              className="artifacts-favorite-filter"
+              aria-pressed={favoritesOnly}
+              title={t("artifacts.page.favoritesOnly")}
+              aria-label={t("artifacts.page.favoritesOnly")}
+              onClick={() => setFavoritesOnly((on) => !on)}
+            >
+              <StarIcon filled={favoritesOnly} />
+            </button>
           </div>
         </div>
         {listError && <p className="scheduled-error" role="alert">{t("artifacts.page.loadFailed", { error: listError })}</p>}
@@ -286,7 +344,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
           </div>
         )}
         {list && (items.length > 0 || search) && visible.length === 0 && (
-          <p className="scheduled-hint artifacts-status">{t("artifacts.page.noMatches")}</p>
+          <p className="scheduled-hint artifacts-status">{t(favoritesOnly ? "artifacts.page.noFavorites" : "artifacts.page.noMatches")}</p>
         )}
         <ul className={`artifacts-list${loading && list && listSearch !== search ? " is-loading" : ""}`}>
           {visible.map((item) => {
@@ -308,7 +366,14 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                 >
                   <ArtifactThumbnail item={item} scrollRoot={listPaneRef} />
                   <span className="artifacts-item-main">
-                    <span className="artifacts-item-title">{item.title}</span>
+                    <span className="artifacts-item-title">
+                      {item.favorite && (
+                        <span className="artifacts-item-star" title={t("artifacts.page.favorited")} aria-label={t("artifacts.page.favorited")}>
+                          <StarIcon filled />
+                        </span>
+                      )}
+                      {item.title}
+                    </span>
                     <span className="artifacts-item-meta" title={meta}>{meta}</span>
                     {snippet && (
                       <span className="artifacts-item-snippet">
@@ -352,7 +417,19 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
               <span className="artifacts-detail-session" title={current.sessionTitle}>
                 {current.sessionTitle} · {formatRelativeTime(current.updated, locale)}
               </span>
+              <button
+                type="button"
+                className="file-viewer-icon-button artifacts-favorite-toggle"
+                aria-pressed={current.favorite}
+                disabled={favoriteBusy}
+                title={current.favorite ? t("artifacts.page.unfavorite") : t("artifacts.page.favorite")}
+                aria-label={current.favorite ? t("artifacts.page.unfavorite") : t("artifacts.page.favorite")}
+                onClick={() => void toggleFavorite(current)}
+              >
+                <StarIcon filled={current.favorite} />
+              </button>
             </div>
+            {favoriteError && <p className="scheduled-error artifacts-detail-error" role="alert">{favoriteError}</p>}
             {current.kind === "file" && (
               <FileOutputView
                 key={selectedKey}
