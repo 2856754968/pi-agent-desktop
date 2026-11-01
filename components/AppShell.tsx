@@ -1904,7 +1904,7 @@ export function AppShell() {
         aria-label={translate("common.settings")}
         aria-haspopup="dialog"
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
@@ -1915,7 +1915,7 @@ export function AppShell() {
         title={translate("sidebar.hide")}
         aria-label={translate("sidebar.hide")}
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" />
         </svg>
       </button>
@@ -1967,14 +1967,14 @@ export function AppShell() {
           minHeight: mobileBanner ? 32 : undefined,
           height: mobileBanner ? undefined : "100%",
           padding: mobileBanner ? "6px 12px" : "0 12px",
-          background: mobileBanner ? "color-mix(in srgb, #d97706 8%, var(--bg-panel))" : "none",
+          background: mobileBanner ? "color-mix(in srgb, var(--warning) 8%, var(--bg-panel))" : "none",
           border: "none",
           borderRight: mobileBanner ? "none" : "1px solid var(--border)",
           borderBottom: mobileBanner ? "1px solid var(--border)" : "none",
-          color: "#d97706",
+          color: "var(--warning)",
           cursor: "pointer",
           flexShrink: 0,
-          fontSize: 11,
+          fontSize: "var(--fs-micro)",
           lineHeight: 1.35,
           textAlign: "left",
         }}
@@ -2103,7 +2103,7 @@ export function AppShell() {
             background: "color-mix(in srgb, var(--danger) 14%, var(--bg-panel))",
             borderBottom: "var(--hairline) solid color-mix(in srgb, var(--danger) 35%, var(--border))",
             color: "var(--text)",
-            fontSize: 12,
+            fontSize: "var(--fs-caption)",
             zIndex: 300,
           }}
         >
@@ -2115,12 +2115,12 @@ export function AppShell() {
               height: 24,
               padding: "0 10px",
               border: "var(--hairline) solid var(--border)",
-              borderRadius: 5,
+              borderRadius: "var(--radius-sm)",
               background: "var(--bg)",
               color: "var(--accent)",
               cursor: "pointer",
-              fontSize: 11,
-              fontWeight: 600,
+              fontSize: "var(--fs-micro)",
+              fontWeight: "var(--fw-semibold)",
             }}
           >
             {translate("connection.retry")}
@@ -2139,7 +2139,7 @@ export function AppShell() {
           background: "rgba(0,0,0,0.4)",
           opacity: sidebarOpen ? 1 : 0,
           pointerEvents: sidebarOpen ? "auto" : "none",
-          transition: "opacity 0.25s ease",
+          transition: "opacity 0.25s var(--ease-native)",
         }}
       />
 
@@ -2263,7 +2263,7 @@ export function AppShell() {
                   cursor: selectedSession ? "pointer" : "not-allowed",
                   opacity: selectedSession ? 1 : 0.45,
                   flexShrink: 0,
-                  fontSize: 11,
+                  fontSize: "var(--fs-micro)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -2392,8 +2392,8 @@ export function AppShell() {
                         borderTop: topMoreOpen ? "2px solid var(--accent)" : "2px solid transparent",
                         color: topMoreOpen ? "var(--text)" : "var(--text-muted)",
                         cursor: "pointer",
-                        fontSize: 11, whiteSpace: "nowrap",
-                        transition: "color 0.1s, background 0.1s",
+                        fontSize: "var(--fs-micro)", whiteSpace: "nowrap",
+                        transition: "color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native)",
                       }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -2611,7 +2611,7 @@ export function AppShell() {
                 <div className="session-info-popover" style={{
                   background: "var(--bg-panel)",
                   borderBottom: "var(--hairline) solid var(--border)",
-                  boxShadow: "0 10px 28px rgba(0,0,0,0.10)",
+                  boxShadow: "var(--shadow-popover)",
                   padding: "12px 16px",
                 }}>
                   {sessionStats ? (() => {
@@ -2669,7 +2669,7 @@ export function AppShell() {
                       compact = false,
                     ) => (
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{title}</div>
+                          <div style={{ fontSize: "var(--fs-micro)", fontWeight: "var(--fw-bold)", color: "var(--text)", marginBottom: 6 }}>{title}</div>
                           <div style={{
                             display: "grid",
                             gridTemplateColumns: compact ? "max-content max-content" : "auto minmax(0, 1fr)",
@@ -2742,7 +2742,7 @@ export function AppShell() {
                     const cacheWarmingSectionRows = cacheWarmingInfo ? cacheWarmingRows(cacheWarmingInfo, translate) : [];
                     const sessionInfoSection = (
                       <div style={{ minWidth: 0 }}>
-                         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{translate("session.infoSection")}</div>
+                         <div style={{ fontSize: "var(--fs-micro)", fontWeight: "var(--fw-bold)", color: "var(--text)", marginBottom: 6 }}>{translate("session.infoSection")}</div>
                         <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", columnGap: 12, rowGap: 8, alignItems: "start" }}>
                           {sessionRows.map((row) => (
                             <div key={`session-info:${row.label}`} style={{ display: "contents" }}>
@@ -2762,7 +2762,7 @@ export function AppShell() {
                     );
                     const projectInfoSection = projectRows.length > 0 ? (
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{translate("session.projectSection")}</div>
+                        <div style={{ fontSize: "var(--fs-micro)", fontWeight: "var(--fw-bold)", color: "var(--text)", marginBottom: 6 }}>{translate("session.projectSection")}</div>
                         <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", columnGap: 12, rowGap: 8, alignItems: "start" }}>
                           {projectRows.map((row) => (
                             <div key={`project-info:${row.label}`} style={{ display: "contents" }}>
@@ -2791,7 +2791,7 @@ export function AppShell() {
                           ? "1fr"
                           : "minmax(360px, 1.7fr) minmax(140px, 0.55fr) minmax(190px, 0.75fr)",
                         gap: isMobile ? 16 : 24,
-                        fontSize: 12,
+                        fontSize: "var(--fs-caption)",
                         lineHeight: 1.5,
                         fontFamily: "var(--font-mono)",
                       }}>
@@ -2806,7 +2806,7 @@ export function AppShell() {
                       </div>
                     );
                   })() : (
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
+                    <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", fontStyle: "italic" }}>
                        {translate("session.load")}
                     </div>
                   )}
@@ -2883,27 +2883,27 @@ export function AppShell() {
               role="alert"
               style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 24, color: "var(--text-muted)", textAlign: "center" }}
             >
-              <div style={{ fontSize: 14, color: "#dc2626" }}>{translate("workspace.unable")}</div>
+              <div style={{ fontSize: 14, color: "var(--danger)" }}>{translate("workspace.unable")}</div>
               {showInitialRequestedCwd && (
-                <div style={{ maxWidth: "min(720px, 100%)", overflowWrap: "anywhere", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+                <div style={{ maxWidth: "min(720px, 100%)", overflowWrap: "anywhere", fontFamily: "var(--font-mono)", fontSize: "var(--fs-caption)" }}>
                   {initialNavigation.requestedCwd}
                 </div>
               )}
-              <div style={{ maxWidth: 720, fontSize: 12 }}>{initialCwdError}</div>
+              <div style={{ maxWidth: 720, fontSize: "var(--fs-caption)" }}>{initialCwdError}</div>
             </div>
           ) : showPlaceholder ? (
             visibleProjectCwd ? (
-              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 15 }}>
+              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "var(--fs-title)" }}>
                  {translate("workspace.selectSession")}
               </div>
             ) : (
               <div style={{ position: "absolute", top: 12, left: 12, display: "flex", alignItems: "flex-start", gap: 8, userSelect: "none", pointerEvents: "none" }}>
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0 }}>
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0 }}>
                   <line x1="20" y1="12" x2="4" y2="12" /><polyline points="10 6 4 12 10 18" />
                 </svg>
                 <div>
-                   <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>{translate("workspace.getStarted")}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}>
+                   <div style={{ fontSize: 18, fontWeight: "var(--fw-semibold)", color: "var(--text)", marginBottom: 8 }}>{translate("workspace.getStarted")}</div>
+                  <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", lineHeight: 1.8 }}>
                     <span style={{ color: "var(--text-dim)", marginRight: 6 }}>1.</span>{translate("workspace.selectProject")}<br />
                     <span style={{ color: "var(--text-dim)", marginRight: 6 }}>2.</span>{translate("workspace.addModels")}
                   </div>
@@ -2964,7 +2964,7 @@ export function AppShell() {
           aria-label={rightPanelOpen ? translate("workspace.hidePanel") : translate("workspace.showPanel")}
           aria-pressed={rightPanelOpen}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="15" y1="3" x2="15" y2="21" />
           </svg>
@@ -2999,7 +2999,7 @@ export function AppShell() {
                 aria-label={translate("i18n.close")}
                 title={translate("i18n.close")}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
@@ -3113,7 +3113,7 @@ export function AppShell() {
               aria-label={translate(fileTreeShown ? "contextPanel.hideFileList" : "contextPanel.showFileList")}
               aria-pressed={fileTreeShown}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="4.25" cy="5.25" r="1.35" fill="currentColor" stroke="none" /><path d="M7.75 5.25H21" />
                 <circle cx="4.25" cy="12" r="1.35" fill="currentColor" stroke="none" /><path d="M7.75 12H21" />
                 <circle cx="4.25" cy="18.75" r="1.35" fill="currentColor" stroke="none" /><path d="M7.75 18.75H21" />
@@ -3147,7 +3147,7 @@ export function AppShell() {
           title={translate("workspace.hidePanelHint")}
           aria-label={translate("workspace.hidePanel")}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
@@ -3252,10 +3252,10 @@ export function AppShell() {
                       background: changesCollapsed ? "none" : "var(--bg-selected)",
                       border: "none",
                       color: changesCollapsed ? "var(--text-dim)" : "var(--accent)",
-                      cursor: "pointer", borderRadius: 5,
+                      cursor: "pointer", borderRadius: "var(--radius-sm)",
                     }}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <circle cx="12" cy="12" r="3" />
                       <path d="M3 12h6" />
                       <path d="M15 12h6" />
@@ -3272,11 +3272,11 @@ export function AppShell() {
                     display: "flex", alignItems: "center", justifyContent: "center",
                     width: 26, height: 26, padding: 0,
                     background: "none", border: "none",
-                    color: "var(--text-dim)", cursor: "pointer", borderRadius: 5,
+                    color: "var(--text-dim)", cursor: "pointer", borderRadius: "var(--radius-sm)",
                     opacity: explorerUploadBusy ? 0.6 : 1,
                   }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <path d="m17 8-5-5-5 5" />
                     <path d="M12 3v12" />

@@ -127,11 +127,11 @@ function SafeMarkdownBody({ children, className, ...props }: React.ComponentProp
           margin: "4px 0",
           padding: "7px 10px",
           border: "var(--hairline) solid var(--border)",
-          borderRadius: 6,
+          borderRadius: "var(--radius-sm)",
           background: "var(--bg-panel)",
           color: "var(--text-muted)",
           cursor: "pointer",
-          fontSize: 12,
+          fontSize: "var(--fs-caption)",
           textAlign: "left",
         }}
       >
@@ -405,7 +405,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
             <img
               src={src}
               alt=""
-              style={{ maxWidth: 240, maxHeight: 240, borderRadius: 6, objectFit: "contain", display: "block", border: "var(--hairline) solid rgba(59,130,246,0.15)" }}
+              style={{ maxWidth: 240, maxHeight: 240, borderRadius: "var(--radius-sm)", objectFit: "contain", display: "block", border: "var(--hairline) solid rgba(59,130,246,0.15)" }}
             />
           </ImagePreview>
         );
@@ -476,7 +476,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    style={{ flexShrink: 0, opacity: 0.75, transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                    style={{ flexShrink: 0, opacity: 0.75, transform: expanded ? "rotate(180deg)" : "none", transition: "transform var(--dur-base) var(--ease-native)" }}
                     aria-hidden="true"
                   >
                     <polyline points="6 9 12 15 18 9" />
@@ -524,24 +524,24 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
               aria-live="polite"
               style={{
                 display: "flex", alignItems: "center", gap: 4,
-                padding: "3px 8px", height: 22,
+                padding: "3px 8px", height: "var(--control-h-sm)",
                 background: "none", border: "none",
-                borderRadius: 5,
+                borderRadius: "var(--radius-sm)",
                 color: copied ? "var(--accent)" : "var(--text-dim)",
                 cursor: "pointer",
-                fontSize: 11, fontWeight: 400,
+                fontSize: "var(--fs-micro)", fontWeight: "var(--fw-regular)",
                 whiteSpace: "nowrap",
-                transition: "color 0.12s",
+                transition: "color var(--dur-fast) var(--ease-native)",
               }}
               onMouseEnter={(e) => { if (!copied) e.currentTarget.style.color = "var(--accent)"; }}
               onMouseLeave={(e) => { if (!copied) e.currentTarget.style.color = "var(--text-dim)"; }}
             >
               {copied ? (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               ) : (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
@@ -562,19 +562,19 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
                   title={editTitle}
                   style={{
                     display: "flex", alignItems: "center", gap: 4,
-                    padding: "3px 8px", height: 22,
+                    padding: "3px 8px", height: "var(--control-h-sm)",
                     background: "none", border: "none",
-                    borderRadius: 5,
+                    borderRadius: "var(--radius-sm)",
                     color: "var(--text-dim)",
                     cursor: editBlocked ? "not-allowed" : "pointer",
-                    fontSize: 11, fontWeight: 400,
+                    fontSize: "var(--fs-micro)", fontWeight: "var(--fw-regular)",
                     whiteSpace: "nowrap",
-                    transition: "color 0.12s",
+                    transition: "color var(--dur-fast) var(--ease-native)",
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-dim)"; }}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="15 10 20 15 15 20" />
                     <path d="M4 4v7a4 4 0 0 0 4 4h12" />
                   </svg>
@@ -589,16 +589,16 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
                   aria-label={t("i18n.cancel")}
                   style={{
                     display: "flex", alignItems: "center", gap: 4,
-                    padding: "3px 8px", height: 22,
+                    padding: "3px 8px", height: "var(--control-h-sm)",
                     background: "none", border: "none",
-                    borderRadius: 5,
+                    borderRadius: "var(--radius-sm)",
                     color: "var(--accent)",
                     cursor: "pointer",
-                    fontSize: 11, fontWeight: 500,
+                    fontSize: "var(--fs-micro)", fontWeight: "var(--fw-medium)",
                     whiteSpace: "nowrap",
                   }}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                     <path d="M6 6l12 12M18 6L6 18" />
                   </svg>
                   {t("i18n.cancel")}
@@ -611,19 +611,19 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
                    title={forking ? t("i18n.creatingSession") : t("i18n.newSessionTitle")}
                   style={{
                     display: "flex", alignItems: "center", gap: 4,
-                    padding: "3px 8px", height: 22,
+                    padding: "3px 8px", height: "var(--control-h-sm)",
                     background: "none", border: "none",
-                    borderRadius: 5,
+                    borderRadius: "var(--radius-sm)",
                     color: forking ? "var(--accent)" : "var(--text-dim)",
                     cursor: forking ? "not-allowed" : "pointer",
-                    fontSize: 11, fontWeight: 400,
+                    fontSize: "var(--fs-micro)", fontWeight: "var(--fw-regular)",
                     whiteSpace: "nowrap",
-                    transition: "color 0.12s",
+                    transition: "color var(--dur-fast) var(--ease-native)",
                   }}
                   onMouseEnter={(e) => { if (!forking) e.currentTarget.style.color = "var(--accent)"; }}
                   onMouseLeave={(e) => { if (!forking) e.currentTarget.style.color = "var(--text-dim)"; }}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="6" y1="3" x2="6" y2="15" />
                     <circle cx="18" cy="6" r="3" />
                     <circle cx="6" cy="18" r="3" />
@@ -634,7 +634,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
               )}
             </div>
           )}
-          {time && <span className="message-meta" style={{ fontSize: 11, color: "var(--text-dim)" }}>{time}</span>}
+          {time && <span className="message-meta" style={{ fontSize: "var(--fs-micro)", color: "var(--text-dim)" }}>{time}</span>}
         </div>
       )}
     </div>
@@ -814,7 +814,7 @@ function AssistantMessageView({
       <div
         className="message-assistant-model"
         style={{
-          fontSize: 11,
+          fontSize: "var(--fs-micro)",
           color: "var(--text-dim)",
           marginBottom: 4,
           display: "flex",
@@ -832,8 +832,8 @@ function AssistantMessageView({
 
               {est > 0 && (
                 <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text)" }} title={t("i18n.estimatedTokens")}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 11, fontWeight: 400 }}>
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                  <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: "var(--fs-micro)", fontWeight: "var(--fw-regular)" }}>
+                    <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="5" y1="1.5" x2="5" y2="8.5" /><polyline points="2 6 5 8.5 8 6" />
                     </svg>
                     {est}
@@ -841,7 +841,7 @@ function AssistantMessageView({
                   {tps !== null && (() => {
                     const bg = tps >= 50 ? "#53b3cb" : tps >= 30 ? "#9bc53d" : tps >= 15 ? "#f9c22e" : "#e01a4f";
                     return (
-                      <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 4, background: bg, color: "#fff", fontSize: 11, fontWeight: 400 }}>
+                      <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: "var(--radius-xs)", background: bg, color: "#fff", fontSize: "var(--fs-micro)", fontWeight: "var(--fw-regular)" }}>
                         {tps.toFixed(1)} t/s
                       </span>
                     );
@@ -865,12 +865,12 @@ function AssistantMessageView({
           style={{
             marginTop: blocks.length > 0 ? 8 : 0,
             padding: "7px 10px",
-            border: "var(--hairline) solid rgba(239,68,68,0.3)",
-            borderRadius: 6,
-            background: "rgba(239,68,68,0.07)",
-            color: "#ef4444",
+            border: "var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent)",
+            borderRadius: "var(--radius-sm)",
+            background: "color-mix(in srgb, var(--danger) 7%, transparent)",
+            color: "var(--danger)",
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "var(--fs-caption)",
             lineHeight: 1.5,
             whiteSpace: "pre-wrap",
             overflowWrap: "anywhere",
@@ -887,11 +887,11 @@ function AssistantMessageView({
             marginTop: blocks.length > 0 || providerError ? 8 : 0,
             padding: "7px 10px",
             border: "var(--hairline) solid rgba(234,179,8,0.3)",
-            borderRadius: 6,
+            borderRadius: "var(--radius-sm)",
             background: "rgba(234,179,8,0.07)",
-            color: "#ca8a04",
+            color: "var(--warning)",
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
+            fontSize: "var(--fs-caption)",
             lineHeight: 1.5,
             whiteSpace: "pre-wrap",
             overflowWrap: "anywhere",
@@ -908,7 +908,7 @@ function AssistantMessageView({
                 marginTop: 8,
                 padding: "3px 8px",
                 border: "var(--hairline) solid currentColor",
-                borderRadius: 5,
+                borderRadius: "var(--radius-sm)",
                 background: "transparent",
                 color: "inherit",
                 cursor: isCompacting ? "default" : "pointer",
@@ -919,7 +919,7 @@ function AssistantMessageView({
             </button>
           )}
           {unansweredTruncation && compactError && (
-            <div style={{ marginTop: 8, color: "#ef4444", whiteSpace: "pre-wrap" }}>{compactError}</div>
+            <div style={{ marginTop: 8, color: "var(--danger)", whiteSpace: "pre-wrap" }}>{compactError}</div>
           )}
         </div>
       )}
@@ -935,7 +935,7 @@ function AssistantMessageView({
           const usage = formatUsage(message.usage);
           // Cost only at rest; token counts appear while the footer is hovered.
           return (
-            <div className="message-meta" style={{ fontSize: 11, color: "var(--text-dim)" }} title={usage.full}>
+            <div className="message-meta" style={{ fontSize: "var(--fs-micro)", color: "var(--text-dim)" }} title={usage.full}>
               <span className="message-meta-summary">{usage.summary}</span>
               {usage.detail && <span className="message-meta-detail"> · {usage.detail}</span>}
             </div>
@@ -949,24 +949,24 @@ function AssistantMessageView({
             aria-live="polite"
             style={{
               display: "flex", alignItems: "center", gap: 4,
-              padding: "3px 8px", height: 22,
+              padding: "3px 8px", height: "var(--control-h-sm)",
               background: "none", border: "none",
-              borderRadius: 5,
+              borderRadius: "var(--radius-sm)",
               color: copied ? "var(--accent)" : "var(--text-dim)",
               cursor: "pointer",
-              fontSize: 11, fontWeight: 400,
+              fontSize: "var(--fs-micro)", fontWeight: "var(--fw-regular)",
               whiteSpace: "nowrap",
-              transition: "opacity 0.12s, color 0.12s",
+              transition: "opacity var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native)",
             }}
             onMouseEnter={(e) => { if (!copied) e.currentTarget.style.color = "var(--accent)"; }}
             onMouseLeave={(e) => { if (!copied) e.currentTarget.style.color = "var(--text-dim)"; }}
           >
             {copied ? (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             ) : (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
@@ -975,7 +975,7 @@ function AssistantMessageView({
           </button>
         )}
         {time && !isStreaming && (
-          <span className="message-meta" style={{ fontSize: 11, color: "var(--text-dim)", marginLeft: "auto" }}>{time}</span>
+          <span className="message-meta" style={{ fontSize: "var(--fs-micro)", color: "var(--text-dim)", marginLeft: "auto" }}>{time}</span>
         )}
       </div>
     </div>
@@ -1063,7 +1063,7 @@ export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex 
     <div style={{
       display: "flex", alignItems: "flex-start", gap: 6, minWidth: 0,
       border: "var(--hairline) solid var(--border)",
-      borderRadius: 7,
+      borderRadius: "var(--radius-md)",
       padding: "6px 10px",
       background: "var(--bg)",
       fontFamily: "var(--font-mono)",
@@ -1105,7 +1105,7 @@ export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex 
           style={{
             padding: "8px 10px",
             color: error ? "var(--danger)" : "var(--text-muted)",
-            fontSize: 12,
+            fontSize: "var(--fs-caption)",
             lineHeight: 1.6,
             whiteSpace: "pre-wrap",
             overflowWrap: "anywhere",
@@ -1172,9 +1172,9 @@ function ToolCallBlock({ block, result, duration, aborted, defaultExpanded, onOp
   return (
     <div
       style={{
-        borderRadius: 7,
+        borderRadius: "var(--radius-md)",
         overflow: "hidden",
-        fontSize: 12,
+        fontSize: "var(--fs-caption)",
         border: isError
           ? "1px solid rgba(248,113,113,0.45)"
           : aborted
@@ -1202,40 +1202,40 @@ function ToolCallBlock({ block, result, duration, aborted, defaultExpanded, onOp
             border: "none",
             color: "var(--text-muted)",
             cursor: "pointer",
-            fontSize: 12,
+            fontSize: "var(--fs-caption)",
             textAlign: "left",
           }}
         >
           <span
             title={mcpLabel ? block.toolName : undefined}
-            style={{ color: isError ? "var(--danger)" : aborted ? "var(--text-dim)" : "var(--success)", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 11, flexShrink: 0 }}
+            style={{ color: isError ? "var(--danger)" : aborted ? "var(--text-dim)" : "var(--success)", fontFamily: "var(--font-mono)", fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-micro)", flexShrink: 0 }}
           >
             {mcpLabel ? (
               <>
-                <span style={{ fontWeight: 500, opacity: 0.75 }}>{mcpLabel.server}/</span>
+                <span style={{ fontWeight: "var(--fw-medium)", opacity: 0.75 }}>{mcpLabel.server}/</span>
                 {mcpLabel.tool}
               </>
             ) : block.toolName}
           </span>
           {aborted && (
-            <span title={t("chat.toolCancelled")} style={{ flexShrink: 0, fontSize: 11, color: "var(--text-dim)", border: "var(--hairline) solid var(--border)", borderRadius: 4, padding: "1px 5px" }}>
+            <span title={t("chat.toolCancelled")} style={{ flexShrink: 0, fontSize: "var(--fs-micro)", color: "var(--text-dim)", border: "var(--hairline) solid var(--border)", borderRadius: "var(--radius-xs)", padding: "1px 5px" }}>
               {t("chat.toolCancelled")}
             </span>
           )}
-          <span style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+          <span style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: "var(--fs-micro)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
             {isStreamingInput
               ? t("chat.generatingToolInput")
               : (patchLabel ?? (codemode ? codemodeScriptPreview(codemode.code) : getToolPreview(block)))}
           </span>
           {codemodeCallCount > 0 && (
-            <span style={{ fontSize: 11, color: "var(--text-dim)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ fontSize: "var(--fs-micro)", color: "var(--text-dim)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
               {codemodeCallCount === 1 ? t("codemode.callCountOne") : t("codemode.callCount", { count: codemodeCallCount })}
             </span>
           )}
           {duration !== undefined && (
-            <span style={{ fontSize: 11, color: "var(--text-dim)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{duration}s</span>
+            <span style={{ fontSize: "var(--fs-micro)", color: "var(--text-dim)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{duration}s</span>
           )}
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="var(--text-dim)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+          <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="var(--text-dim)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transform: expanded ? "rotate(180deg)" : "none", transition: "transform var(--dur-base) var(--ease-native)" }}>
             <polyline points="2 3.5 5 6.5 8 3.5" />
           </svg>
         </button>
@@ -1713,7 +1713,7 @@ function ResultImages({ images, isError }: { images: ImageContent[]; isError: bo
                   display: "block",
                   maxWidth: "min(100%, 720px)",
                   maxHeight: 520,
-                  borderRadius: 6,
+                  borderRadius: "var(--radius-sm)",
                   objectFit: "contain",
                   border: "var(--hairline) solid var(--border)",
                 }}
@@ -1814,10 +1814,10 @@ function CollapsibleUserText({ text, cwd, onOpenFile }: {
             border: "none",
             color: "var(--text-muted)",
             cursor: "pointer",
-            fontSize: 11,
+            fontSize: "var(--fs-micro)",
           }}
         >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+          <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform var(--dur-base) var(--ease-native)" }}>
             <polyline points="2 3.5 5 6.5 8 3.5" />
           </svg>
           {expanded ? t("i18n.collapse") : t("i18n.expand")}
@@ -1838,7 +1838,7 @@ function CompactionMessageView({ message, kind = "compaction" }: { message: Cust
       <div
         style={{
           border: "var(--hairline) solid var(--border)",
-          borderRadius: 8,
+          borderRadius: "var(--radius-md)",
           overflow: "hidden",
           background: "var(--bg)",
         }}
@@ -1854,14 +1854,14 @@ function CompactionMessageView({ message, kind = "compaction" }: { message: Cust
             color: "var(--text-muted)",
           }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-micro)", fontWeight: "var(--fw-semibold)" }}>
             {kind === "branch_summary" ? "branch summary" : "compaction"}
           </span>
-          {time && <span className="message-meta" style={{ marginLeft: "auto", color: "var(--text-dim)", fontSize: 11 }}>{time}</span>}
+          {time && <span className="message-meta" style={{ marginLeft: "auto", color: "var(--text-dim)", fontSize: "var(--fs-micro)" }}>{time}</span>}
         </div>
 
         <div style={{ padding: "11px 13px 12px" }}>
-          <div style={{ color: "var(--text)", fontSize: "calc(15px + var(--chat-font-size-offset, 0px))", fontWeight: 700, lineHeight: 1.35 }}>
+          <div style={{ color: "var(--text)", fontSize: "calc(15px + var(--chat-font-size-offset, 0px))", fontWeight: "var(--fw-bold)", lineHeight: 1.35 }}>
              {t(kind === "branch_summary" ? "i18n.branchSummaryTitle" : "i18n.conversationCompacted")}
           </div>
           <div style={{ marginTop: 3, marginBottom: 10, color: "var(--text)", fontSize: "calc(14px + var(--chat-font-size-offset, 0px))", lineHeight: 1.5 }}>
@@ -1870,7 +1870,7 @@ function CompactionMessageView({ message, kind = "compaction" }: { message: Cust
           {parsedSummary.body ? (
             <MarkdownBody className="markdown-compaction-message">{parsedSummary.body}</MarkdownBody>
           ) : (
-             <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("i18n.noSummary")}</span>
+             <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-caption)" }}>{t("i18n.noSummary")}</span>
           )}
           <CompactionFileMetadata readFiles={parsedSummary.readFiles} modifiedFiles={parsedSummary.modifiedFiles} />
         </div>
@@ -1935,7 +1935,7 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
       <div
         style={{
           border: "var(--hairline) solid var(--border)",
-          borderRadius: 8,
+          borderRadius: "var(--radius-md)",
           overflow: "hidden",
           background: isHiddenDisplay ? "var(--bg-subtle)" : "var(--bg)",
           opacity: isHiddenDisplay && !contentExpanded ? 0.82 : 1,
@@ -1950,14 +1950,14 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
             borderBottom: "var(--hairline) solid var(--border)",
             background: "var(--bg-panel)",
             color: "var(--text-muted)",
-            fontSize: 12,
+            fontSize: "var(--fs-caption)",
           }}
         >
-          <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600 }}>
+          <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "var(--fs-micro)", fontWeight: "var(--fw-semibold)" }}>
             {title}
           </span>
-          {isHiddenDisplay && <span style={{ color: "var(--text-dim)", fontSize: 11 }}>{t("i18n.hiddenExtensionMessage")}</span>}
-          {time && <span className="message-meta" style={{ marginLeft: "auto", color: "var(--text-dim)", fontSize: 11 }}>{time}</span>}
+          {isHiddenDisplay && <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-micro)" }}>{t("i18n.hiddenExtensionMessage")}</span>}
+          {time && <span className="message-meta" style={{ marginLeft: "auto", color: "var(--text-dim)", fontSize: "var(--fs-micro)" }}>{time}</span>}
         </div>
 
         {contentExpanded ? (
@@ -1973,14 +1973,14 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
                       <img
                         src={src}
                         alt=""
-                        style={{ maxWidth: 240, maxHeight: 240, borderRadius: 6, objectFit: "contain", display: "block", border: "var(--hairline) solid var(--border)" }}
+                        style={{ maxWidth: 240, maxHeight: 240, borderRadius: "var(--radius-sm)", objectFit: "contain", display: "block", border: "var(--hairline) solid var(--border)" }}
                       />
                     </ImagePreview>
                   );
                 })}
               </div>
             )}
-             {text ? <MarkdownBody className="markdown-custom-message" cwd={cwd} onOpenFile={onOpenFile}>{text}</MarkdownBody> : <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{t("i18n.noMessage")}</span>}
+             {text ? <MarkdownBody className="markdown-custom-message" cwd={cwd} onOpenFile={onOpenFile}>{text}</MarkdownBody> : <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-caption)" }}>{t("i18n.noMessage")}</span>}
           </div>
         ) : (
           <button
@@ -1993,7 +1993,7 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
               background: "transparent",
               color: "var(--text-dim)",
               cursor: "pointer",
-              fontSize: 12,
+              fontSize: "var(--fs-caption)",
               textAlign: "left",
             }}
           >
@@ -2020,7 +2020,7 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
                 background: "none",
                 color: copied ? "var(--accent)" : "var(--text-dim)",
                 cursor: "pointer",
-                fontSize: 11,
+                fontSize: "var(--fs-micro)",
               }}
             >
                {copied ? t("i18n.copied") : t("i18n.copy")}
@@ -2039,7 +2039,7 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
                 background: "none",
                 color: "var(--text-dim)",
                 cursor: "pointer",
-                fontSize: 11,
+                fontSize: "var(--fs-micro)",
               }}
             >
               {isHiddenDisplay
@@ -2230,12 +2230,12 @@ function BashExecutionView({ message, sessionId }: { message: BashExecutionMessa
     <div style={{ margin: "6px 0" }}>
       <ToolCallBlock block={block} result={result} defaultExpanded={isRunning} />
       {message.truncated && fullOutputUrl && (
-        <div style={{ padding: "4px 10px", fontSize: 11, marginTop: -1 }}>
+        <div style={{ padding: "4px 10px", fontSize: "var(--fs-micro)", marginTop: -1 }}>
           {showFullButton && (
             <button
               onClick={loadFullOutput}
               disabled={loadingFull}
-              style={{ background: "none", border: "none", color: "var(--accent)", cursor: loadingFull ? "default" : "pointer", fontSize: 11, padding: 0, textDecoration: "underline" }}
+              style={{ background: "none", border: "none", color: "var(--accent)", cursor: loadingFull ? "default" : "pointer", fontSize: "var(--fs-micro)", padding: 0, textDecoration: "underline" }}
             >
               {loadingFull ? "loading…" : "view full output"}
             </button>
@@ -2253,14 +2253,14 @@ function BashExecutionView({ message, sessionId }: { message: BashExecutionMessa
               border: "none",
               padding: 0,
               color: "var(--accent)",
-              fontSize: 11,
+              fontSize: "var(--fs-micro)",
               textDecoration: "underline",
               cursor: "pointer",
             }}
           >
             download full output
           </button>
-          {fullError && <span style={{ marginLeft: 6, color: "var(--text-dim)", fontSize: 11 }}>({fullError})</span>}
+          {fullError && <span style={{ marginLeft: 6, color: "var(--text-dim)", fontSize: "var(--fs-micro)" }}>({fullError})</span>}
         </div>
       )}
     </div>

@@ -58,7 +58,7 @@
   justify-content: center;
   color: var(--text-muted);
   font-size: var(--fs-body);
-  animation: chat-loading-hint-in 0.12s ease 0.24s both;
+  animation: chat-loading-hint-in var(--dur-fast) var(--ease-native) 0.24s both;
 }
 @keyframes chat-loading-hint-in {
   from { opacity: 0; }
@@ -70,7 +70,7 @@
   position: absolute;
   left: 10px;
   top: 50%;
-  z-index: 30;
+  z-index: var(--z-sticky);
   width: 58px;
   height: min(46vh, 280px);
   transform: translateY(-50%);
@@ -93,7 +93,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--text) 28%, transparent);
   transform: translateY(-50%);
-  transition: width 120ms ease, height 120ms ease, background 120ms ease;
+  transition: width var(--dur-fast) var(--ease-native), height var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 .conversation-navigator-tick.is-active {
   width: 42px;
@@ -113,7 +113,7 @@
   border: var(--hairline) solid var(--border);
   border-radius: 22px;
   background: color-mix(in srgb, var(--bg) 94%, transparent);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-popover);
   transform: translateY(-50%);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -226,8 +226,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: var(--control-h-md);
+  height: var(--control-h-md);
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
@@ -324,20 +324,20 @@
 }
 .sidebar-project-tree-action {
   width: 24px;
-  height: 24px;
+  height: var(--control-h-sm);
 }
  .sidebar-project-tree-children {
   min-width: 0;
 }
 .sidebar-project-context-menu {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-modal);
   width: 168px;
   padding: 4px;
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--shadow-popover);
 }
 .sidebar-project-context-menu button {
   display: block;
@@ -416,7 +416,7 @@
   display: flex;
   flex: 0 0 28px;
   width: 28px;
-  height: 28px;
+  height: var(--control-h-md);
   margin-right: 0;
   padding: 0;
 }
@@ -525,7 +525,7 @@
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background var(--dur-fast) var(--ease-native), border-color var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-empty-add:hover {
@@ -587,7 +587,7 @@
     width: 1px;
     border-radius: 1px;
     background: transparent;
-    transition: background 0.15s ease 0.05s;
+    transition: background var(--dur-base) var(--ease-native) var(--dur-fast);
   }
   .column-resize-handle:hover::after {
     background: color-mix(in srgb, var(--accent) 35%, transparent);
@@ -615,12 +615,12 @@
 /* Upstream .file-panel-expand-button — borderless 28px icon button. */
 .file-panel-expand-button {
   width: 28px;
-  height: 28px;
+  height: var(--control-h-md);
   background: transparent;
   border-left: none;
   border-radius: var(--radius-md);
   color: var(--text-muted);
-  transition: color 120ms ease, background 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 .file-panel-expand-button:hover {
   background: var(--bg-hover);
@@ -1020,7 +1020,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 28px;
+  min-height: var(--control-h-md);
 }
 
 /* ---- end of fork base layer ---------------------------------------------- */
@@ -1086,13 +1086,34 @@
 
   --font-display: var(--font-display-default);
 
-  /* Shape, spacing and elevation */
+  /* Shape, spacing and elevation. Radii: xs = badges, kbd and swatches; sm =
+     rows, chips and inputs; md = buttons and cards; lg = panels; xl = sheets. */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-  --control-height-sm: 28px;
-  --control-height: 32px;
+  /* Control heights: sm = inline and dense actions, md = toolbar chips and
+     settings buttons, lg = primary actions and inputs. Coarse pointers lift
+     targets to 44px separately. */
+  --control-h-sm: 24px;
+  --control-h-md: 28px;
+  --control-h-lg: 32px;
+  --control-height-sm: var(--control-h-md);
+  --control-height: var(--control-h-lg);
+  /* Motion: fast = hover and press feedback, base = panels, reveals and fades. */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  /* Stacking layers, lowest first. Single-digit z-index orders siblings inside
+     one component and stays literal; anything that floats over other UI takes
+     a layer. upstream globals.css keeps its own 220–250 for the mobile drawer. */
+  --z-sticky: 30;     /* in-canvas overlays: navigator, find bar, full-page views */
+  --z-chrome: 90;     /* topbar and the chat column's floating controls */
+  --z-dropdown: 120;  /* composer popovers and panel toggles */
+  --z-popover: 650;   /* menus, notice shelf */
+  --z-modal: 1000;    /* dialogs and their backdrops */
+  --z-toast: 1200;    /* context menus and reminders above dialogs */
+  --z-menu: 2400;     /* option menus opened from inside a dialog */
   --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.045);
   --shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.06),
     0 12px 32px rgba(0, 0, 0, 0.08);
@@ -1159,7 +1180,7 @@ html.dark {
   position: absolute;
   left: 12px;
   top: 50%;
-  z-index: 30;
+  z-index: var(--z-sticky);
   width: 42px;
   transform: translateY(-50%);
   pointer-events: none;
@@ -1184,9 +1205,9 @@ html.dark {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
   transform: translateY(-50%);
   transition:
-    width 140ms var(--ease-native),
-    background 140ms var(--ease-native),
-    opacity 140ms var(--ease-native);
+    width var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    opacity var(--dur-fast) var(--ease-native);
 }
 
 .conversation-navigator-tick.is-active {
@@ -1253,8 +1274,8 @@ html.dark {
   text-align: left;
   cursor: pointer;
   pointer-events: auto;
-  animation: conversation-navigator-preview-in 140ms var(--ease-native);
-  transition: border-color 120ms ease;
+  animation: conversation-navigator-preview-in var(--dur-fast) var(--ease-native);
+  transition: border-color var(--dur-fast) var(--ease-native);
 }
 
 .conversation-navigator-preview:hover {
@@ -1352,7 +1373,7 @@ html.dark .conversation-navigator-preview {
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
-  height: 28px;
+  height: var(--control-h-md);
   align-items: center;
   overflow: hidden;
 }
@@ -1395,7 +1416,7 @@ html.dark .conversation-navigator-preview {
   --file-tab-fade-end: 0px;
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--file-tab-fade-start), #000 calc(100% - var(--file-tab-fade-end)), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, #000 var(--file-tab-fade-start), #000 calc(100% - var(--file-tab-fade-end)), transparent 100%);
-  transition: --file-tab-fade-start 180ms ease, --file-tab-fade-end 180ms ease;
+  transition: --file-tab-fade-start var(--dur-base) var(--ease-native), --file-tab-fade-end var(--dur-base) var(--ease-native);
 }
 
 .file-tab-bar[data-overflow-start] {
@@ -1423,7 +1444,7 @@ html.dark .conversation-navigator-preview {
   flex: 0 0 auto;
   min-width: 148px;
   max-width: min(280px, 34vw);
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0 6px 0 10px;
   align-items: center;
   gap: 7px;
@@ -1434,7 +1455,7 @@ html.dark .conversation-navigator-preview {
   cursor: default;
   font-size: var(--fs-body);
   user-select: none;
-  transition: background 140ms ease, color 140ms ease, transform 140ms var(--ease-native);
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native), transform var(--dur-fast) var(--ease-native);
 }
 
 .file-tab:hover {
@@ -1452,7 +1473,7 @@ html.dark .conversation-navigator-preview {
 }
 
 .file-tab:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -1px;
 }
 
@@ -1497,7 +1518,7 @@ html.dark .conversation-navigator-preview {
   background: transparent;
   color: transparent;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, transform 120ms var(--ease-native);
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native), transform var(--dur-fast) var(--ease-native);
 }
 
 .file-tab:hover .file-tab-close,
@@ -1520,13 +1541,13 @@ html.dark .conversation-navigator-preview {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  height: 28px;
+  height: var(--control-h-md);
 }
 
 .file-tab-add {
   display: inline-flex;
   width: 28px;
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0;
   align-items: center;
   justify-content: center;
@@ -1536,7 +1557,7 @@ html.dark .conversation-navigator-preview {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 
 .file-tab-add:hover {
@@ -1547,7 +1568,7 @@ html.dark .conversation-navigator-preview {
 .file-workbench-icon-button {
   display: inline-flex;
   width: 28px;
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0;
   align-items: center;
   justify-content: center;
@@ -1558,7 +1579,7 @@ html.dark .conversation-navigator-preview {
   cursor: pointer;
   font: inherit;
   font-size: var(--fs-small);
-  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native), border-color var(--dur-fast) var(--ease-native);
 }
 
 .file-workbench-icon-button > svg,
@@ -1648,7 +1669,7 @@ html.dark .conversation-navigator-preview {
   min-width: 0;
   flex: 1 1 auto;
   align-items: center;
-  height: 28px;
+  height: var(--control-h-md);
 }
 
 
@@ -1675,13 +1696,13 @@ html.dark .conversation-navigator-preview {
   position: fixed;
   top: 10px;
   right: 10px;
-  z-index: 120;
+  z-index: var(--z-dropdown);
   display: inline-flex;
   width: 34px !important;
   min-width: 34px !important;
   max-width: 34px !important;
-  height: 28px;
-  min-height: 28px;
+  height: var(--control-h-md);
+  min-height: var(--control-h-md);
   padding: 0;
   align-items: center;
   justify-content: center;
@@ -1690,7 +1711,7 @@ html.dark .conversation-navigator-preview {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 
 .right-panel-toggle-button.is-open,
@@ -1736,8 +1757,8 @@ html.dark .conversation-navigator-preview {
 ::view-transition-old(root),
 ::view-transition-new(root) {
   mix-blend-mode: normal;
-  animation-duration: 160ms;
-  animation-timing-function: ease-out;
+  animation-duration: var(--dur-base);
+  animation-timing-function: var(--ease-native);
 }
 ::view-transition-old(root) {
   z-index: 1;
@@ -1791,7 +1812,7 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -1882,7 +1903,7 @@ pre, code {
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0;
   flex-shrink: 0;
   border: 0;
@@ -1890,7 +1911,7 @@ pre, code {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-chrome-button:hover {
@@ -1920,7 +1941,7 @@ pre, code {
   line-height: 1.35;
   text-align: left;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-header-row:hover:not(:disabled):not([aria-disabled="true"]) {
@@ -1970,13 +1991,13 @@ pre, code {
   align-items: center;
   justify-content: center;
   width: 24px !important;
-  height: 24px !important;
+  height: var(--control-h-sm) !important;
   padding: 0;
   flex-shrink: 0;
   border-radius: var(--radius-sm) !important;
   opacity: 0;
   cursor: pointer;
-  transition: opacity 140ms ease, background 140ms ease, color 140ms ease;
+  transition: opacity var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-refresh-button:focus-visible,
@@ -2036,7 +2057,7 @@ html.dark .sidebar-view-switcher-thumb {
 .sidebar-view-switcher button {
   position: relative;
   z-index: 1;
-  height: 24px;
+  height: var(--control-h-sm);
   padding: 0 10px;
   border: 0;
   border-radius: 999px;
@@ -2045,7 +2066,7 @@ html.dark .sidebar-view-switcher-thumb {
   font-size: var(--fs-small);
   font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: color 180ms var(--ease-native);
+  transition: color var(--dur-base) var(--ease-native);
 }
 
 .sidebar-view-switcher button:hover:not(.is-active) {
@@ -2081,7 +2102,7 @@ html.dark .sidebar-view-switcher-thumb {
   width: auto;
   min-width: 0;
   flex: 1 1 auto;
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0 26px 0 26px;
   border: var(--hairline) solid var(--separator);
   border-radius: var(--radius-md);
@@ -2089,7 +2110,7 @@ html.dark .sidebar-view-switcher-thumb {
   color: var(--text);
   font-size: var(--fs-small);
   outline: none;
-  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+  transition: border-color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native), box-shadow var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-search-input::placeholder {
@@ -2226,7 +2247,7 @@ html.dark .sidebar-view-switcher-thumb {
   flex: 0 0 auto;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 100ms ease;
+  transition: opacity var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-project-tree-header:hover .sidebar-project-tree-tools,
@@ -2241,15 +2262,15 @@ html.dark .sidebar-view-switcher-thumb {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
   padding: 0;
   background: transparent;
   border: 0;
   border-radius: var(--radius-sm);
   color: var(--text-dim);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 @media (hover: none) {
@@ -2268,7 +2289,7 @@ html.dark .sidebar-view-switcher-thumb {
 
 .project-view-menu {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: flex;
   width: 216px;
   padding: 5px;
@@ -2363,7 +2384,7 @@ html.dark .sidebar-view-switcher-thumb {
   font-size: var(--fs-body);
   text-align: left;
   cursor: pointer;
-  transition: background 100ms ease, color 100ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-project-tree-row:hover {
@@ -2484,7 +2505,7 @@ html.dark .sidebar-view-switcher-thumb {
   opacity: 0;
   pointer-events: none;
   transform: translateY(-50%);
-  transition: opacity 100ms ease;
+  transition: opacity var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-project-tree-row:hover .sidebar-project-tree-row-actions,
@@ -2529,7 +2550,7 @@ html.dark .sidebar-view-switcher-thumb {
   display: flex;
   align-items: center;
   width: calc(100% - 20px);
-  min-height: 24px;
+  min-height: var(--control-h-sm);
   margin: 0 10px 3px;
   /* Match the session title start: 11px row padding + 14px icon + 6px gap
      = the project name's left edge. */
@@ -2543,7 +2564,7 @@ html.dark .sidebar-view-switcher-thumb {
   font-weight: var(--fw-medium);
   text-align: left;
   cursor: pointer;
-  transition: color 100ms ease;
+  transition: color var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-project-tree-show-more:hover {
@@ -2555,7 +2576,7 @@ html.dark .sidebar-view-switcher-thumb {
   display: flex;
   align-items: center;
   gap: 5px;
-  height: 24px;
+  height: var(--control-h-sm);
   margin: 2px 8px 2px 30px;
   padding: 0 8px;
   border: 0;
@@ -2565,7 +2586,7 @@ html.dark .sidebar-view-switcher-thumb {
   font-size: var(--fs-small);
   text-align: left;
   cursor: pointer;
-  transition: background 100ms ease, color 100ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 .sidebar-project-tree-newchat:hover {
@@ -2585,7 +2606,7 @@ html.dark .sidebar-view-switcher-thumb {
 .project-picker-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: var(--z-chrome);
   background: color-mix(in srgb, var(--bg) 55%, transparent);
   backdrop-filter: blur(6px);
   display: flex;
@@ -2599,8 +2620,8 @@ html.dark .sidebar-view-switcher-thumb {
   max-height: min(640px, calc(100vh - 48px));
   background: var(--bg-panel);
   border: var(--hairline) solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dialog);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2696,9 +2717,9 @@ html:not(.dark) .session-item.is-selected .session-item-time {
 .sidebar-file-action-button {
   border-radius: var(--radius-md) !important;
   transition:
-    color 120ms ease,
-    background 120ms ease,
-    transform 120ms var(--ease-native) !important;
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native) !important;
 }
 
 .sidebar-file-action-button:hover:not(:disabled) {
@@ -2776,10 +2797,10 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   cursor: default;
   user-select: none;
   transition:
-    color 120ms ease,
-    background 120ms ease,
-    transform 120ms var(--ease-native),
-    box-shadow 120ms ease;
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native),
+    box-shadow var(--dur-fast) var(--ease-native);
 }
 
 .file-tree-row:hover {
@@ -2808,14 +2829,14 @@ html:not(.dark) .session-item.is-selected .session-item-time {
 }
 
 .file-tree-row:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -1px;
 }
 
 .file-tree-chevron {
   flex: 0 0 auto;
   transform: rotate(0deg);
-  transition: transform 140ms var(--ease-native);
+  transition: transform var(--dur-fast) var(--ease-native);
 }
 
 .file-tree-chevron.is-open {
@@ -2827,7 +2848,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   flex: 0 0 auto;
   align-items: center;
   color: var(--text-dim);
-  transition: color 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native);
 }
 
 .file-tree-icon.is-folder {
@@ -2873,7 +2894,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   position: absolute;
   top: 50%;
   display: flex;
-  height: 22px;
+  height: var(--control-h-sm);
   padding: 0 6px;
   align-items: center;
   justify-content: center;
@@ -2890,9 +2911,9 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   text-decoration: none;
   transform: translateY(-50%);
   transition:
-    color 120ms ease,
-    background 120ms ease,
-    transform 120ms var(--ease-native);
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native);
   white-space: nowrap;
 }
 
@@ -2938,7 +2959,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
 .file-tree-dismiss-button {
   display: flex;
   width: 24px;
-  height: 24px;
+  height: var(--control-h-sm);
   padding: 0;
   flex: 0 0 24px;
   align-items: center;
@@ -3038,7 +3059,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
 
 .app-topbar {
   position: relative;
-  z-index: 90;
+  z-index: var(--z-chrome);
   min-height: 48px;
   height: 48px !important;
   padding: 0 9px;
@@ -3104,10 +3125,10 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   color: var(--text-muted);
   cursor: pointer;
   transition:
-    color 140ms ease,
-    background 140ms ease,
-    opacity 140ms ease,
-    transform 140ms var(--ease-native) !important;
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    opacity var(--dur-fast) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native) !important;
 }
 
 .native-icon-button {
@@ -3173,7 +3194,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 .window-control-btn:hover {
@@ -3211,7 +3232,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
 .app-topbar-actions .native-toolbar-button,
 .app-topbar-actions > button,
 .app-topbar-actions > div > button {
-  height: 28px !important;
+  height: var(--control-h-md) !important;
   padding: 0 9px !important;
   border: 0 !important;
   border-radius: var(--radius-md) !important;
@@ -3229,7 +3250,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   position: absolute;
   top: calc(100% + 7px);
   right: -2px;
-  z-index: 650;
+  z-index: var(--z-popover);
   width: 242px;
   padding: 5px;
   transform-origin: top right !important;
@@ -3303,7 +3324,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
 
 .native-popover:not(.animated-native-popover) {
   transform-origin: bottom center;
-  animation: native-popover-in 140ms var(--ease-native) both;
+  animation: native-popover-in var(--dur-fast) var(--ease-native) both;
 }
 
 @keyframes native-popover-in {
@@ -3321,8 +3342,8 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   min-height: 30px;
   border-radius: var(--radius-md) !important;
   transition:
-    color 110ms ease,
-    background 110ms ease;
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native);
 }
 
 .native-popover button:hover:not(:disabled) {
@@ -3358,7 +3379,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   --menu-row-radius: var(--choice-row-radius);
   --menu-row-height: 34px;
   --menu-row-gap: var(--choice-row-gap);
-  --menu-focus-ring: var(--text);
+  --menu-focus-ring: var(--focus-ring);
 }
 
 html.dark {
@@ -3445,7 +3466,7 @@ html.dark {
   font-weight: var(--fw-regular);
   line-height: 20px;
   cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  transition: background-color var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native), box-shadow var(--dur-fast) var(--ease-native);
 }
 :is(.settings-theme-options, .settings-language-options, .settings-send-mode-options,
     .settings-choice-group, .config-scope-switch, .file-viewer-mode-switch) > :is(label, button):not(:disabled, [aria-checked="true"], [aria-pressed="true"], :has(input:checked)):hover {
@@ -3467,7 +3488,7 @@ html.dark {
 .config-scope-switch.is-small { border-radius: var(--segment-radius); }
 .config-scope-switch .config-scope-switch-option { border: 0; }
 .config-scope-switch.is-small .config-scope-switch-option {
-  min-height: 24px;
+  min-height: var(--control-h-sm);
   padding: 2px 10px;
   color: var(--text-muted);
 }
@@ -3661,7 +3682,7 @@ html.dark {
 .app-select-trigger[data-state="open"] { background: var(--bg-hover); }
 .app-select-chevron { display: inline-flex; flex: none; color: var(--text-muted); }
 .app-select-menu {
-  z-index: 2400;
+  z-index: var(--z-menu);
   min-width: min(var(--radix-select-trigger-width, 120px), calc(100vw - 16px));
   max-width: min(440px, var(--radix-select-content-available-width, calc(100vw - 16px)));
   max-height: min(360px, var(--radix-select-content-available-height, calc(100dvh - 16px)));
@@ -3689,7 +3710,7 @@ html.dark {
 .app-select-option[data-highlighted] { background: var(--bg-hover); }
 .app-select-option:focus-visible { outline: 2px solid var(--menu-focus-ring); }
 .app-select-option[data-disabled] { opacity: 0.45; pointer-events: none; }
-.app-combobox-menu { position: fixed; z-index: 2400; overflow-y: auto; overscroll-behavior: contain; }
+.app-combobox-menu { position: fixed; z-index: var(--z-menu); overflow-y: auto; overscroll-behavior: contain; }
 .app-menu-option {
   display: flex;
   width: 100%;
@@ -3762,7 +3783,7 @@ html.dark {
    .native-popover. */
 .dom-context-menu {
   position: fixed;
-  z-index: 1200;
+  z-index: var(--z-toast);
   min-width: 200px;
   max-width: 320px;
   padding: 4px;
@@ -3858,7 +3879,7 @@ html.dark {
   background: rgba(16, 16, 18, 0.34) !important;
   -webkit-backdrop-filter: blur(3px) saturate(110%);
   backdrop-filter: blur(3px) saturate(110%);
-  animation: native-backdrop-in 150ms ease-out both;
+  animation: native-backdrop-in var(--dur-base) var(--ease-native) both;
 }
 
 .native-modal {
@@ -3866,7 +3887,7 @@ html.dark {
   border-radius: var(--radius-lg) !important;
   background: var(--surface-elevated) !important;
   box-shadow: var(--shadow-dialog) !important;
-  animation: native-modal-in 220ms var(--ease-sheet) both;
+  animation: native-modal-in var(--dur-base) var(--ease-sheet) both;
 }
 
 .native-modal-header {
@@ -3887,7 +3908,7 @@ html.dark {
 .native-modal-close {
   display: inline-flex !important;
   width: 28px;
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0 !important;
   align-items: center;
   justify-content: center;
@@ -3898,8 +3919,8 @@ html.dark {
   cursor: pointer;
   font-size: 20px !important;
   transition:
-    color 140ms ease,
-    background 140ms ease;
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native);
 }
 
 .native-modal-close:hover:not(:disabled) {
@@ -3943,9 +3964,9 @@ html.dark {
   font-size: var(--fs-small) !important;
   outline: none;
   transition:
-    border-color 140ms ease,
-    background 140ms ease,
-    box-shadow 140ms ease;
+    border-color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    box-shadow var(--dur-fast) var(--ease-native);
 }
 
 .settings-modal textarea {
@@ -3969,7 +3990,7 @@ html.dark {
 .settings-modal select:focus {
   border-color: var(--accent-border) !important;
   background: var(--surface) !important;
-  box-shadow: 0 0 0 3px var(--focus-ring) !important;
+  box-shadow: 0 0 0 2px var(--focus-ring) !important;
 }
 
 .native-input::placeholder,
@@ -3990,8 +4011,8 @@ html.dark {
 .native-input-action {
   border-radius: var(--radius-sm) !important;
   transition:
-    color 140ms ease,
-    background 140ms ease;
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native);
 }
 
 .native-input-action:hover {
@@ -4032,11 +4053,11 @@ html.dark {
   font-weight: var(--fw-medium);
   cursor: pointer;
   transition:
-    color 140ms ease,
-    border-color 140ms ease,
-    background 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms var(--ease-native);
+    color var(--dur-fast) var(--ease-native),
+    border-color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    box-shadow var(--dur-fast) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native);
 }
 
 .native-button:hover:not(:disabled) {
@@ -4055,7 +4076,7 @@ html.dark {
 }
 
 .native-button-compact {
-  min-height: 26px;
+  min-height: var(--control-h-md);
   padding: 0 9px !important;
   border-radius: var(--radius-md) !important;
   font-size: var(--fs-caption) !important;
@@ -4136,9 +4157,9 @@ html.dark {
   background: transparent !important;
   cursor: pointer;
   transition:
-    color 120ms ease,
-    border-color 120ms ease,
-    background 120ms ease;
+    color var(--dur-fast) var(--ease-native),
+    border-color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native);
 }
 
 .settings-list-row:hover {
@@ -4217,11 +4238,11 @@ html.dark {
 
 .settings-modal button:not(.native-modal-close) {
   transition:
-    color 140ms ease,
-    border-color 140ms ease,
-    background 140ms ease,
-    opacity 140ms ease,
-    transform 140ms var(--ease-native);
+    color var(--dur-fast) var(--ease-native),
+    border-color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    opacity var(--dur-fast) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native);
 }
 
 .provider-picker-search {
@@ -4256,9 +4277,9 @@ html.dark {
   font-weight: var(--fw-semibold);
   cursor: pointer;
   transition:
-    background 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms var(--ease-native);
+    background var(--dur-fast) var(--ease-native),
+    box-shadow var(--dur-fast) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native);
 }
 
 .native-primary-button:hover:not(:disabled) {
@@ -4291,7 +4312,7 @@ html.dark {
   background: rgba(16, 16, 18, 0.34);
   -webkit-backdrop-filter: blur(3px) saturate(110%);
   backdrop-filter: blur(3px) saturate(110%);
-  animation: native-backdrop-in 150ms ease-out both;
+  animation: native-backdrop-in var(--dur-base) var(--ease-native) both;
 }
 
 .settings-dialog-surface {
@@ -4299,7 +4320,7 @@ html.dark {
   --settings-control-on-hover: color-mix(in srgb, var(--menu-selection-color) 88%, var(--text));
   --settings-control-knob-on: #ffffff;
   box-shadow: var(--shadow-dialog);
-  animation: native-modal-in 200ms var(--ease-sheet) both;
+  animation: native-modal-in var(--dur-base) var(--ease-sheet) both;
 }
 
 .settings-dialog-surface .config-switch[aria-checked="true"] {
@@ -4322,11 +4343,11 @@ html.dark {
 
 .settings-dialog-close {
   width: 28px;
-  height: 28px;
+  height: var(--control-h-md);
   border-radius: var(--radius-md);
   transition:
-    color 140ms ease,
-    background 140ms ease;
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4415,8 +4436,8 @@ html.dark {
     border-radius: var(--radius-md);
     font-size: var(--fs-caption);
     transition:
-      color 140ms ease,
-      background 140ms ease;
+      color var(--dur-fast) var(--ease-native),
+      background var(--dur-fast) var(--ease-native);
   }
 
   :root[data-platform="macos"] .settings-section-tab .settings-section-icon {
@@ -4546,8 +4567,8 @@ html.dark {
     border-radius: var(--choice-row-radius);
     font-size: var(--fs-body);
     transition:
-      color 120ms ease,
-      background 120ms ease;
+      color var(--dur-fast) var(--ease-native),
+      background var(--dur-fast) var(--ease-native);
   }
 
   :root[data-platform="windows"] .settings-section-tab[aria-current="page"],
@@ -4651,9 +4672,9 @@ html.dark {
   border-radius: calc(var(--composer-send-size) / 2 + var(--composer-inset) + var(--composer-border-width)) !important;
   box-shadow: var(--shadow-composer) !important;
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease !important;
+    border-color var(--dur-base) var(--ease-native),
+    box-shadow var(--dur-base) var(--ease-native),
+    background var(--dur-base) var(--ease-native) !important;
 }
 
 .chat-composer-editor {
@@ -4749,7 +4770,7 @@ html.dark {
   font-size: var(--fs-small);
   font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 .chat-project-context:hover:not(:disabled) {
@@ -4784,7 +4805,7 @@ html.dark {
   display: flex;
   align-items: center;
   gap: 5px;
-  height: 32px;
+  height: var(--control-h-lg);
   padding: 0 12px;
   border: var(--hairline) solid color-mix(in srgb, var(--queue-hue) 38%, transparent);
   border-radius: var(--radius-md);
@@ -4794,7 +4815,7 @@ html.dark {
   font-weight: var(--fw-semibold);
   letter-spacing: 0;
   cursor: pointer;
-  transition: background 120ms ease, transform 140ms var(--ease-native);
+  transition: background var(--dur-fast) var(--ease-native), transform var(--dur-fast) var(--ease-native);
 }
 
 .composer-queue-button[data-kind="followup"] {
@@ -4899,7 +4920,7 @@ html.dark {
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 160ms ease;
+  transition: opacity var(--dur-base) var(--ease-native);
 }
 
 .chat-composer:focus-within .composer-trigger-hint {
@@ -4913,7 +4934,7 @@ html.dark {
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 32px;
+  height: var(--control-h-lg);
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -4922,10 +4943,10 @@ html.dark {
   color: var(--accent-contrast);
   cursor: pointer;
   transition:
-    background 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease,
-    transform 140ms var(--ease-native);
+    background var(--dur-base) var(--ease-native),
+    color var(--dur-base) var(--ease-native),
+    box-shadow var(--dur-base) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native);
 }
 
 .composer-send-button:hover:not(:disabled) {
@@ -4995,7 +5016,7 @@ html.dark {
   gap: 3px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) var(--ease-native);
 }
 
 .message-user:hover .message-copy-actions,
@@ -5089,9 +5110,9 @@ html.dark {
   font-size: var(--fs-small) !important;
   font-weight: var(--fw-medium);
   transition:
-    color 140ms ease,
-    background 140ms ease,
-    border-color 140ms ease;
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    border-color var(--dur-fast) var(--ease-native);
 }
 
 .process-details-trigger:hover {
@@ -5236,7 +5257,7 @@ html.dark {
   height: 14px;
   margin: 0;
   border: var(--hairline) solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--bg);
   display: inline-grid;
   place-content: center;
@@ -5623,7 +5644,7 @@ html.dark {
   font: inherit;
   font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: background 140ms var(--ease-native), transform 120ms var(--ease-native);
+  transition: background var(--dur-fast) var(--ease-native), transform var(--dur-fast) var(--ease-native);
 }
 .html-preview-error-fix:hover {
   background: var(--bg-hover);
@@ -5651,7 +5672,7 @@ html.dark {
 }
 .html-preview-error-fix:focus-visible,
 .html-preview-error-dismiss:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -1px;
 }
 
@@ -5674,7 +5695,7 @@ html.dark {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background 140ms var(--ease-native), border-color 140ms var(--ease-native), transform 120ms var(--ease-native);
+  transition: background var(--dur-fast) var(--ease-native), border-color var(--dur-fast) var(--ease-native), transform var(--dur-fast) var(--ease-native);
 }
 .artifact-card:hover {
   border-color: var(--border);
@@ -5684,7 +5705,7 @@ html.dark {
   transform: scale(0.99);
 }
 .artifact-card:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 .artifact-card-icon {
@@ -5939,7 +5960,7 @@ html.dark {
   flex-basis: 26px;
   display: inline-flex;
   width: 24px;
-  height: 24px;
+  height: var(--control-h-sm);
   align-items: center;
   justify-content: center;
   flex: 0 0 24px;
@@ -5970,8 +5991,8 @@ html.dark {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: var(--control-h-lg);
+  height: var(--control-h-lg);
   margin-right: 7px;
   padding: 0;
   flex-shrink: 0;
@@ -5980,7 +6001,7 @@ html.dark {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 140ms ease, background 140ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 
 .right-panel-close:hover {
@@ -6005,7 +6026,7 @@ html.dark {
   display: flex;
   align-items: center;
   gap: 5px;
-  height: 26px;
+  height: var(--control-h-md);
   padding: 0 10px;
   border: 0;
   border-radius: var(--radius-md);
@@ -6014,7 +6035,7 @@ html.dark {
   font-size: var(--fs-small);
   font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 .context-panel-mode-tab:hover:not(.is-active) {
@@ -6248,8 +6269,8 @@ html.dark {
 
 .context-diff-refresh {
   display: inline-flex;
-  width: 26px;
-  height: 26px;
+  width: var(--control-h-md);
+  height: var(--control-h-md);
   align-items: center;
   justify-content: center;
   flex: 0 0 26px;
@@ -6444,7 +6465,7 @@ html.dark {
 
 .file-viewer-action-slot {
   display: flex;
-  height: 28px;
+  height: var(--control-h-md);
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -6484,7 +6505,7 @@ html.dark {
 
 .file-viewer-mode-button:focus-visible,
 .file-viewer-icon-button:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -1px;
 }
 
@@ -6520,8 +6541,8 @@ html.dark {
 }
 
 .file-viewer-image-stage img {
-  border-radius: 4px;
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18) !important;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-popover) !important;
 }
 
 .file-viewer-audio-stage {
@@ -6588,7 +6609,7 @@ html.dark {
 }
 
 .file-viewer-retry-button {
-  height: 28px;
+  height: var(--control-h-md);
   margin-top: 5px;
   padding: 0 10px;
   border: var(--hairline) solid var(--separator);
@@ -6600,8 +6621,8 @@ html.dark {
   font-size: var(--fs-small);
   font-weight: var(--fw-medium);
   transition:
-    background 120ms ease,
-    transform 120ms var(--ease-native);
+    background var(--dur-fast) var(--ease-native),
+    transform var(--dur-fast) var(--ease-native);
 }
 
 .file-viewer-retry-button:hover {
@@ -6663,7 +6684,7 @@ html.dark {
   font-size: 0.9em;
   background: var(--bg-panel);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 .markdown-file-preview pre code {
   background: none;
@@ -6750,7 +6771,7 @@ span.linenumber {
   top: calc(60px + env(safe-area-inset-top, 0px));
   right: 16px;
   /* Keep the toolbar reachable and let menus/dialogs cover background notices. */
-  z-index: 650;
+  z-index: var(--z-popover);
   display: flex;
   width: min(420px, calc(100vw - 24px));
   flex-direction: column;
@@ -6789,7 +6810,7 @@ span.linenumber {
 }
 
 .app-notice-item.is-exiting {
-  animation: notice-shelf-out 180ms var(--ease-native) forwards;
+  animation: notice-shelf-out var(--dur-base) var(--ease-native) forwards;
 }
 
 .app-notice-message {
@@ -6808,13 +6829,13 @@ span.linenumber {
 .app-notice-action,
 .app-notice-dismiss {
   flex: 0 0 auto;
-  min-height: 26px;
+  min-height: var(--control-h-md);
   border: 1px solid var(--separator);
   border-radius: var(--radius-md);
   color: var(--text-muted);
   cursor: pointer;
   background: transparent;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), border-color var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 
 .app-notice-action {
@@ -6858,7 +6879,7 @@ span.linenumber {
   box-shadow: var(--shadow-popover) !important;
   -webkit-backdrop-filter: blur(22px) saturate(130%);
   backdrop-filter: blur(22px) saturate(130%);
-  animation: native-toast-in 180ms var(--ease-native) both;
+  animation: native-toast-in var(--dur-base) var(--ease-native) both;
 }
 
 @keyframes native-toast-in {
@@ -6968,9 +6989,9 @@ span.linenumber {
 }
 
 @keyframes saved-pop {
-  0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.55); }
-  40%  { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.25); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 55%, transparent); }
+  40%  { transform: scale(1.08); box-shadow: 0 0 0 6px color-mix(in srgb, var(--success) 25%, transparent); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; }
 }
 
 @keyframes saved-check-draw {
@@ -6986,7 +7007,7 @@ span.linenumber {
   .sidebar-container {
     position: relative;
     overflow: hidden;
-    transition: width 0.2s ease, min-width 0.2s ease;
+    transition: width var(--dur-base) var(--ease-native), min-width var(--dur-base) var(--ease-native);
   }
   .sidebar-container.sidebar-open {
     width: var(--sidebar-width, 284px);
@@ -7010,7 +7031,7 @@ span.linenumber {
 @media (min-width: 641px) {
   .right-panel-container {
     overflow: hidden;
-    transition: width 0.2s ease, min-width 0.2s ease, transform 0.2s ease;
+    transition: width var(--dur-base) var(--ease-native), min-width var(--dur-base) var(--ease-native), transform var(--dur-base) var(--ease-native);
     flex-shrink: 0;
   }
   .right-panel-container.right-panel-open {
@@ -7043,7 +7064,7 @@ span.linenumber {
     width: calc(100vw - 16px) !important;
     height: calc(100dvh - 16px) !important;
     max-height: calc(100dvh - 16px) !important;
-    border-radius: 12px !important;
+    border-radius: var(--radius-lg) !important;
   }
 
   .settings-modal .native-modal-header {
@@ -7084,11 +7105,11 @@ span.linenumber {
     bottom: 0;
     width: 292px;
     max-width: 85vw;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.25s var(--ease-native), box-shadow 0.25s var(--ease-native);
   }
   .sidebar-container.sidebar-open {
     transform: translateX(0);
-    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-popover);
   }
   .sidebar-container.sidebar-closed {
     transform: translateX(-100%);
@@ -7104,7 +7125,7 @@ span.linenumber {
     height: var(--app-viewport-height, 100dvh) !important;
     z-index: 250;
     overflow: hidden;
-    transition: transform 0.25s ease, visibility 0s linear 0s;
+    transition: transform 0.25s var(--ease-native), visibility 0s linear 0s;
     flex-shrink: 0;
   }
   .right-panel-container.right-panel-open {
@@ -7122,7 +7143,7 @@ span.linenumber {
     transform: translateX(100%);
     visibility: hidden;
     pointer-events: none;
-    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+    transition: transform 0.25s var(--ease-native), visibility 0s linear 0.25s;
   }
 
   .context-panel-mode-strip {
@@ -7215,7 +7236,7 @@ span.linenumber {
   min-width: 0;
   flex: 1 1 auto;
   align-items: center;
-  height: 28px;
+  height: var(--control-h-md);
 }
 
 
@@ -7228,14 +7249,14 @@ span.linenumber {
   font-weight: var(--fw-regular);
   letter-spacing: normal;
   text-transform: none;
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0 10px;
   border: var(--hairline) solid var(--separator);
   border-radius: var(--radius-md);
   background: var(--surface-muted);
   outline: none !important;
   font-size: var(--fs-body);
-  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+  transition: border-color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native), box-shadow var(--dur-fast) var(--ease-native);
 }
 
 .context-panel-file-filter::placeholder {
@@ -7302,7 +7323,7 @@ span.linenumber {
 }
 
 .file-viewer-mode-switch > .file-viewer-mode-button {
-  min-height: 24px;
+  min-height: var(--control-h-sm);
   padding: 2px 8px;
   filter: none;
 }
@@ -7358,8 +7379,8 @@ span.linenumber {
   font-weight: var(--fw-medium);
   letter-spacing: 0;
   white-space: nowrap;
-  transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease, transform 120ms var(--ease-native);
-  height: 26px;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native), box-shadow var(--dur-fast) var(--ease-native), transform var(--dur-fast) var(--ease-native);
+  height: var(--control-h-md);
   padding: 0 11px;
   border-radius: var(--radius-md);
   font-size: var(--fs-small);
@@ -7378,9 +7399,9 @@ span.linenumber {
   color: var(--text-muted);
   cursor: pointer;
   text-decoration: none;
-  transition: color 120ms ease, background 120ms ease, transform 120ms var(--ease-native);
-  width: 30px;
-  height: 30px;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native), transform var(--dur-fast) var(--ease-native);
+  width: var(--control-h-lg);
+  height: var(--control-h-lg);
   flex-basis: 30px;
   border-radius: var(--radius-md);
 }
@@ -7392,7 +7413,7 @@ span.linenumber {
 .main-file-toggle {
   display: inline-flex;
   width: 28px;
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0;
   align-items: center;
   justify-content: center;
@@ -7402,7 +7423,7 @@ span.linenumber {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
   /* Pinned to the right edge on its own. The actions group that otherwise
      pushes it there only renders once a chat is shown, so on load the toggle
      sat after the title and then jumped right. */
@@ -7451,14 +7472,14 @@ span.linenumber {
   padding: 0 6px;
   height: 18px;
   border: var(--hairline) solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--bg);
   color: var(--text-muted);
   font-size: var(--fs-micro);
   line-height: 16px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.1s;
+  transition: opacity var(--dur-fast);
 }
 .branch-tree-row:hover .branch-summary-action,
 .branch-summary-action:focus-visible {
@@ -7490,7 +7511,7 @@ span.linenumber {
 }
 .branch-summary-form button {
   flex-shrink: 0;
-  height: 24px;
+  height: var(--control-h-sm);
   padding: 0 8px;
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-sm);
@@ -7655,7 +7676,7 @@ span.linenumber {
 .scheduled-view {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: var(--z-sticky);
   overflow-y: auto;
   background: var(--bg);
   color: var(--text);
@@ -7800,7 +7821,7 @@ span.linenumber {
 }
 
 .scheduled-owner-actions .scheduled-button {
-  height: 30px;
+  height: var(--control-h-lg);
   padding: 0 10px;
   font-size: var(--fs-small);
 }
@@ -7816,7 +7837,7 @@ span.linenumber {
   font-size: var(--fs-body);
   cursor: pointer;
   box-shadow: var(--shadow-control);
-  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), border-color var(--dur-fast) var(--ease-native), opacity var(--dur-fast) var(--ease-native);
 }
 
 .scheduled-button:hover:not(:disabled) { background: var(--bg-hover); }
@@ -7894,7 +7915,7 @@ span.linenumber {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native);
 }
 
 .scheduled-card:hover { background: var(--bg-hover); }
@@ -8301,7 +8322,7 @@ span.linenumber {
 .artifacts-view {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: var(--z-sticky);
   display: grid;
   /* List, its resize handle (a zero-width track it overhangs), preview. */
   grid-template-columns: var(--artifacts-list-width, 360px) 0 minmax(0, 1fr);
@@ -8411,7 +8432,7 @@ span.linenumber {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) var(--ease-native);
 }
 
 .artifacts-list.is-loading { opacity: 0.6; }
@@ -8436,7 +8457,7 @@ span.linenumber {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native);
 }
 
 .artifacts-item:hover { background: var(--bg-hover); }
@@ -8483,7 +8504,7 @@ span.linenumber {
    with their row. */
 .artifacts-thumb-image.is-fresh,
 .artifacts-thumb-text.is-fresh {
-  animation: artifacts-thumb-in 160ms ease-out;
+  animation: artifacts-thumb-in var(--dur-base) var(--ease-native);
 }
 
 @keyframes artifacts-thumb-in {
@@ -8548,7 +8569,7 @@ span.linenumber {
 }
 
 .artifacts-item-snippet mark {
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--text);
 }
@@ -8842,7 +8863,7 @@ html.native-desktop :is(
   background: transparent;
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-md);
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), border-color var(--dur-fast) var(--ease-native);
 }
 .composer-queue-recall:hover {
   background: var(--bg-hover);
@@ -8853,7 +8874,7 @@ html.native-desktop :is(
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 8%, transparent);
   border: var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent);
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native);
 }
 .composer-stop-button:hover {
   background: color-mix(in srgb, var(--danger) 16%, transparent);
@@ -8864,7 +8885,7 @@ html.native-desktop :is(
   background: var(--bg-hover);
   border: 0;
   border-left: var(--hairline) solid color-mix(in srgb, var(--border) 72%, transparent);
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 .composer-controls-close:hover {
   background: var(--bg-selected);
@@ -8893,7 +8914,7 @@ html.native-desktop :is(
   border-radius: var(--session-row-radius);
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native);
 }
 .session-item-more-icon {
   display: flex;
@@ -8903,7 +8924,7 @@ html.native-desktop :is(
   width: calc(var(--session-row-height) - 2 * var(--session-action-inset));
   height: calc(var(--session-row-height) - 2 * var(--session-action-inset));
   border-radius: calc(var(--session-row-radius) - var(--session-action-inset));
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native);
 }
 .session-item-more-icon svg { display: block; flex: none; }
 .session-item-more:hover .session-item-more-icon,
@@ -8928,7 +8949,7 @@ html.native-desktop :is(
   align-items: center;
   justify-content: center;
   width: 34px;
-  height: 28px;
+  height: var(--control-h-md);
   padding: 0;
   margin-right: 4px;
   flex-shrink: 0;
@@ -8937,7 +8958,7 @@ html.native-desktop :is(
   border-radius: var(--radius-sm);
   color: var(--text-dim);
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 .worktree-remove-button:hover:not(:disabled) {
   color: var(--danger);
@@ -8947,8 +8968,8 @@ html.native-desktop :is(
 .session-field-copy {
   background: transparent;
   border: var(--hairline) solid var(--border);
-  border-radius: 4px;
-  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+  border-radius: var(--radius-xs);
+  transition: color var(--dur-fast) var(--ease-native), border-color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 .session-field-copy:hover {
   color: var(--accent) !important;
@@ -9076,7 +9097,7 @@ html.native-desktop :is(
   font-size: var(--fs-body);
   text-align: left;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native);
 }
 .turn-files-header:hover,
 .turn-files-row:hover {
@@ -9093,7 +9114,7 @@ html.native-desktop :is(
   color: var(--text-dim);
 }
 .turn-files-chevron {
-  transition: transform 150ms ease;
+  transition: transform var(--dur-base) var(--ease-native);
 }
 .turn-files-header[aria-expanded="true"] .turn-files-chevron {
   transform: rotate(90deg);
@@ -9170,7 +9191,7 @@ html.native-desktop :is(
   color: var(--text-muted);
   font: inherit;
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease;
+  transition: color var(--dur-fast) var(--ease-native), background var(--dur-fast) var(--ease-native);
 }
 .right-panel-empty-action:hover {
   background: var(--bg-hover);
@@ -9204,7 +9225,7 @@ html.native-desktop :is(
 .models-sidebar-override-badge {
   flex-shrink: 0;
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   font-size: var(--fs-micro);
   line-height: 15px;
 }
@@ -9286,7 +9307,7 @@ html.native-desktop :is(
   align-items: center;
   gap: 6px;
   max-width: 100%;
-  min-height: 24px;
+  min-height: var(--control-h-sm);
   padding: 2px 4px 2px 8px;
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-sm);
@@ -9477,7 +9498,7 @@ html.native-desktop :is(
   color: inherit;
   font: inherit;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-native), color var(--dur-fast) var(--ease-native);
 }
 .composer-outbox-preview {
   flex: 1;
@@ -9496,13 +9517,13 @@ html.native-desktop :is(
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-width: 30px;
-  min-height: 30px;
+  min-width: var(--control-h-lg);
+  min-height: var(--control-h-lg);
   padding: 5px;
 }
 .composer-outbox-actions .composer-outbox-send { padding-inline: 7px; white-space: nowrap; }
 .composer-outbox button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); }
-.composer-outbox button:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.composer-outbox button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
 .composer-outbox button:disabled { opacity: 0.5; cursor: default; }
 @media (max-width: 480px) {
   .composer-outbox { margin-inline: 10px; }
@@ -9529,7 +9550,7 @@ html.native-desktop :is(
 }
 
 .composer-send-button:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -9717,7 +9738,7 @@ html.native-desktop :is(
   height: 15px;
   border-radius: 999px;
   background: var(--border);
-  transition: background 0.12s;
+  transition: background var(--dur-fast);
 }
 
 .chat-access-switch::after {
@@ -9729,7 +9750,7 @@ html.native-desktop :is(
   height: 11px;
   border-radius: 50%;
   background: var(--bg);
-  transition: transform 0.12s;
+  transition: transform var(--dur-fast);
 }
 
 .chat-access-switch[data-on] {
@@ -9770,7 +9791,7 @@ html.native-desktop :is(
   gap: 12px;
   padding: 8px 8px 8px 12px;
   border: var(--hairline) solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--bg-panel);
   font-size: 12px;
   color: var(--text-muted);
@@ -9785,7 +9806,7 @@ html.native-desktop :is(
   flex: 0 0 auto;
   padding: 5px 10px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   background: var(--accent);
   color: #fff;
   font-size: 12px;
@@ -9934,7 +9955,7 @@ html.dark .terminal-panel {
   margin: 8px 12px 0 auto;
   padding: 6px 8px;
   border: var(--hairline) solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--bg-panel);
   box-shadow: var(--shadow-control);
   color: var(--text);
@@ -9945,13 +9966,13 @@ html.dark .terminal-panel {
   flex: 1; min-width: 0; width: 0; padding: 5px 6px;
   border: 0; border-radius: 5px; background: transparent; color: var(--text); font: inherit;
 }
-.conversation-find input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.conversation-find input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .conversation-find-count { flex-shrink: 0; min-width: 42px; text-align: center; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .conversation-find button { flex-shrink: 0; border: 0; border-radius: 5px; background: transparent; color: var(--text); cursor: pointer; font: inherit; }
-.conversation-find-row button { width: 28px; height: 28px; font-size: 18px; }
+.conversation-find-row button { width: 28px; height: var(--control-h-md); font-size: 18px; }
 .conversation-find button:hover:not(:disabled) { background: var(--bg-hover); }
 .conversation-find button:disabled { opacity: .4; cursor: default; }
-.conversation-find button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.conversation-find button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .conversation-find-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 3px 6px 0; color: var(--text-dim); font-size: var(--fs-caption); }
 .conversation-find-hint button { color: var(--accent); padding: 2px 0; }
 ::highlight(conversation-find) { background-color: #f5ce65; color: #302000; }
@@ -9973,13 +9994,13 @@ html.dark .terminal-panel {
   height: 36px;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
 }
 .composer-clear-button:hover { background: var(--bg-hover); color: var(--text); }
-.composer-clear-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.composer-clear-button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 @media (pointer: coarse) { .composer-clear-button { width: 44px; height: 44px; } }
 
 
@@ -10005,7 +10026,7 @@ html.dark .terminal-panel {
   font-size: 26px;
   font-weight: var(--fw-semibold);
   line-height: 1.25;
-  transition: opacity 160ms var(--ease-native);
+  transition: opacity var(--dur-base) var(--ease-native);
 }
 
 .new-session-welcome-title.is-pending { opacity: 0; }
@@ -10026,7 +10047,7 @@ html.dark .terminal-panel {
 }
 
 .new-session-welcome-chip {
-  height: 32px;
+  height: var(--control-h-lg);
   padding: 0 14px;
   border: var(--hairline) solid var(--border);
   border-radius: 999px;
@@ -10036,9 +10057,9 @@ html.dark .terminal-panel {
   box-shadow: var(--shadow-control);
   cursor: pointer;
   transition:
-    color 120ms var(--ease-native),
-    background 120ms var(--ease-native),
-    border-color 120ms var(--ease-native);
+    color var(--dur-fast) var(--ease-native),
+    background var(--dur-fast) var(--ease-native),
+    border-color var(--dur-fast) var(--ease-native);
 }
 
 .new-session-welcome-chip:hover {
