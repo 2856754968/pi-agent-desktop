@@ -45,7 +45,7 @@ export function ContextUsageRing({ contextUsage, sessionStats, onOpenStats }: Co
   const pct = percent !== null ? Math.max(0, Math.min(100, percent)) : 0;
   const color = percent === null ? "var(--text-dim)"
     : display === "ramp" ? `hsl(${120 * (1 - pct / 100)} 65% 42%)`
-    : pct >= CTX_DANGER_PCT ? "var(--danger)" : pct >= 60 ? "var(--warning, #c49125)" : "var(--accent)";
+    : pct >= CTX_DANGER_PCT ? "var(--danger)" : pct >= 60 ? "var(--warning)" : "var(--accent)";
   const filled = RING_CIRCUMFERENCE * (pct / 100);
 
   const tooltipParts: string[] = [];
@@ -79,9 +79,9 @@ export function ContextUsageRing({ contextUsage, sessionStats, onOpenStats }: Co
       style={{
         display: "flex", alignItems: "center", justifyContent: "center",
         minWidth: 32, gap: 4, height: 32, padding: "0 4px", flexShrink: 0,
-        background: "none", border: "none", borderRadius: 9,
+        background: "none", border: "none", borderRadius: "var(--radius-md)",
         cursor: hasUsage ? "pointer" : "default",
-        transition: "background 0.12s, opacity 0.12s",
+        transition: "background var(--dur-fast) var(--ease-native), opacity var(--dur-fast) var(--ease-native)",
         opacity: hasUsage ? 1 : 0.5,
       }}
       onMouseEnter={(e) => {

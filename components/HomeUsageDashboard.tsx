@@ -86,7 +86,7 @@ function Dashboard() {
     : null;
   const dollars = (value: number | null | undefined) => value == null ? "—"
     : "$" + value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: value > 0 && value < .01 ? 6 : 2 });
-  const colors = ["#426cad", "#6a8fc3", "#94afd3", "#bbcbe0", "#93969c"];
+  const colors = Array.from({ length: 5 }, (_, index) => `var(--home-model-${index})`);
   const metrics = [
     ["sessions", data?.sessions], ["messages", data?.messages], ["tokens", data?.tokens], ["costUsd", dollars(data?.costUsd)],
     ["activeDays", data?.activeDays],
