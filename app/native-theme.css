@@ -91,7 +91,7 @@
   width: 21px;
   height: 3px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 20%, transparent);
+  background: color-mix(in srgb, var(--text) 28%, transparent);
   transform: translateY(-50%);
   transition: width 120ms ease, height 120ms ease, background 120ms ease;
 }
@@ -9995,3 +9995,35 @@ html.dark .terminal-panel {
   background: linear-gradient(to bottom, transparent, var(--bg));
   pointer-events: none;
 }
+
+/* Artifacts list: icon fallbacks carry a hue per kind of output. */
+.artifacts-thumb:not(.is-filled)[data-tone] {
+  border-color: color-mix(in srgb, var(--tone) 22%, transparent);
+  background: color-mix(in srgb, var(--tone) 9%, transparent);
+  color: var(--tone);
+}
+.artifacts-thumb[data-tone="web"] { --tone: #3b6cf6; }
+.artifacts-thumb[data-tone="doc"] { --tone: #6e56cf; }
+.artifacts-thumb[data-tone="code"] { --tone: #5f6b7a; }
+.artifacts-thumb[data-tone="config"] { --tone: #b7791f; }
+.artifacts-thumb[data-tone="image"] { --tone: #2f9e6e; }
+.artifacts-thumb[data-tone="data"] { --tone: #0e8aa0; }
+html.dark .artifacts-thumb[data-tone="web"] { --tone: #7c9dff; }
+html.dark .artifacts-thumb[data-tone="doc"] { --tone: #a594f0; }
+html.dark .artifacts-thumb[data-tone="code"] { --tone: #9aa5b4; }
+html.dark .artifacts-thumb[data-tone="config"] { --tone: #e0b25a; }
+html.dark .artifacts-thumb[data-tone="image"] { --tone: #5cc79a; }
+html.dark .artifacts-thumb[data-tone="data"] { --tone: #4fc1d6; }
+
+.conversation-navigator-hint {
+  display: block;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: var(--hairline) solid var(--separator, var(--border));
+  color: var(--text-dim);
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+}
+
+/* CJK units ("17小时") are wider than "17h"; keep them off the title's ellipsis. */
+.session-item-time { margin-left: 6px; }

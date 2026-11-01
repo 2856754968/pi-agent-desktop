@@ -2020,9 +2020,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
   const chatUnlocked = chatOnly && Boolean(chatAccess?.state.unlocked);
   const toolPresetLabel = chatOnly
     ? t(chatUnlocked ? "chat.chatUnlocked" : "chat.chatWorkspace")
-    : rawToolPresetLabel === "chat-only"
-      ? t("chat.chatOnly")
-      : rawToolPresetLabel;
+    : t(`chat.toolPresetName.${rawToolPresetLabel}`);
   // One chip for reasoning + tools: the level always, the preset only when it
   // departs from settings.json ("configured" is the unremarkable default).
   // The session menu (gear) holds the automation switches once a wrapper
@@ -2862,9 +2860,10 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                 menuRef={projectDropdownRef}
                 open={projectDropdownOpen}
                 onOpenChange={setProjectDropdownOpen}
-                label={projectLabel}
+                // On a phone the owner prefix ate the whole chip ("you…"); the folder name is what identifies it.
+                label={isNarrow ? projectLabel.split("/").pop() || projectLabel : projectLabel}
                 projectPath={projectPath}
-                maxWidth={isNarrow ? 72 : isCompact ? 120 : 170}
+                maxWidth={isNarrow ? 112 : isCompact ? 120 : 170}
                 projectOptions={projectOptions}
                 onProjectChange={onProjectChange}
                 onSelectProject={onSelectProject}
@@ -2923,19 +2922,20 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: "100%",
+                  width: 32,
                   height: 32,
-                  padding: "0 6px",
+                  padding: 0,
                   borderRadius: 8,
                   cursor: controlsMenuOpen ? "default" : "pointer",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  whiteSpace: "nowrap",
                   visibility: controlsMenuOpen ? "hidden" : "visible",
                   pointerEvents: controlsMenuOpen ? "none" : "auto",
                 }}
               >
-                {t("chat.moreControls")}
+                {/* An icon like its neighbours; the label stays in title/aria-label. */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
+                  <circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" />
+                </svg>
               </button>
             )}
             <div style={{
@@ -3164,7 +3164,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                           onSelect={() => { setToolDropdownOpen(false); if (!isActive) onToolPresetChange(preset); }}
                         >
                           <span className="app-menu-copy">
-                            <span>{lvl}</span>
+                            <span>{t(`chat.toolPresetName.${lvl}`)}</span>
                             <small>{desc}</small>
                           </span>
                         </SelectorRow>
