@@ -424,6 +424,8 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
             const key = artifactKey(item);
             const meta = [
               item.kind === "file" ? (item.created ? t("artifacts.page.fileCreated") : t("artifacts.page.fileEdited")) : ARTIFACT_TYPE_LABEL[item.type],
+              // The count reads as part of the meta line; as a second tag it stacked under "Deleted".
+              ...(item.versionCount > 1 ? [t(item.kind === "file" ? "artifacts.page.changeCount" : "artifacts.page.versionCount", { count: item.versionCount })] : []),
               ...(item.kind === "file" ? [getFileDirectory(item.displayPath) || "."] : []),
               item.sessionTitle,
               formatRelativeTime(item.updated, locale),
@@ -460,11 +462,6 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                       <span className="scheduled-tag">{t(`artifacts.page.reason.${item.reasons[0]}`)}</span>
                     )}
                     {item.scheduled && <span className="scheduled-tag">{t("artifacts.page.scheduled")}</span>}
-                    {item.versionCount > 1 && (
-                      <span className="scheduled-tag">
-                        {t(item.kind === "file" ? "artifacts.page.changeCount" : "artifacts.page.versionCount", { count: item.versionCount })}
-                      </span>
-                    )}
                   </span>
                 </button>
               </li>

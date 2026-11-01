@@ -197,7 +197,7 @@ function ResourceList({ pkg }: { pkg: PluginPackageInfo }) {
         >
           <div
             style={{
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 700,
               color: "var(--text-dim)",
               textTransform: "uppercase",
@@ -224,7 +224,7 @@ function ResourceList({ pkg }: { pkg: PluginPackageInfo }) {
                 </div>
                 <div
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     color: "var(--text-dim)",
                     fontFamily: "var(--font-mono)",
                     overflow: "hidden",
@@ -368,7 +368,7 @@ function PackageDetail({
             {pkg.disabled ? (
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   padding: "1px 5px",
                   borderRadius: 3,
                   background: "rgba(120,120,120,0.12)",
@@ -380,7 +380,7 @@ function PackageDetail({
             ) : pkg.filtered && (
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   padding: "1px 5px",
                   borderRadius: 3,
                   background: "rgba(245,158,11,0.12)",
