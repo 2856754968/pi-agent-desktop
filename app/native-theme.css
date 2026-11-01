@@ -1473,7 +1473,7 @@ html.dark .conversation-navigator-preview {
 }
 
 .file-tab:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 3px solid var(--focus-ring);
   outline-offset: -1px;
 }
 
@@ -1812,7 +1812,7 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -2829,7 +2829,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
 }
 
 .file-tree-row:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 3px solid var(--focus-ring);
   outline-offset: -1px;
 }
 
@@ -3379,7 +3379,7 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   --menu-row-radius: var(--choice-row-radius);
   --menu-row-height: 34px;
   --menu-row-gap: var(--choice-row-gap);
-  --menu-focus-ring: var(--focus-ring);
+  --menu-focus-ring: var(--text);
 }
 
 html.dark {
@@ -3990,7 +3990,7 @@ html.dark {
 .settings-modal select:focus {
   border-color: var(--accent-border) !important;
   background: var(--surface) !important;
-  box-shadow: 0 0 0 2px var(--focus-ring) !important;
+  box-shadow: 0 0 0 3px var(--focus-ring) !important;
 }
 
 .native-input::placeholder,
@@ -5672,7 +5672,7 @@ html.dark {
 }
 .html-preview-error-fix:focus-visible,
 .html-preview-error-dismiss:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 3px solid var(--focus-ring);
   outline-offset: -1px;
 }
 
@@ -5705,7 +5705,7 @@ html.dark {
   transform: scale(0.99);
 }
 .artifact-card:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 1px;
 }
 .artifact-card-icon {
@@ -6505,7 +6505,7 @@ html.dark {
 
 .file-viewer-mode-button:focus-visible,
 .file-viewer-icon-button:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 3px solid var(--focus-ring);
   outline-offset: -1px;
 }
 
@@ -9523,7 +9523,7 @@ html.native-desktop :is(
 }
 .composer-outbox-actions .composer-outbox-send { padding-inline: 7px; white-space: nowrap; }
 .composer-outbox button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); }
-.composer-outbox button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.composer-outbox button:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
 .composer-outbox button:disabled { opacity: 0.5; cursor: default; }
 @media (max-width: 480px) {
   .composer-outbox { margin-inline: 10px; }
@@ -9550,7 +9550,7 @@ html.native-desktop :is(
 }
 
 .composer-send-button:focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--text);
   outline-offset: 3px;
 }
 
@@ -9966,13 +9966,13 @@ html.dark .terminal-panel {
   flex: 1; min-width: 0; width: 0; padding: 5px 6px;
   border: 0; border-radius: 5px; background: transparent; color: var(--text); font: inherit;
 }
-.conversation-find input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.conversation-find input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .conversation-find-count { flex-shrink: 0; min-width: 42px; text-align: center; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .conversation-find button { flex-shrink: 0; border: 0; border-radius: 5px; background: transparent; color: var(--text); cursor: pointer; font: inherit; }
 .conversation-find-row button { width: 28px; height: var(--control-h-md); font-size: 18px; }
 .conversation-find button:hover:not(:disabled) { background: var(--bg-hover); }
 .conversation-find button:disabled { opacity: .4; cursor: default; }
-.conversation-find button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.conversation-find button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .conversation-find-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 3px 6px 0; color: var(--text-dim); font-size: var(--fs-caption); }
 .conversation-find-hint button { color: var(--accent); padding: 2px 0; }
 ::highlight(conversation-find) { background-color: #f5ce65; color: #302000; }
@@ -10000,7 +10000,7 @@ html.dark .terminal-panel {
   cursor: pointer;
 }
 .composer-clear-button:hover { background: var(--bg-hover); color: var(--text); }
-.composer-clear-button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.composer-clear-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (pointer: coarse) { .composer-clear-button { width: 44px; height: 44px; } }
 
 

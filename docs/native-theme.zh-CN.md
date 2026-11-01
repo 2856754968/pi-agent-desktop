@@ -63,7 +63,7 @@
 **形状与动效。** 圆角用 `--radius-xs/sm/md/lg/xl`（4/6/8/12/16px）；5px 的选项行圆角是菜单系统自己的 token。
 按钮高度用 `--control-h-sm/md/lg`（24/28/32px；`--control-height-sm` 和 `--control-height` 是 md、lg 的别名）。
 层级阴影用四档 `--shadow-*`。过渡用 `--dur-fast`（120ms，悬停与按下）或 `--dur-base`（180ms，展开与淡入），
-缓动用 `--ease-native`；只有无限循环动画保留自己的曲线。焦点环统一为 2px `--focus-ring`，菜单也一样。
+缓动用 `--ease-native`；只有无限循环动画保留自己的曲线。焦点环按所在表面保留各自粗细：半透明的 `--focus-ring` 在有底色的表面上是 3px；菜单用实色的 `--menu-focus-ring`（`--text`），保证焦点环在悬停行上对比度不低于 3:1（见 `e2e/option-controls.mjs`）。
 浮在其他界面之上的元素用 `--z-*` 层级（sticky 30、chrome 90、dropdown 120、popover 650、modal 1000、
 toast 1200、menu 2400）；组件内部的个位数 z-index 保持字面值。状态色用 `--danger`、`--success`、`--warning`，
 不写死红、绿、琥珀色。24 单位 viewBox 的图标描边 1.75 或 2，尺寸 12、14 或 16px。

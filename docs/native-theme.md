@@ -87,8 +87,10 @@ Syntax colours come from `lib/code-theme.ts` (one muted blue, one muted warm ton
 5px choice-row radius is the menu system's own token. Buttons sit on `--control-h-sm/md/lg`
 (24/28/32px; `--control-height-sm` and `--control-height` alias md and lg). Elevation uses the
 four `--shadow-*` levels. Transitions take `--dur-fast` (120ms, hover and press) or `--dur-base`
-(180ms, reveals) with `--ease-native`; only infinite loops keep their own curve. Focus is a
-2px `--focus-ring` everywhere, menus included. Anything floating over other UI takes a
+(180ms, reveals) with `--ease-native`; only infinite loops keep their own curve. Focus rings
+keep their per-surface weight: the translucent `--focus-ring` is 3px where it sits on a tinted
+surface, and menus use the solid `--menu-focus-ring` (`--text`) so the ring keeps 3:1 against a
+hovered row (`e2e/option-controls.mjs`). Anything floating over other UI takes a
 `--z-*` layer (sticky 30, chrome 90, dropdown 120, popover 650, modal 1000, toast 1200,
 menu 2400); single-digit z-index stays literal inside a component. States use `--danger`,
 `--success` and `--warning`, never a hard-coded red, green or amber. Icons drawn on a
