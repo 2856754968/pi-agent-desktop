@@ -8265,10 +8265,19 @@ span.linenumber {
   inset: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  /* List, its resize handle (a zero-width track it overhangs), preview. */
+  grid-template-columns: var(--artifacts-list-width, 360px) 0 minmax(0, 1fr);
   background: var(--bg);
   color: var(--text);
   outline: none;
+}
+
+/* Drag handle between the list and the preview (ArtifactsView); the list's
+   own border stays the visible line. */
+.artifacts-resize-handle {
+  z-index: 3;
+  width: 12px;
+  margin: 0 -6px;
 }
 
 .artifacts-list-pane {
@@ -8656,6 +8665,7 @@ span.linenumber {
 /* Narrow: the list and the preview take turns. */
 @media (max-width: 640px) {
   .artifacts-view { grid-template-columns: minmax(0, 1fr); }
+  .artifacts-resize-handle { display: none; }
   .artifacts-list-pane { padding: 20px 12px 32px; border-right: 0; }
   .artifacts-view.has-selection .artifacts-list-pane,
   .artifacts-view:not(.has-selection) .artifacts-detail-pane { display: none; }

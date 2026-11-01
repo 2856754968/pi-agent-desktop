@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { isImeComposing } from "@/lib/ime";
 import { formatRelativeTime } from "@/lib/i18n/format";
@@ -9,6 +9,7 @@ import type { ArtifactListResponse, IndexedArtifactVersion, OutputSummary } from
 import type { NativeMenuEntry } from "@/lib/desktop-menu-model";
 import { getFileDirectory } from "@/lib/file-paths";
 import { showMenu } from "@/hooks/useFileContextMenu";
+import { useResizablePanel } from "@/hooks/useResizablePanel";
 import { openPathNative, revealItemInDirNative } from "@/lib/desktop-native";
 import { isTauriDesktop } from "@/lib/desktop-updater";
 import { getDesktopPlatform } from "@/lib/desktop-window";
@@ -48,6 +49,15 @@ const SEARCH_DEBOUNCE_MS = 250;
 /** Focusing the window refreshes the list at most this often. */
 const FOCUS_REFRESH_MIN_MS = 10_000;
 const LIST_CACHE_MAX = 10;
+/**
+ * List column width. 300 still fits the thumbnail, a readable title and the tags;
+ * past 640 rows gain nothing but whitespace. The preview keeps at least
+ * PREVIEW_MIN_WIDTH, so on a narrow window the list stops earlier.
+ */
+const LIST_DEFAULT_WIDTH = 360;
+const LIST_MIN_WIDTH = 300;
+const LIST_MAX_WIDTH = 640;
+const PREVIEW_MIN_WIDTH = 360;
 
 function StarIcon({ filled }: { filled: boolean }) {
   return (
@@ -96,7 +106,29 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   const [continueIndex, setContinueIndex] = useState<number | null>(null);
   const [continueText, setContinueText] = useState("");
   const [continueBusy, setContinueBusy] = useState(false);
-  const rootRef = useRef<HTMLElement>(null);
+  const listWidthRef = useRef(LIST_DEFAULT_WIDTH);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  // The page fills the main column, not the window: the sidebar sits beside it.
+  const getListMaxWidth = useCallback(
+    () => (rootRef.current?.clientWidth || window.innerWidth) - PREVIEW_MIN_WIDTH,
+    [],
+  );
+  const listResizer = useResizablePanel({
+    ariaLabel: t("artifacts.page.resizeList"),
+    cssVariable: "--artifacts-list-width",
+    defaultWidth: LIST_DEFAULT_WIDTH,
+    getMaxWidth: getListMaxWidth,
+    growthDirection: "right",
+    maxWidth: LIST_MAX_WIDTH,
+    minWidth: LIST_MIN_WIDTH,
+    storageKey: "pi-artifacts-list-width",
+    widthRef: listWidthRef,
+  });
+  const listPanelRef = listResizer.panelRef;
+  const setRootRef = useCallback((node: HTMLDivElement | null) => {
+    rootRef.current = node;
+    listPanelRef.current = node;
+  }, [listPanelRef]);
   const listPaneRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const runningRef = useRef(runningCount);
@@ -333,8 +365,10 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
         : "";
 
   return (
-    <section
-      ref={rootRef}
+    <div
+      ref={setRootRef}
+      role="region"
+      style={{ "--artifacts-list-width": `${listResizer.width}px` } as CSSProperties}
       className={`artifacts-view${current ? " has-selection" : ""}`}
       tabIndex={-1}
       aria-label={t("artifacts.page.title")}
@@ -447,6 +481,11 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
         )}
       </div>
 
+      <div
+        {...listResizer.separatorProps}
+        className={`panel-resize-handle artifacts-resize-handle${listResizer.isResizing ? " is-resizing" : ""}`}
+        title={`${t("artifacts.page.resizeList")}: ${t("layout.resizeHint")}`}
+      />
       <div className="artifacts-detail-pane">
         {current ? (
           <>
@@ -567,6 +606,6 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }
