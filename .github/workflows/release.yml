@@ -114,43 +114,45 @@ jobs:
           tagName: v__VERSION__
           releaseName: pi-agent-desktop v__VERSION__
           releaseBody: |
-            ## Pi Agent Desktop 0.7.10
+            ## Pi Agent Desktop 0.8.0
 
             ### New
 
-            - **Artifacts page lists files too.** Besides artifacts, the Artifacts page now lists the files the agent wrote or edited, so coding sessions show their real output. Open one to see its content and the calls that changed it.
+            - **A welcome screen for new sessions.** An empty session now greets you with the project name and four starter prompts (different ones for chats and projects). Picking one fills the composer without sending it.
+            - **Artifacts page shows what you asked for.** By default it lists the files you named or the agent handed you (HTML, Markdown, PDF, Office, CSV, images, media), including pages produced by shell commands. Files the agent only edited as part of its work stay out of the way, and credentials are never listed. Switch the filter to see process files or everything, and move any file between the two.
+            - **Favorites and a right-click menu on the Artifacts page.** Star an artifact or file and filter the list to favorites. Right-click a row to open the conversation that made it, open the file with its default app, or reveal it in Finder / Explorer. The list column can be resized and remembers its width.
 
             ### Improved
 
-            - **Faster Artifacts page.** The page opens with the previous list straight away and refreshes it in the background, the index survives restarts (the first list after a restart is about ten times faster), and scrolling through thumbnails is smoother.
-            - **Faster session switching.** Switching to a conversation no longer waits for the model list to load, which could add up to about a second, especially between chats.
-            - **Drag the window from the sidebar.** The top of the sidebar now moves the window like the title bar does, and on macOS a drag works on the first press even when the window is not focused.
+            - **Clearer typography and quieter chrome.** Font weights are unified so Latin and Chinese text render at the same weight, small text is larger, headings and prose spacing are tuned, and message dates follow the app language instead of the system locale.
+            - **Friendlier wording and details.** Tool presets show readable names, the usage footer shows just the cost (hover for token counts), and the scheduler notice is one line with details on demand.
+            - **Files that were moved or deleted are explained.** An "Edited N files" row for a file that no longer exists is dimmed and labelled, and opening it says the file was moved or deleted instead of a bare "Not found".
 
             ### Fixed
 
-            - **Windows: no more stuck black window.** When the WebView2 render, GPU or browser process crashes or hangs, the window now reloads or rebuilds itself instead of staying black, and the failure is written to the log.
-            - The desktop log now records startup timing for the first few minutes, to help diagnose slow sign-in starts.
+            - A hydration error in the sidebar when the Chats section had been collapsed.
 
             Bundled components: pi 1.4.0, pi-web 0.10.0.
 
             ---
 
-            ## Pi Agent Desktop 0.7.10
+            ## Pi Agent Desktop 0.8.0
 
             ### 新增
 
-            - **Artifacts 页面也列出文件。** 除了 artifact，Artifacts 页面现在还会列出 agent 写入或编辑过的文件，编程类对话的实际产出也能在这里找到。打开文件可以查看内容以及修改它的调用。
+            - **新会话欢迎页。** 空会话现在会显示问候、项目名和四条起手提示（聊天与项目各有不同的提示）。点选后只填入输入框，不会直接发送。
+            - **Artifacts 页面默认只显示你要的成果。** 默认列出你提到的、或 agent 交给你的文件（HTML、Markdown、PDF、Office、CSV、图片、媒体），包括由 shell 命令生成的页面；agent 工作过程中只是编辑过的文件不再干扰列表，凭据类文件永远不会列出。可切换筛选查看过程文件或全部，也能手动在两类之间移动文件。
+            - **Artifacts 页面支持收藏和右键菜单。** 可为 artifact 或文件加星，并按收藏筛选；右键某一行可打开产生它的对话、用默认应用打开文件，或在 Finder / 资源管理器中显示。列表栏可拖动调整宽度，并会记住宽度。
 
             ### 改进
 
-            - **Artifacts 页面更快。** 打开页面时立即显示上次的列表并在后台刷新；索引在重启后保留（重启后首次加载快约十倍）；滚动缩略图更流畅。
-            - **切换会话更快。** 切换对话不再等待模型列表加载，之前这可能多花近一秒，在 Chats 之间切换时尤其明显。
-            - **可以从侧栏拖动窗口。** 侧栏顶部现在和标题栏一样可以拖动窗口；macOS 上窗口未激活时，第一次按下就能拖动。
+            - **排版更清晰、界面更安静。** 统一字重，使中英文在同一行中粗细一致；提升小字号；调整标题和正文行距；消息日期跟随应用语言而不是系统区域设置。
+            - **措辞和细节更友好。** 工具预设显示易读名称；用量页脚只显示费用（悬停可看 token 数）；调度器提示精简为一行，详情可展开。
+            - **说明已移动或删除的文件。** “编辑了 N 个文件”中已不存在的文件会变灰并标注；打开时会提示文件已被移动或删除，而不再只显示“Not found”。
 
             ### 修复
 
-            - **Windows：不再卡在黑屏。** WebView2 的渲染、GPU 或浏览器进程崩溃或无响应时，窗口会自动重新加载或重建，不再一直黑屏，并在日志中记录原因。
-            - 桌面日志会记录启动后前几分钟的时间信息，便于排查登录启动缓慢的问题。
+            - 修复折叠 Chats 区域后侧栏出现的 hydration 错误。
 
             内置组件版本：pi 1.4.0、pi-web 0.10.0。
           releaseDraft: true
