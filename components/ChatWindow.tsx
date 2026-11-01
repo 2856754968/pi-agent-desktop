@@ -14,6 +14,7 @@ import { MessageView } from "./MessageView";
 import { useReportDesktopReady } from "./desktop";
 import { MarkdownBody } from "./MarkdownBody";
 import { ChatInput, type ChatInputHandle } from "./ChatInput";
+import { NewSessionWelcome } from "./NewSessionWelcome";
 import { ConversationNavigator, type ConversationTurnLocation } from "./ConversationNavigator";
 import { ExtensionWidgets } from "./ExtensionWidgets";
 import { ExtensionStatusLine, formatExtensionStatusLine } from "./ExtensionStatusLine";
@@ -1320,7 +1321,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
                 <line x1="87.5" y1="66.5" x2="85.4" y2="68.6"/>
               </g>
             </svg>
-            <div style={{ maxWidth: 320, color: "var(--text)", fontSize: 13, fontWeight: 550, lineHeight: 1.35 }}>
+            <div style={{ maxWidth: 320, color: "var(--text)", fontSize: 13, fontWeight: 500, lineHeight: 1.35 }}>
               {t(chatOnly ? "chat.dropImagesHint" : "chat.dropFilesHint")}
             </div>
             <div style={{ maxWidth: 360, color: "var(--text-muted)", fontSize: 12, lineHeight: 1.4 }}>
@@ -1713,7 +1714,7 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
           the max column width. */}
       <div
         ref={composerOverlayRef}
-        className={isEmptyNew ? "relative shrink-0" : "absolute inset-x-0 z-20"}
+        className={isEmptyNew ? "relative shrink-0" : "chat-composer-overlay absolute inset-x-0 z-20"}
         style={{
           ...(isEmptyNew ? {} : { bottom: "env(safe-area-inset-bottom)" }),
           ...(scrollbarGutter > 0 ? { paddingInline: scrollbarGutter } : {}),
@@ -1762,6 +1763,13 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
                 if (ok) void handleSend(t("chat.chatShellPromptContinue"));
               });
             }}
+          />
+        )}
+        {isEmptyNew && (
+          <NewSessionWelcome
+            cwd={newSessionCwd}
+            isChat={chatOnly}
+            onSuggestion={(prompt) => chatInputRef?.current?.insertIfEmpty(prompt)}
           />
         )}
         {chatInputElement}
@@ -1898,7 +1906,7 @@ function ExtensionWaitingCount({ count }: { count: number }) {
   const { t } = useI18n();
   if (count <= 0) return null;
   return (
-    <span style={{ fontSize: 11, fontWeight: 650, color: "var(--accent)", whiteSpace: "nowrap", flexShrink: 0 }}>
+    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--accent)", whiteSpace: "nowrap", flexShrink: 0 }}>
       {t("chat.extensionMoreWaiting", { count })}
     </span>
   );
@@ -1988,7 +1996,7 @@ function ExtensionDialog({
             textAlign: "left",
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 650, color: "var(--accent)", flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--accent)", flexShrink: 0 }}>
             {t("chat.extensionPending")}
           </span>
           <span style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
@@ -2026,7 +2034,7 @@ function ExtensionDialog({
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* Pi's TUI shows the title verbatim, newlines included; select/input have no
                 separate message field, so extensions put multi-line text here. */}
-            <div style={{ color: "var(--text)", fontSize: 14, fontWeight: 650, lineHeight: 1.45, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{request.title}</div>
+            <div style={{ color: "var(--text)", fontSize: 14, fontWeight: 600, lineHeight: 1.45, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{request.title}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 3, color: "var(--text-dim)", fontSize: 11, fontFamily: "var(--font-mono)" }}>
               <span>{t("chat.extensionRequest")}</span>
               <ExtensionWaitingCount count={waitingCount} />
@@ -2139,7 +2147,7 @@ function ExtensionDialog({
                     background: "color-mix(in srgb, var(--accent) 10%, transparent)",
                     color: "var(--accent)",
                     fontSize: 12,
-                    fontWeight: 650,
+                    fontWeight: 600,
                     textDecoration: "none",
                   }}
                 >
@@ -2312,7 +2320,7 @@ function ExtensionCustomPanel({
             textAlign: "left",
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 650, color: "var(--accent)", flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--accent)", flexShrink: 0 }}>
             {t("chat.extensionPending")}
           </span>
           <span style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
@@ -2398,7 +2406,7 @@ function ExtensionCustomPanel({
           }}
         />
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 12px", borderBottom: "var(--hairline) solid var(--border)" }}>
-           <div style={{ color: "var(--text)", fontSize: 13, fontWeight: 650 }}>{t("chat.extensionPanel")}</div>
+           <div style={{ color: "var(--text)", fontSize: 13, fontWeight: 600 }}>{t("chat.extensionPanel")}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <ExtensionWaitingCount count={waitingCount} />
             <button
