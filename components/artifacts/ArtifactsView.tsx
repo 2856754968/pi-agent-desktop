@@ -82,8 +82,22 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
   const listPaneRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const runningRef = useRef(runningCount);
+  const scrollHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { searchRef.current?.focus({ preventScroll: true }); }, []);
+
+  // Overlay-style scrollbar, as in the sidebar: `is-scrolling` shows the thumb only while the list moves.
+  function handleListScroll() {
+    listPaneRef.current?.classList.add("is-scrolling");
+    if (scrollHideTimerRef.current) clearTimeout(scrollHideTimerRef.current);
+    scrollHideTimerRef.current = setTimeout(() => {
+      listPaneRef.current?.classList.remove("is-scrolling");
+      scrollHideTimerRef.current = null;
+    }, 800);
+  }
+  useEffect(() => () => {
+    if (scrollHideTimerRef.current) clearTimeout(scrollHideTimerRef.current);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query.trim()), SEARCH_DEBOUNCE_MS);
@@ -241,11 +255,7 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
       // Esc here must not reach the global shortcut that stops the agent running behind this page.
       onKeyDown={(event) => { if (event.key === "Escape") event.preventDefault(); }}
     >
-      <div ref={listPaneRef} className="artifacts-list-pane">
-        <header className="artifacts-header">
-          <h2 className="scheduled-title">{t("artifacts.page.title")}</h2>
-          <p className="scheduled-subtitle">{t("artifacts.page.subtitle")}</p>
-        </header>
+      <div ref={listPaneRef} className="artifacts-list-pane" onScroll={handleListScroll}>
         <div className="artifacts-filters">
           <input
             ref={searchRef}
@@ -311,7 +321,6 @@ export function ArtifactsView({ runningCount, onOpenInConversation, onContinueIn
                       <span className="scheduled-tag">{t(`artifacts.page.reason.${item.reasons[0]}`)}</span>
                     )}
                     {item.scheduled && <span className="scheduled-tag">{t("artifacts.page.scheduled")}</span>}
-                    {item.kind === "file" && item.missing && <span className="scheduled-tag">{t("artifacts.page.fileMissing")}</span>}
                     {item.versionCount > 1 && (
                       <span className="scheduled-tag">
                         {t(item.kind === "file" ? "artifacts.page.changeCount" : "artifacts.page.versionCount", { count: item.versionCount })}

@@ -179,6 +179,21 @@
   border-radius: var(--radius-md);
 }
 .sidebar-project-tree.is-scrolling::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* The Artifacts list scrolls the same way (`is-scrolling` from ArtifactsView). */
+.artifacts-list-pane {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.artifacts-list-pane.is-scrolling {
+  scrollbar-color: var(--border) transparent;
+}
+.artifacts-list-pane::-webkit-scrollbar { width: 7px; }
+.artifacts-list-pane::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: var(--radius-md);
+}
+.artifacts-list-pane.is-scrolling::-webkit-scrollbar-thumb { background: var(--border); }
  .sidebar-project-tree-header {
   display: flex;
   align-items: center;
@@ -8265,10 +8280,6 @@ span.linenumber {
   padding: 24px 12px 32px 16px;
   border-right: var(--hairline) solid var(--border);
   box-sizing: border-box;
-}
-
-.artifacts-header {
-  padding: 0 4px;
 }
 
 .artifacts-filters {

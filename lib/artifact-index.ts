@@ -454,7 +454,7 @@ export interface FileOutputSummary extends OutputSource {
   /** Successful write/edit calls; 0 for a file only a reply named. */
   versionCount: number;
   updated: string;
-  /** Gone from disk (deleted or moved since). */
+  /** Gone from disk. Always false in the list, which leaves such files out; it can turn true while one is open. */
   missing: boolean;
   /** An output the page shows by default, or a process file it files away. */
   role: FileOutputRole;
@@ -748,12 +748,14 @@ export async function listArtifacts(
       ...(file.override ? { override: file.override } : {}),
     });
   }
-  all.sort((a, b) => b.updated.localeCompare(a.updated) || a.title.localeCompare(b.title));
-  const shown = all.slice(0, MAX_RESULTS);
-  await Promise.all(shown.map(async (item) => {
-    if (item.kind === "file") item.missing = await isMissing(item.path);
+  // A file gone from disk (deleted, or its folder moved) cannot be opened, so it is not listed.
+  const gone = new Set<OutputSummary>();
+  await Promise.all(all.map(async (item) => {
+    if (item.kind === "file" && await isMissing(item.path)) gone.add(item);
   }));
-  return { artifacts: shown, truncated: all.length > MAX_RESULTS };
+  const present = all.filter((item) => !gone.has(item));
+  present.sort((a, b) => b.updated.localeCompare(a.updated) || a.title.localeCompare(b.title));
+  return { artifacts: present.slice(0, MAX_RESULTS), truncated: present.length > MAX_RESULTS };
 }
 
 export interface FileOutputOpInfo {
