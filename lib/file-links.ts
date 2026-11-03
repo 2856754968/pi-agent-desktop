@@ -137,6 +137,15 @@ export function resolveLocalFileHref(
   return filePath;
 }
 
+/** Source locations in `path:line[:column]` and GitHub-style `#Lline` links. */
+export function parseFileLine(href: string | undefined): number | undefined {
+  if (!href) return undefined;
+  const fragment = href.match(/#L(\d+)(?:C\d+)?(?:-L?\d+(?:C\d+)?)?$/i);
+  const suffix = safeDecode(href.split("#", 1)[0].split("?", 1)[0]).match(/:(\d+)(?::\d+)?$/);
+  const line = Number(fragment?.[1] ?? suffix?.[1]);
+  return Number.isSafeInteger(line) && line > 0 ? line : undefined;
+}
+
 const PDF_PAGE_FRAGMENT = /^page=(\d+)$/i;
 
 /**

@@ -1,5 +1,18 @@
 # Layout, settings and client behavior — fork notes
 
+## Clipboard button behavior
+
+`lib/clipboard.ts` writes the explicit text passed by a message or code-block button,
+independent of the current selection. Desktop uses the clipboard plugin first, then
+the browser Clipboard API, then an `execCommand` fallback. The fallback mounts its
+textarea inside the active dialog (body children are inert under a modal), writes
+`text/plain` in a temporary capture-phase copy listener, and rejects if no copy
+event wrote the payload. Cleanup restores focus, DOM ranges and input selection
+on success or failure; input ranges are restored last because Chromium can reset
+them while restoring DOM ranges. Native selection-copy menus retain their usual
+selection semantics. Run `node e2e/clipboard.mjs` for actual message/code buttons,
+with and without selection, API denial, modal dialogs and focus restoration.
+
 ## Terminal appearance
 
 `LazyTerminalPanel` caches the imported component and renders it synchronously after

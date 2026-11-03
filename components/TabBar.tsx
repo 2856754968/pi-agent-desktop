@@ -15,6 +15,7 @@ export interface Tab {
   initialDisplayMode?: FileViewerDisplayMode;
   /** PDF page requested by the link that opened this tab (`#page=N`). */
   page?: number;
+  line?: number;
   viewerState?: FileViewerState;
   viewerRevision?: number;
 }

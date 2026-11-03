@@ -7,7 +7,7 @@ import { StreamingMarkdown } from "./StreamingMarkdown";
 import { useFileContextMenu } from "@/hooks/useFileContextMenu";
 import { useI18n } from "@/hooks/useI18n";
 import { fenceFilePaths, inlineCodeFilePath } from "@/lib/file-context-menu";
-import { parsePdfPageFragment, resolveLocalFileHref, shouldOpenLocalFileInApp } from "@/lib/file-links";
+import { parseFileLine, parsePdfPageFragment, resolveLocalFileHref, shouldOpenLocalFileInApp } from "@/lib/file-links";
 import { encodeFilePathForApi } from "@/lib/file-paths";
 import { markdownRehypePlugins, markdownRemarkPlugins, markdownUrlTransform, markdownUserRemarkPlugins, normalizeDisplayMath } from "@/lib/markdown";
 import { ImagePreview } from "./ImagePreview";
@@ -29,7 +29,7 @@ interface MarkdownBodyProps {
   className?: string;
   isStreaming?: boolean;
   cwd?: string;
-  onOpenFile?: (filePath: string, page?: number) => void;
+  onOpenFile?: (filePath: string, page?: number, line?: number) => void;
   /** Render every line ending as a line break, for text the user typed. */
   keepLineBreaks?: boolean;
   /** Render `:::artifact{...}` blocks as artifact cards (assistant text only). */
@@ -68,7 +68,7 @@ function MarkdownInlineCode({
   ...props
 }: ComponentProps<"code"> & ExtraProps & {
   cwd: string | undefined;
-  onOpenFile: ((filePath: string, page?: number) => void) | undefined;
+  onOpenFile: ((filePath: string, page?: number, line?: number) => void) | undefined;
 }) {
   delete props.node;
   const showFileMenu = useFileContextMenu(onOpenFile);
@@ -128,13 +128,15 @@ function CodeBlockOpenFile({ filePath, onOpenFile }: { filePath: string; onOpenF
 function MarkdownLocalFileLink({
   filePath,
   page,
+  line,
   onOpenFile,
   children,
   ...props
 }: ComponentProps<"a"> & ExtraProps & {
   filePath: string;
   page: number | undefined;
-  onOpenFile: (filePath: string, page?: number) => void;
+  line: number | undefined;
+  onOpenFile: (filePath: string, page?: number, line?: number) => void;
 }) {
   delete props.node;
   const showFileMenu = useFileContextMenu(onOpenFile);
@@ -143,14 +145,14 @@ function MarkdownLocalFileLink({
     const target = event.currentTarget.getAttribute("target");
     if (target && target !== "_self") return;
     event.preventDefault();
-    onOpenFile(filePath, page);
+    onOpenFile(filePath, page, line);
   };
   return (
     <MarkdownLinkContext.Provider value={true}>
       <a
         {...props}
         onClick={handleClick}
-        onContextMenu={(event) => showFileMenu(event, { filePath, page })}
+        onContextMenu={(event) => showFileMenu(event, { filePath, page, line })}
       >
         {children}
       </a>
@@ -161,7 +163,7 @@ function MarkdownLocalFileLink({
 function buildComponents(
   isStreaming: boolean | undefined,
   cwd: string | undefined,
-  onOpenFile: ((filePath: string, page?: number) => void) | undefined,
+  onOpenFile: ((filePath: string, page?: number, line?: number) => void) | undefined,
   fenceFiles: Map<number, string>,
 ): Components {
   return {
@@ -241,6 +243,7 @@ function buildComponents(
           {...props}
           filePath={filePath}
           page={parsePdfPageFragment(href) ?? undefined}
+          line={parseFileLine(href)}
           onOpenFile={openFile}
         >
           {children}

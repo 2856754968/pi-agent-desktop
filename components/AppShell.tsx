@@ -1626,7 +1626,7 @@ export function AppShell() {
   const handleOpenFile = useCallback((
     filePath: string,
     fileName: string,
-    options?: { sourceSessionId?: string | null; modeHint?: "diff"; page?: number },
+    options?: { sourceSessionId?: string | null; modeHint?: "diff"; page?: number; line?: number },
   ) => {
     if (isChatWorkspaceActive && !(chatFolderCwd && isPathInside(filePath, chatFolderCwd))) return;
     const sourceSessionId = options?.sourceSessionId;
@@ -1638,6 +1638,7 @@ export function AppShell() {
       filePath,
       modeHint,
       page,
+      line: options?.line,
       sourceSessionId,
       tabId,
     }));
@@ -1657,8 +1658,8 @@ export function AppShell() {
     });
   }, []);
 
-  const handleOpenLinkedFile = useCallback((filePath: string, page?: number) => {
-    handleOpenFile(filePath, getFileName(filePath), { sourceSessionId: selectedSession?.id ?? null, page });
+  const handleOpenLinkedFile = useCallback((filePath: string, page?: number, line?: number) => {
+    handleOpenFile(filePath, getFileName(filePath), { sourceSessionId: selectedSession?.id ?? null, page, line });
   }, [handleOpenFile, selectedSession?.id]);
 
   const handleOpenTerminal = useCallback((cwd: string) => {
@@ -3174,6 +3175,7 @@ export function AppShell() {
               gitRefreshKey={explorerRefreshKey}
               initialDisplayMode={activeFileTab.initialDisplayMode}
               initialPage={activeFileTab.page}
+              initialLine={activeFileTab.line}
               initialState={activeFileTab.viewerState}
               watchEnabled={rightPanelOpen}
               onStateChange={(viewerState) => handleFileViewerStateChange(
@@ -3183,10 +3185,10 @@ export function AppShell() {
               )}
               onMentionLines={rightPanelOpen && !isChatWorkspaceActive ? handleFileLineMention : undefined}
               onAtMention={isChatWorkspaceActive ? undefined : handleAtMention}
-              onOpenFile={(filePath, page) => handleOpenFile(
+              onOpenFile={(filePath, page, line) => handleOpenFile(
                 filePath,
                 getFileName(filePath),
-                { sourceSessionId: activeFileTab.sourceSessionId, page },
+                { sourceSessionId: activeFileTab.sourceSessionId, page, line },
               )}
             />
           ) : !terminalTabs.some((tab) => tab.id === activeFileTabId) ? (

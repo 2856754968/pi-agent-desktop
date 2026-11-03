@@ -69,6 +69,7 @@ export interface FileMenuTarget {
   filePath: string;
   /** PDF page fragment of a markdown link, handed back to `onOpenFile`. */
   page?: number;
+  line?: number;
   /**
    * The path is only a guess (inline code): ask the server whether the file
    * exists, and when it does not, leave the right-click to the plain
@@ -83,11 +84,11 @@ export interface FileMenuTarget {
  * browser it does nothing, so the browser's own menu stays.
  */
 export function useFileContextMenu(
-  onOpenFile?: (filePath: string, page?: number) => void,
+  onOpenFile?: (filePath: string, page?: number, line?: number) => void,
 ): (event: MouseEvent, target: FileMenuTarget) => void {
   const { t } = useI18n();
 
-  return useCallback((event, { filePath, page, verify }) => {
+  return useCallback((event, { filePath, page, line, verify }) => {
     if (!isTauriDesktop()) return;
     // Claim the right-click now: the checks below are async, and the document
     // fallback in useNativeContextMenu only respects a prevented event.
@@ -126,7 +127,7 @@ export function useFileContextMenu(
           defaultApp: (name) => t("fileMenu.defaultApp", { name }),
         },
         {
-          open: () => onOpenFile?.(filePath, page),
+          open: () => onOpenFile?.(filePath, page, line),
           openWith,
           chooseOtherApp: () => {
             selectApplicationNative()

@@ -17,7 +17,7 @@ import {
   isVideoPath,
 } from "@/lib/file-types";
 import { encodeFilePathForApi, getFileDirectory, getFileName, getRelativeFilePath } from "@/lib/file-paths";
-import { parsePdfPageFragment, resolveLocalFileHref, shouldOpenLocalFileInApp } from "@/lib/file-links";
+import { parseFileLine, parsePdfPageFragment, resolveLocalFileHref, shouldOpenLocalFileInApp } from "@/lib/file-links";
 import { parseFrontmatter } from "@/lib/frontmatter";
 import { markdownPreviewRehypePlugins, markdownPreviewRemarkPlugins, markdownUrlTransform, normalizeDisplayMath } from "@/lib/markdown";
 import { CodeBlock, MermaidBlock } from "./MermaidBlock";
@@ -38,7 +38,7 @@ interface Props {
   filePath: string;
   cwd?: string;
   sourceSessionId?: string | null;
-  onOpenFile?: (filePath: string, page?: number) => void;
+  onOpenFile?: (filePath: string, page?: number, line?: number) => void;
   onMentionLines?: (relativePath: string, startLine: number, endLine: number) => void;
   /** Insert this file's relative path into the chat input (@ mention). */
   onAtMention?: (relativePath: string, isDir: boolean) => void;
@@ -46,6 +46,7 @@ interface Props {
   initialDisplayMode?: DisplayMode;
   /** PDF page to open on first render (`#page=N` from a markdown link). */
   initialPage?: number;
+  initialLine?: number;
   initialState?: FileViewerState;
   onStateChange?: (state: FileViewerState) => void;
   watchEnabled?: boolean;
@@ -1048,6 +1049,7 @@ export function FileViewer({
   initialDisplayMode,
   initialState,
   initialPage,
+  initialLine,
   onStateChange,
   watchEnabled = true,
 }: Props) {
@@ -1063,7 +1065,7 @@ export function FileViewer({
   if (isDocumentPreviewPath(filePath)) {
     return <DocumentViewer filePath={filePath} cwd={cwd} sourceSessionId={sourceSessionId} initialPage={initialPage} watchEnabled={watchEnabled} />;
   }
-  return <TextFileViewer filePath={filePath} cwd={cwd} sourceSessionId={sourceSessionId} onOpenFile={onOpenFile} onMentionLines={onMentionLines} onAtMention={onAtMention} gitRefreshKey={gitRefreshKey} initialDisplayMode={initialDisplayMode} initialState={initialState} onStateChange={onStateChange} watchEnabled={watchEnabled} />;
+  return <TextFileViewer filePath={filePath} cwd={cwd} sourceSessionId={sourceSessionId} onOpenFile={onOpenFile} onMentionLines={onMentionLines} onAtMention={onAtMention} gitRefreshKey={gitRefreshKey} initialDisplayMode={initialDisplayMode} initialLine={initialLine} initialState={initialState} onStateChange={onStateChange} watchEnabled={watchEnabled} />;
 }
 
 function TextFileViewer({
@@ -1076,6 +1078,7 @@ function TextFileViewer({
   gitRefreshKey,
   initialDisplayMode,
   initialState,
+  initialLine,
   onStateChange,
   watchEnabled = true,
 }: Props) {
@@ -1090,7 +1093,7 @@ function TextFileViewer({
   // The path default is resolved here, before the first fetch, so a markdown or
   // HTML file renders its preview as the first thing painted. Deciding it after
   // the contents load painted the source view for a frame first.
-  const requestedInitialDisplayMode = resolveInitialFileDisplayMode(initialState, initialDisplayMode, filePath);
+  const requestedInitialDisplayMode = initialLine ? "source" : resolveInitialFileDisplayMode(initialState, initialDisplayMode, filePath);
   const initialWrapLines = initialState?.wrapLines ?? false;
   const initialScrollTop = initialState?.scrollTop ?? 0;
   const initialScrollLeft = initialState?.scrollLeft ?? 0;
@@ -1109,6 +1112,7 @@ function TextFileViewer({
   const contentRef = useRef<HTMLDivElement | null>(null);
   const autoDiffAppliedRef = useRef(false);
   const scrollRestorePendingRef = useRef(true);
+  const lineJumpPendingRef = useRef(initialLine);
   const viewerStateRef = useRef<FileViewerState>({
     displayMode: requestedInitialDisplayMode,
     wrapLines: initialWrapLines,
@@ -1143,6 +1147,7 @@ function TextFileViewer({
 
     viewerStateRef.current = nextState;
     scrollRestorePendingRef.current = true;
+    lineJumpPendingRef.current = initialLine;
     autoDiffAppliedRef.current = false;
     setDisplayMode(requestedInitialDisplayMode);
     setWrapLines(initialWrapLines);
@@ -1152,6 +1157,7 @@ function TextFileViewer({
     };
   }, [
     filePath,
+    initialLine,
     sourceSessionId,
     requestedInitialDisplayMode,
     initialWrapLines,
@@ -1464,6 +1470,27 @@ function TextFileViewer({
     requestedInitialDisplayMode,
   ]);
 
+  useEffect(() => {
+    const requestedLine = lineJumpPendingRef.current;
+    const root = contentRef.current;
+    if (!requestedLine || loading || error || !data || !root || effectiveDisplayMode !== "source") return;
+    // Files are paginated. Fetch through the destination before attempting the jump.
+    if (requestedLine > sourceLines.length && data.nextOffset != null) {
+      void fetchContent(filePath, data.nextOffset);
+      return;
+    }
+    const line = Math.min(requestedLine, sourceLines.length);
+    const target = root.querySelector<HTMLElement>(`[data-line-number="${line}"]`);
+    if (!target) return;
+    root.scrollTop += target.getBoundingClientRect().top - root.getBoundingClientRect().top
+      - Math.max(0, (root.clientHeight - target.clientHeight) / 2);
+    viewerStateRef.current.scrollTop = root.scrollTop;
+    scrollRestorePendingRef.current = false;
+    lineJumpPendingRef.current = undefined;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!motion) target.animate([{ backgroundColor: "var(--bg-selected)" }, { backgroundColor: "transparent" }], { duration: 1800 });
+  }, [data, effectiveDisplayMode, error, fetchContent, filePath, loading, sourceLines.length]);
+
   if (loading || (requestedInitialDisplayMode === "diff" && gitDiffLoading && !data)) {
     return (
       <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>
@@ -1725,7 +1752,7 @@ function TextFileViewer({
                   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
                     if (!shouldOpenLocalFileInApp(event)) return;
                     event.preventDefault();
-                    onOpenFile(linkedFile, parsePdfPageFragment(href) ?? undefined);
+                    onOpenFile(linkedFile, parsePdfPageFragment(href) ?? undefined, parseFileLine(href));
                   };
 
                   return <a href={href} {...props} onClick={handleClick}>{children}</a>;

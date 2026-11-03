@@ -1,5 +1,10 @@
 # File access, worktrees and web auth
 
+## Local file links and source locations
+- Markdown links with Windows drive paths (`D:/project/a.ts`, including `/D:/...`) are converted to `file:///` before sanitization; URL scheme filtering stays enabled. Chat messages and Markdown file previews use the same normalization.
+- `path:line[:column]` and `path#Lline` links open the existing file panel in source mode and center the requested line. Columns and range ends are accepted but only the starting line is used. Repeated clicks reuse the tab and request a fresh jump. Paginated text is loaded through the destination; a line beyond EOF lands on the last line. PDF `#page=N` links keep their page behavior. All reads still go through `/api/files` authorization.
+- Verification: `node --experimental-strip-types --test lib/file-link-rendering.test.mjs` and `node e2e/file-links.mjs` (real MarkdownBody + FileViewer, both themes, repeated clicks and paginated text).
+
 ## Worktrees and project grouping
 - `lib/worktree.ts` resolves linked worktree top-levels to the main repo `projectRoot`; `listAllSessions()` attaches it to each `SessionInfo`, so a repo's worktrees group together in the sidebar. A session whose cwd is a removed worktree is inferred back into the main project, never a phantom project row.
 - `/api/worktrees` serves worktree operations under the same allowed-root rules as `/api/files`. New worktrees go under `<repoRoot>-worktrees/<sanitized-branch>`; an existing branch is reused, else `git worktree add -b` creates it. Removing a dirty worktree answers `409 { dirty: true }`, and the UI asks before retrying with `force`.

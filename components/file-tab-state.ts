@@ -6,6 +6,7 @@ interface OpenFileTabInput {
   filePath: string;
   modeHint?: "diff";
   page?: number;
+  line?: number;
   sourceSessionId?: string | null;
   tabId: string;
 }
@@ -20,6 +21,7 @@ export function openFileTab(tabs: Tab[], input: OpenFileTabInput): Tab[] {
       sourceSessionId: input.sourceSessionId,
       initialDisplayMode: input.modeHint,
       page: input.page,
+      line: input.line,
       viewerState: input.modeHint ? {
         displayMode: input.modeHint,
         wrapLines: false,
@@ -35,7 +37,7 @@ export function openFileTab(tabs: Tab[], input: OpenFileTabInput): Tab[] {
   );
   const sourceUnchanged = !sourceChanged;
   const pageChanged = existing.page !== input.page;
-  if (sourceUnchanged && !input.modeHint && !pageChanged) return tabs;
+  if (sourceUnchanged && !input.modeHint && !pageChanged && input.line === undefined) return tabs;
 
   return tabs.map((tab) => {
     if (tab.id !== input.tabId) return tab;
@@ -47,6 +49,10 @@ export function openFileTab(tabs: Tab[], input: OpenFileTabInput): Tab[] {
     }
     if (pageChanged) {
       next.page = input.page;
+      bumpRevision = true;
+    }
+    if (input.line !== undefined) {
+      next.line = input.line;
       bumpRevision = true;
     }
     if (input.modeHint) {
@@ -74,6 +80,7 @@ export function saveFileViewerState(
   if (index === -1 || (tabs[index].viewerRevision ?? 0) !== viewerRevision) return tabs;
 
   const next = [...tabs];
-  next[index] = { ...next[index], viewerState };
+  // The source location is a one-shot request; subsequent tab restores use saved scroll.
+  next[index] = { ...next[index], viewerState, line: undefined };
   return next;
 }

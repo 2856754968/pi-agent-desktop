@@ -24,8 +24,37 @@ const markdownSanitizeSchema = {
   strip: [...(defaultSchema.strip || []), "iframe", "object", "style", "form"],
 };
 
+function normalizeWindowsFileHref(value: string): string {
+  return /^\/?[a-zA-Z]:[\\/]/.test(value)
+    ? `file:///${value.replace(/^\//, "").replace(/\\/g, "/")}`
+    : value;
+}
+
+interface HtmlLinkNode {
+  type: string;
+  tagName?: string;
+  properties?: Record<string, unknown>;
+  children?: HtmlLinkNode[];
+}
+
+// Run before sanitization: a Windows drive is otherwise rejected as a URL scheme.
+function rehypeWindowsFileLinks(): (tree: HtmlLinkNode) => void {
+  return (tree) => {
+    const walk = (node: HtmlLinkNode) => {
+      if (node.tagName === "a" && node.properties && typeof node.properties.href === "string") {
+        node.properties.href = normalizeWindowsFileHref(node.properties.href);
+      }
+      for (const child of node.children ?? []) {
+        walk(child);
+      }
+    };
+    walk(tree);
+  };
+}
+
 export function markdownUrlTransform(value: string): string {
-  return /^file:/i.test(value) ? value : defaultUrlTransform(value);
+  const normalized = normalizeWindowsFileHref(value);
+  return /^file:/i.test(normalized) ? normalized : defaultUrlTransform(normalized);
 }
 
 /**
@@ -649,12 +678,14 @@ export const markdownPreviewRemarkPlugins: ReactMarkdownOptions["remarkPlugins"]
 
 export const markdownRehypePlugins: ReactMarkdownOptions["rehypePlugins"] = [
   rehypeRaw,
+  rehypeWindowsFileLinks,
   [rehypeSanitize, markdownSanitizeSchema],
   [rehypeKatex, { throwOnError: false, strict: false }],
 ];
 
 export const markdownPreviewRehypePlugins: ReactMarkdownOptions["rehypePlugins"] = [
   rehypeRaw,
+  rehypeWindowsFileLinks,
   [rehypeSanitize, markdownSanitizeSchema],
   [rehypeKatex, { throwOnError: false, strict: false }],
 ];
