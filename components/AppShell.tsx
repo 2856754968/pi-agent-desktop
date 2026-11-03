@@ -24,6 +24,7 @@ import { LazyTerminalPanel as TerminalPanel, preloadTerminalPanel } from "./Lazy
 // syntax highlighting a second time and only matters once a file tab opens.
 const FileViewer = dynamic(() => import("./FileViewer").then((m) => m.FileViewer), { ssr: false });
 const FileExplorer = dynamic(() => import("./FileExplorer").then((m) => m.FileExplorer), { ssr: false });
+const TasksView = dynamic(() => import("./tasks/TasksView").then((m) => m.TasksView), { ssr: false });
 const ScheduledView = dynamic(() => import("./scheduled/ScheduledView").then((m) => m.ScheduledView), { ssr: false });
 import { openFileTab, saveFileViewerState } from "./file-tab-state";
 import { SettingsPanel } from "./SettingsPanel";
@@ -107,13 +108,15 @@ import type { FileViewerState } from "@/lib/file-viewer-state";
 import type { ToolEntry } from "@/lib/tool-presets";
 import { getSessionFamily } from "@/lib/session-family";
 import { getLastSettingsSection, type SettingsSection } from "@/lib/settings-navigation";
+import { archivedProjectRootFor, restoreProjectRoot } from "@/lib/archived-projects";
+import { getProjectDisplayName } from "@/lib/project-display";
 
 type SessionCopyField = "file" | "id" | "projectDir" | "gitBranch" | "gitWorktree";
 /** A page covering the chat area, named by `?view=`. */
-type WorkspaceView = "scheduled" | "artifacts" | null;
+type WorkspaceView = "tasks" | "scheduled" | "artifacts" | null;
 
 function parseWorkspaceView(value: string | null | undefined): WorkspaceView {
-  return value === "scheduled" || value === "artifacts" ? value : null;
+  return value === "tasks" || value === "scheduled" || value === "artifacts" ? value : null;
 }
 type AutoNameStatus =
   | { kind: "idle" }
@@ -198,6 +201,7 @@ export function AppShell() {
   // The Scheduled and Artifacts pages cover the chat area without unmounting
   // it, so the open session keeps its state. At most one is open (`?view=`).
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(() => parseWorkspaceView(searchParams?.get("view")));
+  const tasksOpen = workspaceView === "tasks";
   const scheduledOpen = workspaceView === "scheduled";
   const artifactsOpen = workspaceView === "artifacts";
   const pageOpen = workspaceView !== null;
@@ -1216,6 +1220,16 @@ export function AppShell() {
     ));
   }, []);
 
+  // The keyboard shortcut and the app menu start a session in the active cwd,
+  // which is an archived project while one of its sessions is open. Those stay
+  // readable; a new one waits until the project is restored (sidebar rule).
+  const blockArchivedNewSession = useCallback((cwd: string): boolean => {
+    const root = archivedProjectRootFor(cwd, sessionCatalog);
+    if (!root) return false;
+    appNotify.info({ message: translate("sidebar.projectArchivedNewSession", { name: getProjectDisplayName(root, [root]) }) });
+    return true;
+  }, [sessionCatalog, translate]);
+
   const handleProjectChangeFromComposer = useCallback((projectRoot: string) => {
     if (selectedSession || isChatWorkspaceActive) return;
     handleNewSession(`project-${Date.now()}`, projectRoot, "project");
@@ -1225,16 +1239,20 @@ export function AppShell() {
     if (!desktopMode || isChatWorkspaceActive) return;
     try {
       const cwd = await selectProjectDirectoryNative(projectPickerStartCwd, "");
-      if (cwd) handleNewSession(`project-${Date.now()}`, cwd, "project");
+      if (!cwd) return;
+      // Picking a folder is the explicit "add project" gesture: it restores an archived one.
+      const archivedRoot = archivedProjectRootFor(cwd, sessionCatalog);
+      if (archivedRoot) restoreProjectRoot(archivedRoot);
+      handleNewSession(`project-${Date.now()}`, cwd, "project");
     } catch (error) {
       console.error("Failed to switch project:", error);
     }
-  }, [desktopMode, handleNewSession, isChatWorkspaceActive, projectPickerStartCwd]);
+  }, [desktopMode, handleNewSession, isChatWorkspaceActive, projectPickerStartCwd, sessionCatalog]);
 
   const handleNativeMenuAction = useCallback((payload: string) => {
     if (payload === "new-session") {
       const cwd = isChatWorkspaceActive ? chatWorkspaceCwd : activeCwd;
-      if (cwd) {
+      if (cwd && (isChatWorkspaceActive || !blockArchivedNewSession(cwd))) {
         handleNewSession(
           `native-menu-${Date.now()}`,
           cwd,
@@ -1248,7 +1266,7 @@ export function AppShell() {
       setTopMoreOpen(false);
       setSettingsSection(payload === "settings-general" ? "general" : "models");
     }
-  }, [activeCwd, chatWorkspaceCwd, handleNewSession, isChatWorkspaceActive]);
+  }, [activeCwd, blockArchivedNewSession, chatWorkspaceCwd, handleNewSession, isChatWorkspaceActive]);
 
   const openSettingsAtLastSection = useCallback(() => {
     setActiveTopPanel(null);
@@ -1277,11 +1295,14 @@ export function AppShell() {
   useGlobalKeyboardShortcuts({
     onNewSession: settingsSection || shortcutHelpOpen
       ? undefined
-      : (cwd: string) => handleNewSession(
-        `kb-${Date.now()}`,
-        cwd,
-        isChatWorkspaceActive ? "chat" : "project",
-      ),
+      : (cwd: string) => {
+        if (!isChatWorkspaceActive && blockArchivedNewSession(cwd)) return;
+        handleNewSession(
+          `kb-${Date.now()}`,
+          cwd,
+          isChatWorkspaceActive ? "chat" : "project",
+        );
+      },
     activeCwd: isChatWorkspaceActive ? chatWorkspaceCwd : activeCwd,
     // Only while open: a closed panel must leave \ and focus alone.
     onCloseRightPanel: rightPanelOpen && !shortcutHelpOpen ? handleRightPanelClose : undefined,
@@ -1367,6 +1388,7 @@ export function AppShell() {
       router.replace(`?view=${view}`, { scroll: false });
     }
   }, [isMobile, router]);
+  const handleOpenTasks = useCallback(() => openWorkspaceView("tasks"), [openWorkspaceView]);
   const handleOpenScheduled = useCallback(() => openWorkspaceView("scheduled"), [openWorkspaceView]);
   const handleOpenArtifacts = useCallback(() => openWorkspaceView("artifacts"), [openWorkspaceView]);
 
@@ -1871,7 +1893,9 @@ export function AppShell() {
     }
   };
   const activeCwdName = visibleProjectCwd ? getFileName(visibleProjectCwd) || visibleProjectCwd : null;
-  const topBarTitle = scheduledOpen
+  const topBarTitle = tasksOpen
+    ? translate("tasks.title")
+    : scheduledOpen
     ? translate("scheduled.title")
     : artifactsOpen
       ? translate("artifacts.page.title")
@@ -1942,6 +1966,8 @@ export function AppShell() {
         onBackgroundTaskDone={handleBackgroundTaskDone}
         onRunningSessionIdsChange={handleRunningSessionIdsChange}
         onSessionsChange={handleSessionsChange}
+        onOpenTasks={handleOpenTasks}
+        tasksOpen={tasksOpen}
         onOpenScheduled={handleOpenScheduled}
         scheduledOpen={scheduledOpen}
         onOpenArtifacts={handleOpenArtifacts}
@@ -2246,56 +2272,20 @@ export function AppShell() {
           )}
           {showChat && !pageOpen && (
             <div className="app-topbar-actions" style={{ display: "flex", alignItems: "stretch", height: "100%" }}>
-              {/* An unsaved new session has no history or branches yet; hide both rather than show them disabled. */}
-              {selectedSession && <button
-                className="native-toolbar-button"
-                onClick={handleViewFullHistory}
-                disabled={!selectedSession}
-                 title={selectedSession ? translate("history.full") : translate("history.unsaved")}
-                 aria-label={translate("history.full")}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  height: "100%",
-                  padding: "0 12px",
-                  background: "none",
-                  color: selectedSession ? "var(--text-muted)" : "var(--text-dim)",
-                  cursor: selectedSession ? "pointer" : "not-allowed",
-                  opacity: selectedSession ? 1 : 0.45,
-                  flexShrink: 0,
-                  fontSize: "var(--fs-micro)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ flexShrink: 0 }}
-                >
-                  <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-                  <path d="M3 3v5h5" />
-                  <path d="M12 7v5l3 2" />
-                </svg>
-                 {!isMobile && <span>{translate("history.label")}</span>}
-              </button>}
-              {!isChatWorkspaceActive && selectedSession && (
+              {/* Branches opens from the More menu; this instance only hosts its dropdown. */}
+              {!isChatWorkspaceActive && sessionHasBranches && (
                 <BranchNavigator
                   tree={branchTree}
                   activeLeafId={branchActiveLeafId}
                   onLeafChange={handleBranchLeafChange}
+                  locked={branchSwitchLocked}
                   inline
-                  compact={isMobile}
+                  compact
                   containerRef={topBarRef}
                   open={activeTopPanel === "branches"}
                   onToggle={() => toggleTopPanel("branches")}
                   hasSession
+                  hideInlineButton
                 />
               )}
               {(() => {
@@ -2340,8 +2330,19 @@ export function AppShell() {
                 // Desktop shell: the same five actions as a native popup. A
                 // native item holds one line, so the DOM menu's caption is
                 // appended to the label where it carries live state.
+                const historyDisabled = !selectedSession || selectedSession.transient;
+                const showBranches = !isChatWorkspaceActive;
+
                 const openNativeMore = (anchor: Element) => {
                   void showNativeMenu([
+                    ...(showBranches ? [{
+                      label: translate("i18n.branches"),
+                      disabled: !sessionHasBranches,
+                      checked: activeTopPanel === "branches" ? true : undefined,
+                      onSelect: () => toggleTopPanel("branches"),
+                    }] : []),
+                    { label: translate("history.full"), disabled: historyDisabled, onSelect: handleViewFullHistory },
+                    { kind: "separator" as const },
                     { label: nameLabel, disabled: nameDisabled, onSelect: () => void handleAutoName() },
                     {
                       label: `${translate("system.prompt")}${systemPrompt === null ? "" : systemPrompt ? "" : ` (${translate("appshell.toolsDisabled")})`}`,
@@ -2402,7 +2403,6 @@ export function AppShell() {
                         <circle cx="12" cy="12" r="1.65" />
                         <circle cx="19" cy="12" r="1.65" />
                       </svg>
-                      {!isMobile && <span>{translate("appshell.more")}</span>}
                     </button>
                     {topMoreOpen && topMorePos && createPortal(
                       <div
@@ -2417,8 +2417,56 @@ export function AppShell() {
                             : { top: topMorePos.top, right: topMorePos.right }),
                         }}
                       >
+                        {showBranches && (
+                          <button
+                            className="app-topbar-more-item"
+                            type="button"
+                            role="menuitem"
+                            disabled={!sessionHasBranches}
+                            onClick={() => toggleTopPanel("branches")}
+                          >
+                            <span
+                              className="app-topbar-more-icon"
+                              style={{ color: activeTopPanel === "branches" ? "var(--accent)" : "var(--text-muted)" }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <line x1="6" y1="3" x2="6" y2="15" />
+                                <circle cx="18" cy="6" r="3" />
+                                <circle cx="6" cy="18" r="3" />
+                                <path d="M18 9a9 9 0 0 1-9 9" />
+                              </svg>
+                            </span>
+                            <span className="app-topbar-more-copy">
+                              <span>{translate("i18n.branches")}</span>
+                              <small>{sessionHasBranches ? translate("appshell.branchesHint") : translate("i18n.noBranches")}</small>
+                            </span>
+                          </button>
+                        )}
                         <button
                           className="app-topbar-more-item"
+                          type="button"
+                          role="menuitem"
+                          disabled={historyDisabled}
+                          onClick={() => {
+                            setTopMoreOpen(false);
+                            handleViewFullHistory();
+                          }}
+                        >
+                          <span className="app-topbar-more-icon" style={{ color: historyDisabled ? "var(--text-dim)" : "var(--text-muted)" }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                              <path d="M3 3v5h5" />
+                              <path d="M12 7v5l3 2" />
+                            </svg>
+                          </span>
+                          <span className="app-topbar-more-copy">
+                            <span>{translate("history.full")}</span>
+                            <small>{historyDisabled ? translate("history.unsaved") : translate("appshell.historyHint")}</small>
+                          </span>
+                        </button>
+                        <div className="app-topbar-more-separator" role="separator" />
+                        <button
+                          className="app-topbar-more-item app-topbar-more-title"
                           type="button"
                           role="menuitem"
                           disabled={nameDisabled}
@@ -2559,21 +2607,6 @@ export function AppShell() {
           )}
           {!isMobile && renderProjectTrustWarning(false)}
           {!isMobile && showFilePanelToggle && renderMainFileToggle()}
-          {isMobile && !isChatWorkspaceActive && sessionHasBranches && (
-            <BranchNavigator
-              tree={branchTree}
-              activeLeafId={branchActiveLeafId}
-              onLeafChange={handleBranchLeafChange}
-              locked={branchSwitchLocked}
-              inline
-              compact
-              containerRef={topBarRef}
-              open={activeTopPanel === "branches"}
-              onToggle={() => toggleTopPanel("branches")}
-              hasSession={showChat}
-              hideInlineButton
-            />
-          )}
           {/* Top panel dropdown — shared, only one active at a time */}
           {activeTopPanel && topPanelPos && (
             <div style={{
@@ -2914,6 +2947,13 @@ export function AppShell() {
           ) : null}
         </div>
 
+        {tasksOpen && (
+          <TasksView
+            sessions={sessionCatalog}
+            runningSessionIds={runningSessionIds}
+            onOpenSession={(sessionId) => void handleOpenSession(sessionId)}
+          />
+        )}
         {scheduledOpen && (
           <ScheduledView
             projectRoots={availableProjectRoots}

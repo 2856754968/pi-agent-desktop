@@ -46,12 +46,26 @@ test("streams running sessions and reconnects after visibility or network change
 
 test("re-adding a removed project clears only its sidebar marker", () => {
   assert.match(source, /const activateProject = useCallback\(\(cwd: string\) =>/);
-  assert.match(source, /restoreProject\(projectRoot\);/);
+  assert.match(source, /restoreProjectRoot\(projectRootFor\(cwd\) \?\? cwd\);/);
   assert.match(source, /useArchivedProjects\(\)/);
   // Initial render must never persist an empty local cache over the disk state.
   assert.doesNotMatch(source, /setPrefJson\(APP_PREF_KEYS\.archivedProjects/);
   // The add-project dialog is the only picker left in the sidebar.
   assert.match(source, /onSelectCwd=\{\(cwd\) => \{\s+activateProject\(cwd\);/);
+});
+
+test("archived projects sit in a folded Archive group and need a restore before a new session", () => {
+  // New session in an archived project is refused, never a silent restore.
+  assert.match(source, /if \(archivedProjectRoots\.has\(projectRoot\)\) \{\s*appNotify\.info\([^;]*sidebar\.projectArchivedNewSession[\s\S]*?return;/);
+  // The archived row has no "+" and opens the restore menu, from "…" or a right-click.
+  assert.match(source, /\{!archived && \(\s*<button[\s\S]*?handleNewSession\(group\.projectRoot\)/);
+  assert.match(source, /onContextMenu=\{\(e\) => openProjectMenu\(e, group\.projectRoot, archived\)\}/);
+  assert.match(source, /onRestore=\{\(\) => restoreProject\(projectMenu\.root\)\}/);
+  // The group sits after the project list and unfolds for a search.
+  assert.match(source, /activeProjects\.map\(\(group\) => renderProjectGroup\(group\)\)\}\s*\{archivedProjects\.length > 0 && \(\s*<ArchivedProjectsSection/);
+  assert.match(source, /const archiveShown = archiveExpanded \|\| Boolean\(trimmedSessionQuery\)/);
+  // Unfolding an archived project must not select it (that opens a composer there).
+  assert.match(source, /if \(archived\) \{\s*setExpandedArchivedProjects\(\(prev\) => toggleId\(prev, group\.projectRoot\)\);\s*return;\s*\}/);
 });
 
 test("exposes the polled running-session set to the shell", () => {
@@ -153,7 +167,7 @@ test("Chats show five families at a time even when there are no projects", () =>
   // available when `activeProjects` is empty.
   assert.match(
     source,
-    /sidebar-chats-header[\s\S]*?\{allProjects\.length === 0 \? \(/,
+    /sidebar-chats-header[\s\S]*?\{activeProjects\.length === 0 && !\(trimmedSessionQuery && archivedProjects\.length > 0\) \? \(/,
   );
 });
 
@@ -207,7 +221,21 @@ test("chats can be pinned and archived, ordered by recency with no date groups",
   // Row menu: only chat rows (depth 0) get the actions, in both the native and DOM menus.
   assert.match(source, /chatActions=\{depth === 0 \? chatActions : undefined\}/);
   assert.match(source, /t\(chatActions\.pinned \? "sidebar\.unpinChat" : "sidebar\.pinChat"\)/);
-  assert.match(source, /t\(chatActions\.archived \? "sidebar\.unarchiveChat" : "sidebar\.archiveChat"\)/);
+  // Archive is shared with project sessions: chats bring it with their actions.
+  assert.match(source, /const archive: SessionArchiveActions \| undefined = chatActions \?\? archiveActions;/);
+  assert.match(source, /t\(archive\.archived \? "sidebar\.unarchiveChat" : "sidebar\.archiveChat"\)/);
+});
+
+test("project sessions can be archived one by one (#200)", () => {
+  assert.match(source, /APP_PREF_KEYS\.archivedSessions/);
+  // Only top-level rows get the action, in the project tree and the chronological view.
+  assert.match(source, /archiveActions=\{depth === 0 \? archiveActions : undefined\}/);
+  assert.match(source, /archiveActions=\{sessionArchiveActions\(node\.session\.id\)\}/);
+  assert.match(source, /archiveActions=\{sessionArchiveActions\(family\.root\.id\)\}/);
+  // Archived roots leave the list for a per-project fold; a search lists them in place.
+  assert.match(source, /const archivedGroupTree = trimmedSessionQuery\s*\? \[\]\s*: fullGroupTree\.filter\(\(node\) => archivedSessions\.has\(node\.session\.id\)\)/);
+  assert.match(source, /trimmedSessionQuery \|\| !archivedSessions\.has\(family\.root\.id\)/);
+  assert.match(source, /setProjectsShowingArchived\(\(current\) => toggleId\(current, group\.projectRoot\)\)/);
 });
 
 test("a chat's row menu can continue it in a project", () => {

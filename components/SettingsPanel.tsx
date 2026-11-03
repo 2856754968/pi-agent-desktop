@@ -37,7 +37,9 @@ import { AppUpdatesSection } from "./AppUpdatesSection";
 import { DesktopAppSection } from "./desktop";
 import { McpConfig } from "./McpConfig";
 import { ConfigButton, ConfigSwitch } from "./SettingsUi";
-import { ArtifactsSettingRow } from "./ArtifactsSettingRow";
+import { ArtifactsSettingRow, AutoTitleSettingRow } from "./ArtifactsSettingRow";
+import { RemoteAccessSection } from "./RemoteAccessSection";
+import { RelaySection } from "./RelaySection";
 import { ChatsSettingsSection } from "./ChatsSettingsSection";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { TerminalSettingsSection } from "./TerminalSettingsSection";
@@ -267,6 +269,7 @@ function GeneralSettings({
                 />
               </div>
               <ArtifactsSettingRow />
+              <AutoTitleSettingRow />
               <div className="settings-chat-option settings-chat-switch-option" role="radiogroup" aria-label={t("settings.enterSendMode")}>
                 <span>{t("settings.enterSendMode")}</span>
                 <div className="settings-send-mode-options">
@@ -349,6 +352,10 @@ function GeneralSettings({
           </section>
 
           <DesktopAppSection />
+
+          <RelaySection />
+
+          <RemoteAccessSection />
 
           <TerminalSettingsSection />
 

@@ -1881,8 +1881,33 @@ pre, code {
   background: var(--bg-panel) !important;
   background: var(--canvas-background) !important;
   border-right: var(--hairline) solid var(--separator) !important;
-  -webkit-backdrop-filter: saturate(130%) blur(24px);
-  backdrop-filter: saturate(130%) blur(24px);
+  /* No backdrop-filter: the sidebar paints an opaque background, so a blur
+     shows nothing, yet every repaint inside the sidebar (running spinners,
+     unread pulses, live counts) re-runs it over the full height. On Windows
+     that kept the GPU busy for as long as an agent ran (#199). */
+}
+
+/* Sidebar activity indicators animate transform/opacity only, so they stay on
+   the compositor. They were SVG SMIL animations (`animateTransform`, an
+   animated `r`), which repaint on the main thread every frame (#199). */
+.session-running-spinner {
+  animation: spin 0.9s linear infinite;
+}
+
+.session-unread-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: session-unread-ring 1.6s ease-in-out infinite;
+}
+
+@keyframes session-unread-ring {
+  0%, 100% { transform: scale(1); opacity: 0.32; }
+  50% { transform: scale(2); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-running-spinner,
+  .session-unread-ring { animation: none; }
 }
 
 /* No top padding: the header opens with the 48px .sidebar-controls-row, which
@@ -3283,6 +3308,12 @@ html:not(.dark) .session-item.is-selected .session-item-time {
   color: var(--text);
   text-align: left;
   cursor: pointer;
+}
+
+.app-topbar-more-separator {
+  height: var(--hairline);
+  margin: 4px 6px;
+  background: var(--separator);
 }
 
 .app-topbar-more-item:disabled {
@@ -9434,6 +9465,18 @@ html.native-desktop :is(
   opacity: 0.62;
 }
 
+/* Projects: the Archive group at the bottom of the project list. */
+.sidebar-archive-header {
+  margin-top: 6px;
+}
+
+/* Archived project rows read as set aside; their sessions stay at full
+   contrast once unfolded, since reading them is what the archive is for. */
+.sidebar-project-tree-group.is-archived > .sidebar-project-tree-row .sidebar-project-tree-folder,
+.sidebar-project-tree-group.is-archived > .sidebar-project-tree-row .sidebar-project-tree-name {
+  opacity: 0.62;
+}
+
 
 /* Settings › General › Chats: stacked label + control rows. */
 .settings-chats-field {
@@ -10253,51 +10296,12 @@ textarea[data-animated-caret="true"] { caret-color: transparent; }
   line-height: 1.5;
 }
 
-.new-session-welcome-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.new-session-welcome-chip {
-  height: var(--control-h-lg);
-  padding: 0 14px;
-  border: var(--hairline) solid var(--border);
-  border-radius: 999px;
-  background: var(--bg);
-  color: var(--text-muted);
-  font-size: var(--fs-body);
-  box-shadow: var(--shadow-control);
-  cursor: pointer;
-  transition:
-    color var(--dur-fast) var(--ease-native),
-    background var(--dur-fast) var(--ease-native),
-    border-color var(--dur-fast) var(--ease-native);
-}
-
-.new-session-welcome-chip:hover {
-  border-color: color-mix(in srgb, var(--text) 18%, transparent);
-  background: var(--bg-hover);
-  color: var(--text);
-}
-
-.new-session-welcome-chip:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
 @media (max-width: 640px) {
   .new-session-welcome-title { font-size: 22px; }
   .new-session-welcome-subtitle { font-size: var(--fs-body); }
 }
 
-/* Token counts are diagnostics: cost at rest, the full line while the cost
-   itself is hovered (hovering the whole footer would shove Copy sideways). */
 .message-meta { cursor: default; }
-.message-meta-detail { display: none; }
-.message-meta:hover .message-meta-detail { display: inline; }
 
 /* Upstream fades the whole button to 0.28, so the prose shows through it. */
 .chat-scroll-to-bottom.is-visible {
@@ -10354,3 +10358,187 @@ html.dark .artifacts-thumb[data-tone="data"] { --tone: #4fc1d6; }
 
 /* CJK units ("17小时") are wider than "17h"; keep them off the title's ellipsis. */
 .session-item-time { margin-left: 6px; }
+
+/* Settings › General › Remote access (components/RemoteAccessSection.tsx) */
+.remote-access-step {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  /* Same inset as the .settings-option rows around it. */
+  padding: 10px 14px;
+}
+
+.remote-access-section .settings-option-list > .settings-option-hint {
+  padding: 0 14px 10px;
+}
+
+.remote-access-step-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.remote-access-step-value code {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+}
+
+/* Tasks page (components/tasks/TasksView.tsx): reuses the Scheduled page's
+   shell and cards, grouped into Waiting / Running / Recent. */
+.tasks-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tasks-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+}
+
+.tasks-section-count {
+  color: var(--text-dim);
+  font-weight: var(--fw-regular);
+}
+
+.tasks-card .scheduled-card-main { min-width: 0; }
+
+.tasks-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasks-status--attention { color: var(--warning); }
+.tasks-status--failed { color: var(--danger); }
+
+.tasks-dot--attention { background: var(--warning); }
+.tasks-dot--running { background: var(--success); animation: scheduled-pulse 1.4s ease-in-out infinite; }
+.tasks-dot--failed { background: var(--danger); }
+.tasks-dot--done { background: var(--text-dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tasks-dot--running { animation: none; }
+}
+
+/* ---- Render error screen (app/error.tsx, app/global-error.tsx) ------------
+   Replaces Next's built-in "This page couldn't load" page, which the packaged
+   app showed with no way to see the exception (no DevTools). */
+.app-error {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+}
+
+.app-error-card {
+  width: min(720px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.app-error-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: var(--fw-semibold);
+}
+
+.app-error-hint {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.app-error-details {
+  margin: 0;
+  max-height: 50dvh;
+  overflow: auto;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--tool-bg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.app-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Settings › General › Remote relay (components/RelaySection.tsx) */
+.relay-section .settings-option-list > .relay-note,
+.relay-section .settings-option-list > .relay-error {
+  padding: 0 14px 10px;
+}
+
+.relay-error { color: var(--danger); }
+
+.relay-pairing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 14px;
+  text-align: center;
+}
+
+.relay-qr {
+  width: min(240px, 100%);
+  padding: 8px;
+  border-radius: 10px;
+  /* QR codes need dark modules on light: keep it light in dark mode too. */
+  background: #ffffff;
+}
+
+.relay-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.relay-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-self: center;
+}
+
+.relay-devices {
+  display: flex;
+  flex-direction: column;
+}
+
+.relay-devices > .settings-option-hint {
+  padding: 10px 14px 0;
+}

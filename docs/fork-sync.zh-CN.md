@@ -10,6 +10,27 @@
 不要通过重置 fork 到 upstream 的方式更新，也不要让安装器覆盖自定义版本。
 保持 upstream 的提交祖先关系，之后 Git 才能只合并新增的修改。
 
+## 同步桌面 0.8.2
+
+以保留祖先关系的三方合并接入 `upstream/main` 的 `0a1c79e`（v0.8.2），
+内置 Pi SDK 从 1.4.0 更新为 1.5.0。接入端到端加密远程中继、项目与会话归档、
+可选自动命名、侧栏与会话加载优化。自动命名保持默认关闭。
+
+保留 Claude 主题、统一选项菜单、首页用量与小螃蟹、思考滑块、项目重命名、
+聊天动效、Windows 本地文件行号链接和完整内容复制修复。新项目归档的侧栏与
+AppShell 入口共用既有磁盘偏好存储，保持跨端口、重启后的持久化；仅归档组
+展开状态保存在浏览器。继续不挂载 NewSessionWelcome，不恢复无用项目活动函数。
+基础 CSS 维持 pi-web `6fcd7d4`，请求安全边界按新增结构漂移上调为 medium。
+
+验证：完整测试 3365 项，3319 通过、45 跳过、1 失败。剩余失败为
+`lib/relay/connector.test.mjs` 的 unauthenticated phones 上限测试，干净上游
+`0a1c79e` 在相同 Node、依赖与主机条件下同样为 19/20 通过并报 closed by desktop。
+未跳过或修改该测试。TypeScript、lint、drift、菜单一致性及选项菜单、首页、
+聊天动效、复制、文件链接浏览器回归通过。`desktop:prepare` 和 `desktop:verify`
+通过，包含打包后的 Code mode 自检与真实 shell 终端验证。
+
+云构建使用 `desktop-test-build.yml` 在 `develop` 上生成测试安装包，不创建 Release。
+
 ## 同步桌面 0.8.0
 
 本地 `develop` 以三方合并接入桌面上游 `v0.8.0`（`9d1ca6d`），保留提交祖先关系。

@@ -69,5 +69,5 @@ test("lightweight source rows are skipped for highlighted, diff, and preview vie
 
 test("markdown preview links carry PDF page fragments", () => {
   assert.match(source, /parsePdfPageFragment/);
-  assert.match(source, /onOpenFile\(linkedFile, parsePdfPageFragment\(href\) \?\? undefined\)/);
+  assert.match(source, /onOpenFile\(linkedFile, parsePdfPageFragment\(href\) \?\? undefined, parseFileLine\(href\)\)/);
 });

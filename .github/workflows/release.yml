@@ -114,47 +114,49 @@ jobs:
           tagName: v__VERSION__
           releaseName: pi-agent-desktop v__VERSION__
           releaseBody: |
-            ## Pi Agent Desktop 0.8.0
+            ## Pi Agent Desktop 0.8.2
 
             ### New
 
-            - **A welcome screen for new sessions.** An empty session now greets you with the project name and four starter prompts (different ones for chats and projects). Picking one fills the composer without sending it.
-            - **Artifacts page shows what you asked for.** By default it lists the files you named or the agent handed you (HTML, Markdown, PDF, Office, CSV, images, media), including pages produced by shell commands. Files the agent only edited as part of its work stay out of the way, and credentials are never listed. Switch the filter to see process files or everything, and move any file between the two.
-            - **Favorites and a right-click menu on the Artifacts page.** Star an artifact or file and filter the list to favorites. Right-click a row to open the conversation that made it, open the file with its default app, or reveal it in Finder / Explorer. The list column can be resized and remembers its width.
+            - **Archive single sessions.** Right-click a project session, or use its "…" menu, and choose "Archive". It moves out of the project's list into a "Show archived (n)" fold under that project; search still finds it, and "Unarchive" brings it back.
+            - **Name sessions automatically.** Settings › General › "Name sessions automatically" (off by default). After the first reply, the session's model writes a title for an unnamed session, at the cost of one extra short request per session.
 
             ### Improved
 
-            - **Clearer typography and quieter chrome.** Font weights are unified so Latin and Chinese text render at the same weight, small text is larger, headings and prose spacing are tuned, and message dates follow the app language instead of the system locale.
-            - **Friendlier wording and details.** Tool presets show readable names, the usage footer shows just the cost (hover for token counts), and the scheduler notice is one line with details on demand.
-            - **Files that were moved or deleted are explained.** An "Edited N files" row for a file that no longer exists is dimmed and labelled, and opening it says the file was moved or deleted instead of a bare "Not found".
+            - **Session switching is fast again.** 0.8.1 released loaded sessions once more than 4 were idle, so switching back to one had to load it from scratch. Idle sessions are now released only when they add up to more than 256 MiB.
+            - **Lower GPU use in the sidebar**, most noticeable on Windows: the sidebar no longer blurs its (opaque) background, and the running and unread indicators use lighter animations that stop when reduced motion is on.
+            - **pi 1.5.0.** Adds GPT-6.1 Terra (OpenAI, Azure OpenAI and OpenAI Codex), handles large streamed tool calls with far less CPU and memory, lets tool search find tools from Chinese and other non-English queries, and signs in to more MCP servers that use OAuth.
+            - **A quieter chat.** Assistant messages no longer show their cost and token counts, and the new-session screen no longer shows starter suggestion chips.
 
             ### Fixed
 
-            - A hydration error in the sidebar when the Chats section had been collapsed.
+            - A scheduled task's time limit now covers the whole run, so a run whose session never starts or whose prompt is never accepted can no longer hold a scheduler slot forever.
+            - Renaming a session while it is open now updates its title right away and keeps it in the session's history.
 
-            Bundled components: pi 1.4.0, pi-web 0.10.0.
+            Bundled components: pi 1.5.0, pi-web 0.10.0.
 
             ---
 
-            ## Pi Agent Desktop 0.8.0
+            ## Pi Agent Desktop 0.8.2
 
             ### 新增
 
-            - **新会话欢迎页。** 空会话现在会显示问候、项目名和四条起手提示（聊天与项目各有不同的提示）。点选后只填入输入框，不会直接发送。
-            - **Artifacts 页面默认只显示你要的成果。** 默认列出你提到的、或 agent 交给你的文件（HTML、Markdown、PDF、Office、CSV、图片、媒体），包括由 shell 命令生成的页面；agent 工作过程中只是编辑过的文件不再干扰列表，凭据类文件永远不会列出。可切换筛选查看过程文件或全部，也能手动在两类之间移动文件。
-            - **Artifacts 页面支持收藏和右键菜单。** 可为 artifact 或文件加星，并按收藏筛选；右键某一行可打开产生它的对话、用默认应用打开文件，或在 Finder / 资源管理器中显示。列表栏可拖动调整宽度，并会记住宽度。
+            - **单个会话也能归档。** 右键项目里的会话或点它的“…”菜单，选择“归档”，会话会从项目列表移到该项目下的“显示已归档（n）”折叠区；搜索仍能找到它，选择“取消归档”即可恢复。
+            - **自动命名会话。** “设置 › 通用 › 自动命名会话”（默认关闭）。第一轮回复结束后，用当前会话的模型为未命名的会话生成标题，每个会话多一次简短请求。
 
             ### 改进
 
-            - **排版更清晰、界面更安静。** 统一字重，使中英文在同一行中粗细一致；提升小字号；调整标题和正文行距；消息日期跟随应用语言而不是系统区域设置。
-            - **措辞和细节更友好。** 工具预设显示易读名称；用量页脚只显示费用（悬停可看 token 数）；调度器提示精简为一行，详情可展开。
-            - **说明已移动或删除的文件。** “编辑了 N 个文件”中已不存在的文件会变灰并标注；打开时会提示文件已被移动或删除，而不再只显示“Not found”。
+            - **切换会话重新变快。** 0.8.1 在闲置会话超过 4 个时就会释放它们，切回去时需要重新加载。现在只有闲置会话合计超过 256 MiB 时才会释放。
+            - **侧栏 GPU 占用更低**，Windows 上最明显：侧栏不再对（不透明的）背景做模糊，运行中和未读标记改用更轻的动画，开启“减少动态效果”时会停止。
+            - **pi 1.5.0。** 新增 GPT-6.1 Terra（OpenAI、Azure OpenAI 和 OpenAI Codex）；流式输出大型工具调用时 CPU 和内存占用大幅降低；工具搜索支持中文等非英文查询；可以登录更多使用 OAuth 的 MCP 服务器。
+            - **对话界面更清爽。** 助手消息下方不再显示费用和 token 数，新会话页面也不再显示建议提示。
 
             ### 修复
 
-            - 修复折叠 Chats 区域后侧栏出现的 hydration 错误。
+            - 定时任务的时间限制现在覆盖整个运行过程：会话始终没有启动、或提示始终没有被接收的运行，不会再一直占用调度名额。
+            - 会话打开时重命名，标题会立即更新，并正确记录在会话历史中。
 
-            内置组件版本：pi 1.4.0、pi-web 0.10.0。
+            内置组件版本：pi 1.5.0、pi-web 0.10.0。
           releaseDraft: true
           prerelease: false
           uploadUpdaterJson: true

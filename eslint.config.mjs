@@ -9,6 +9,7 @@ const eslintConfig = [
       "dsh-claude-style-master/**",
       ".next/**",
       ".next-desktop/**",
+      "relay-shell/dist/**",
       "test-results/**",
       "src-tauri/resources/server/**",
       "src-tauri/target/**",

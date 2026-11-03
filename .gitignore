@@ -68,3 +68,6 @@ pi-gui-session-preview.png
 e2e_*.mjs
 /.idea/
 /dsh-claude-style-master/
+
+# Built phone shell for the relay entry host (npm run relay:shell)
+/relay-shell/dist/
