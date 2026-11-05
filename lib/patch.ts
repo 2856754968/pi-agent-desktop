@@ -129,6 +129,49 @@ export function parseUnifiedPatch(text: string): SplitDiffFile[] | null {
   return parsed.length > 0 ? parsed : null;
 }
 
+/** Pi's edit tool emits sign + padded line number + space + source, without @@ headers.
+ * Context numbers refer to the old file; the new side follows the accumulated changes. */
+export function parseNumberedEditDiff(text: string): SplitDiffFile[] | null {
+  const rows: SplitDiffRow[] = [];
+  let removed: SplitDiffCell[] = [];
+  let added: SplitDiffCell[] = [];
+  let delta = 0;
+  let changed = false;
+  const flush = () => {
+    for (let i = 0; i < Math.max(removed.length, added.length); i++) {
+      rows.push({ type: "line", left: removed[i] ?? { lineNo: null, text: "", type: "empty" }, right: added[i] ?? { lineNo: null, text: "", type: "empty" } });
+    }
+    delta += added.length - removed.length;
+    removed = [];
+    added = [];
+  };
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  for (const line of lines) {
+    if (/^ +\.\.\.$/.test(line)) {
+      flush();
+      rows.push({ type: "hunk", text: line.trim() });
+      continue;
+    }
+    const match = /^([ +\-]) *(\d+) (.*)$/.exec(line);
+    if (!match) return null;
+    const lineNo = Number(match[2]);
+    if (!Number.isSafeInteger(lineNo) || lineNo < 1) return null;
+    const source = match[3];
+    if (match[1] === " ") {
+      flush();
+      rows.push({ type: "line", left: { lineNo, text: source, type: "context" }, right: { lineNo: lineNo + delta, text: source, type: "context" } });
+    } else {
+      // A removed run after additions starts a separate edit, even without context.
+      if (match[1] === "-" && added.length) flush();
+      changed = true;
+      (match[1] === "-" ? removed : added).push({ lineNo, text: source, type: match[1] === "-" ? "removed" : "added" });
+    }
+  }
+  flush();
+  return changed ? [{ rows }] : null;
+}
+
 function cleanPatchPath(path: string): string {
   return path.split("\t")[0].trim();
 }

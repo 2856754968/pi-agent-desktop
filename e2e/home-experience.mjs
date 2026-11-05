@@ -30,7 +30,7 @@ const data = { sessions: 12, messages: 50, tokens: 12340, costUsd: 12.34, unpric
   providers: [{ name: "provider", tokens: 12340, costUsd: 12.34, usageRecords: 25 }] };
 try {
   for (const theme of ["light", "dark"]) {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    const page = await browser.newPage({ viewport: { width: 1280, height: 1000 }, deviceScaleFactor: theme === "light" ? 1.25 : 1.5 });
     const errors = []; page.on("pageerror", (e) => errors.push(e.message));
     let requests = 0, fail = false;
     await page.route("**/api/home-usage?*", async (route) => {
@@ -59,20 +59,28 @@ try {
     const sprite = await page.locator('.companion-sprite').evaluate((el) => getComputedStyle(el).backgroundImage);
     assert.match(sprite, /claude-companion\/idle.png/);
     assert.equal((await page.request.get('http://127.0.0.1:' + server.address().port + '/claude-companion/idle.png')).status(), 200);
+    await page.locator('.composer-companion').click({ position: { x: 8, y: 16 } });
+    await page.locator('.composer-companion[data-animation="poke-left"]').waitFor();
+    await page.locator('.composer-companion').click({ position: { x: 40, y: 16 } });
+    await page.locator('.composer-companion[data-animation="poke-right"]').waitFor();
+    await page.locator('.composer-companion').click();
     await page.locator('.composer-companion').click();
     await page.locator('.composer-companion[data-animation="tickle"]').waitFor();
     await page.locator('.composer-companion[data-animation="idle"]').waitFor();
     const crabBox = await page.locator('.composer-companion').boundingBox();
-    await page.mouse.move(crabBox.x + 70, crabBox.y + 55);
+    await page.mouse.move(crabBox.x + 24, crabBox.y + 16);
     await page.mouse.down();
-    await page.mouse.move(crabBox.x - 50, crabBox.y + 55, { steps: 5 });
+    await page.mouse.move(crabBox.x - 50, crabBox.y + 16, { steps: 5 });
     await page.locator('.composer-companion[data-animation="drag"]').waitFor();
     await page.mouse.up();
-    await page.locator('.composer-companion[data-animation="waking"]').waitFor();
+    await page.locator('.composer-companion[data-animation="idle"]').waitFor();
     assert.ok((await page.locator('.composer-companion').boundingBox()).x < crabBox.x, 'drag repositions companion');
-    for (const state of ["thinking", "working", "attention", "error"]) {
+    for (const state of ["thinking", "working", "attention", "error", "typing", "compacting", "conducting"]) {
       await page.getByRole("button", { name: state, exact: true }).click();
       await page.locator('.composer-companion[data-state="' + state + '"]').waitFor();
+      const animation = state === "working" ? "building" : state === "attention" ? "notification" : state;
+      await page.locator('.composer-companion[data-animation="' + animation + '"]').waitFor();
+      await page.locator('.companion-art').screenshot({ path: out + '/' + theme + '-crab-' + state + '.png' });
     }
     await page.getByRole("button", { name: "working", exact: true }).click();
     await page.getByRole("button", { name: "idle", exact: true }).click();
@@ -122,6 +130,16 @@ try {
     assert.equal(await page.getByRole("switch", { name: "Home usage dashboard" }).getAttribute("aria-checked"), "true");
     await page.getByRole("switch", { name: "Home usage dashboard" }).click();
     await page.locator(".home-usage").waitFor({ state: "detached" });
+    await page.getByRole("button", { name: "idle", exact: true }).click();
+    await page.clock.install();
+    await page.clock.runFor(3000);
+    await page.mouse.move(2, 2);
+    await page.clock.runFor(60001);
+    await page.locator('.composer-companion[data-animation="sleeping"]').waitFor();
+    await page.mouse.move(4, 4);
+    await page.locator('.composer-companion[data-animation="waking"]').waitFor();
+    await page.clock.runFor(1000);
+    await page.locator('.composer-companion[data-animation="idle"]').waitFor();
     assert.deepEqual(errors, []);
     await page.close();
   }

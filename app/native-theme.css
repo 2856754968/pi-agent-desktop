@@ -10065,11 +10065,12 @@ html.dark .terminal-panel {
 .home-usage-models li > div { display: flex; justify-content: space-between; gap: 12px; overflow-wrap: anywhere; }
 .home-usage-models meter { display: block; width: 100%; height: 12px; accent-color: var(--menu-selection-color); }
 .composer-companion-seat { position: relative; width: 100%; max-width: 820px; height: 0; margin: 0 auto; pointer-events: none; z-index: 2; }
-.composer-companion { position: absolute; bottom: 0; right: 22px; width: 104px; height: 72px; padding: 0; border: 0; background: transparent; color: var(--text-muted); transform: translateX(var(--companion-offset, 0px)); touch-action: none; pointer-events: auto; cursor: grab; }
+.companion-art { position: absolute; right: 0; bottom: 0; width: 104px; height: 72px; pointer-events: none; transform: translateX(var(--companion-offset, 0px)); }
+.composer-companion { position: absolute; bottom: 0; right: 8px; width: 48px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--text-muted); transform: translateX(var(--companion-offset, 0px)); touch-action: none; pointer-events: auto; cursor: grab; }
 .composer-companion:active { cursor: grabbing; }
 .composer-companion:focus-visible { outline: 2px solid var(--focus-ring); border-radius: 8px; }
 .companion-sprite-window { position: absolute; display: block; overflow: hidden; pointer-events: none; }
-.companion-sprite { position: relative; display: block; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; transform: translate(var(--sprite-x, 0px), var(--sprite-y, 0px)); }
+.companion-sprite { position: relative; display: block; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
 .companion-sprite::after { content: ""; position: absolute; inset: 0; background: var(--text-muted); mask: var(--sprite-ink) no-repeat 0 0 / 100% 100%; image-rendering: pixelated; }
 @media (max-width: 480px) {
   .home-usage { padding: 12px; }

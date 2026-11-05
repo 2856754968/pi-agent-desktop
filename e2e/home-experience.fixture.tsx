@@ -12,7 +12,7 @@ function Fixture() {
     <HomeExperienceSettings />
     <div className="home-fixture-stage chat-window" data-home-dashboard="true"><HomeRipple /><HomeUsageDashboard /></div>
     <div className="home-fixture-composer"><ComposerCompanion state={state} /><textarea aria-label="Composer" /></div>
-    <div>{(["idle", "thinking", "working", "attention", "error"] as const).map((value) =>
+    <div>{(["idle", "thinking", "working", "attention", "error", "typing", "compacting", "conducting"] as const).map((value) =>
       <button key={value} onClick={() => setState(value)}>{value}</button>)}</div>
   </main></I18nProvider>;
 }

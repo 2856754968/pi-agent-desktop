@@ -11,7 +11,7 @@ import { useDiffViewMode } from "@/hooks/useDiffViewMode";
 import { useMessageMotion } from "@/hooks/useMessageMotion";
 import { parseCompactionSummary } from "@/lib/compaction-summary";
 import { getAssistantErrorMessage, getThinkingPreview, hasAssistantAnswer, isAssistantTruncated, isEmptyThinkingBlock } from "@/lib/message-display";
-import { parseUnifiedPatch, type SplitDiffCell, type SplitDiffFile } from "@/lib/patch";
+import { parseNumberedEditDiff, parseUnifiedPatch, type SplitDiffCell, type SplitDiffFile } from "@/lib/patch";
 import { applyPatchPreviewToFiles, applyPatchResultHasFailures, extractApplyPatchPaths, getApplyPatchInputText, parseApplyPatchInput } from "@/lib/apply-patch";
 import { isApplyPatchToolName, isEditToolName, isWriteToolName } from "@/lib/tool-names";
 import { isToolCallExpanded, setToolCallExpanded } from "@/lib/tool-call-expansion";
@@ -1334,7 +1334,7 @@ function ApplyPatchDiffView({ files }: { files: SplitDiffFile[] }) {
 
 function SplitPatchView({ text }: { text: string }) {
   const { mode } = useDiffViewMode();
-  const files = useMemo(() => parseUnifiedPatch(text), [text]);
+  const files = useMemo(() => parseUnifiedPatch(text) ?? parseNumberedEditDiff(text), [text]);
   if (!files) return <PatchTextView text={text} />;
   return <SplitFilesView files={files} mode={mode} />;
 }

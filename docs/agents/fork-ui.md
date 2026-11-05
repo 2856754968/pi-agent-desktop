@@ -177,8 +177,16 @@ an empty new conversation; the companion follows model/tool activity, streaming 
 compaction, blocking extension input, errors and a short run-ended animation.
 `lib/companion-sheets.ts` describes the reference sprite sheets in
 `public/claude-companion/`; their separate artwork notice is retained in `NOTICE.txt`.
-The player supports idle routines, sleep, click/tickle and horizontal dragging, pauses
-when hidden and paints a still frame under reduced motion. Resize clamps the drag offset.
+The player uses the v0.19.8 reference crab sheets and 80ms frames. WAAPI holds each
+frame without a JavaScript frame interval; hidden pages pause and reduced motion paints
+a still frame. Idle extras play once every 20–40 seconds. After 60 seconds without
+pointer or keyboard activity the crab sleeps; activity wakes it. Click its left/right
+half to poke; four clicks within 450ms of each other tickle it. Only the body accepts
+pointer input. Horizontal dragging remains available, and resize clamps its offset.
+`node scripts/sync-companion-sheets.mjs [reference-root]` refreshes body/ink sheets from
+the local reference and adds a one-cell transparent gutter to prevent adjacent-frame
+bleed at fractional display scales; keep sheet geometry in `lib/companion-sheets.ts`
+synchronized with the reference before refreshing.
 The Claude palette and prose typography live in `native-theme.css`; custom CSS still wins.
 Proprietary Anthropic fonts and the reference's Sodium engine are not bundled.
 
