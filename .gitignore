@@ -71,3 +71,4 @@ e2e_*.mjs
 
 # Built phone shell for the relay entry host (npm run relay:shell)
 /relay-shell/dist/
+/.debug/
