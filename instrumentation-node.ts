@@ -1,4 +1,5 @@
 import { configureHttpDispatcher, readHttpIdleTimeoutMs } from "@/lib/http-dispatcher";
+import { initializeNetworkProxy } from "@/lib/network-proxy";
 import { closeAllAgentEventStreams } from "@/lib/agent-event-stream";
 import { startScheduler } from "@/lib/scheduled-tasks";
 import { restartRelayFromConfig } from "@/lib/relay/runtime";
@@ -12,6 +13,14 @@ export function registerNodeInstrumentation(): void {
   // body/header timeouts, so a Web UI session gets the timeout the user
   // configured. Without it the built-in five minutes aborts a provider stream
   // that stays quiet for longer, which a CLI session tolerates.
+
+  // The proxy from Settings › General goes into process.env before the
+  // dispatcher reads it; see lib/network-proxy.ts.
+  try {
+    initializeNetworkProxy();
+  } catch (error) {
+    console.error("[network-proxy] could not apply the saved proxy:", error instanceof Error ? error.message : error);
+  }
   configureHttpDispatcher(readHttpIdleTimeoutMs());
 
   // Scheduled tasks must fire without anyone having opened a page, and the
