@@ -50,28 +50,6 @@ function normalizeWindowsFileHref(value: string): string {
     : value;
 }
 
-interface HtmlLinkNode {
-  type: string;
-  tagName?: string;
-  properties?: Record<string, unknown>;
-  children?: HtmlLinkNode[];
-}
-
-// Run before sanitization: a Windows drive is otherwise rejected as a URL scheme.
-function rehypeWindowsFileLinks(): (tree: HtmlLinkNode) => void {
-  return (tree) => {
-    const walk = (node: HtmlLinkNode) => {
-      if (node.tagName === "a" && node.properties && typeof node.properties.href === "string") {
-        node.properties.href = normalizeWindowsFileHref(node.properties.href);
-      }
-      for (const child of node.children ?? []) {
-        walk(child);
-      }
-    };
-    walk(tree);
-  };
-}
-
 export function markdownUrlTransform(value: string): string {
   const normalized = normalizeWindowsFileHref(value);
   return /^file:/i.test(normalized) ? normalized : markdownAppUrlTransform(normalized);
@@ -894,7 +872,6 @@ function rehypeDisplayMathSource() {
 
 export const markdownRehypePlugins: ReactMarkdownOptions["rehypePlugins"] = [
   rehypeRaw,
-  rehypeWindowsFileLinks,
   [rehypeSanitize, markdownSanitizeSchema],
   rehypeMatchClobberedIds,
   rehypeDisplayMathSource,
@@ -936,7 +913,6 @@ export const markdownDocumentRehypePlugins: ReactMarkdownOptions["rehypePlugins"
 
 export const markdownPreviewRehypePlugins: ReactMarkdownOptions["rehypePlugins"] = [
   rehypeRaw,
-  rehypeWindowsFileLinks,
   [rehypeSanitize, markdownSanitizeSchema],
   rehypeMatchClobberedIds,
   [rehypeKatex, { throwOnError: false, strict: false }],

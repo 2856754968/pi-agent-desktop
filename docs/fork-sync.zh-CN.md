@@ -10,6 +10,33 @@
 不要通过重置 fork 到 upstream 的方式更新，也不要让安装器覆盖自定义版本。
 保持 upstream 的提交祖先关系，之后 Git 才能只合并新增的修改。
 
+## 同步上游 0.15 开发分支（2026-11-10）
+
+用户明确选择合并尚未进入上游 main 的开发代码。合入
+`claude/upstream-v015-ui-port` 的 `e1daa2e4`（包含 `merge-upstream-v015`
+与 `project-deep-checkup-933dbb`）及 `claude/analyze-three-issues-1ee976`
+的 `0b9fac8d`，保持所有源分支的提交祖先关系。应用包版本为 0.15.0，
+Pi SDK 保持 1.5.0。包括右侧侧聊、扩展对话框、模型端点覆盖、文件预览、
+设置界面与 HTTP 代理功能。
+
+保留本地主题、首页与像素伙伴、思考滑块、聊天动效、项目重命名、源码行号链接
+和编号 edit diff。冲突中组合文件预览与本地初始行定位、响应式 diff 与编号解析、
+项目置顶/删除入口与重命名；代理重新配置复用 CONNECT 隧道和已有 HTTP 超时。
+Windows 链接统一使用上游 remark 阶段转换，避免把原始 HTML 中的盘符链接
+也转成 file 链接；本地链接测试补齐真实渲染器使用的 remark + rehype 两阶段。
+代理夹具支持 CONNECT，并断言隧道目标和内部请求，未移除超时保护。
+
+TypeScript、lint、drift、69 项菜单/CSS/定制保护检查通过。浏览器选项菜单、
+首页和聊天动效覆盖浅深主题与 1280/390/320px；源码链接覆盖分页和重复跳转。
+Markdown、源码链接和代理集成的 49 项针对性测试通过。
+完整测试中的 10 项上游问题已在干净 `e1daa2e4`、相同 Node 和依赖下复现：
+Git diff junction、models.json 两项符号链接、技能内容符号链接、两项 hook
+测试的 Windows ESM 路径、extension-ui-theme 的 Windows ESM 路径、
+http-dispatcher 的 file URL 样例、relay 连接上限、只读目录权限测试。
+未删除、跳过或降低这些断言。`desktop:prepare` 的隔离生产构建通过，
+`desktop:verify` 的 Code mode 自检、Bedrock 导入与真实终端启动通过。
+独立工作区保留用于检查，当前操作未推送远程，未生成或安装原生安装包。
+
 ## 同步桌面 0.8.2
 
 以保留祖先关系的三方合并接入 `upstream/main` 的 `0a1c79e`（v0.8.2），
