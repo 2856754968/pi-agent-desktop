@@ -269,10 +269,19 @@ function buildSessionTree(sessions: SessionInfo[]): SessionTreeNode[] {
     }
   }
 
-  // Sort each level by modified desc
-  const sort = (nodes: SessionTreeNode[]) => {
-    nodes.sort((a, b) => b.session.modified.localeCompare(a.session.modified));
-    nodes.forEach((n) => sort(n.children));
+  // A continued fork/subagent also makes its visible ancestor recent, while
+  // keeping the project and session tree intact.
+  const latest = new Map<SessionTreeNode, string>();
+  const sort = (nodes: SessionTreeNode[]): string => {
+    let newest = "";
+    for (const node of nodes) {
+      const childModified = sort(node.children);
+      const modified = childModified > node.session.modified ? childModified : node.session.modified;
+      latest.set(node, modified);
+      if (modified > newest) newest = modified;
+    }
+    nodes.sort((a, b) => latest.get(b)!.localeCompare(latest.get(a)!));
+    return newest;
   };
   sort(roots);
   return roots;
@@ -826,7 +835,8 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
 
   useEffect(() => {
     const previous = previousRunningSessionIdsRef.current;
-    const completedInBackground = [...previous].filter((id) => !runningSessionIds.has(id) && id !== selectedSessionId);
+    const completed = [...previous].filter((id) => !runningSessionIds.has(id));
+    const completedInBackground = completed.filter((id) => id !== selectedSessionId);
     const knownSubagentIds = new Set(
       allSessions
         .filter((session) => session.relation?.kind === "subagent")
@@ -854,10 +864,10 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
         return next;
       });
     }
-    const hasUnlistedRunningSession = newlyRunning.some(
-      (id) => !allSessions.some((session) => session.id === id),
-    );
-    if (completedInBackground.length > 0 || hasUnlistedRunningSession) {
+    // Refresh activity timestamps for existing sessions too: continuing an old
+    // conversation must reorder it in its project as soon as the run starts.
+    // Selected-session completion also refreshes the persisted final timestamp.
+    if (completed.length > 0 || newlyRunning.length > 0) {
       loadSessions(false, true);
     }
     if (completedWithNotifications.length > 0) {

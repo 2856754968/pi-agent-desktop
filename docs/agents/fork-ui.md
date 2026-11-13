@@ -35,7 +35,13 @@ The headless `@lobehub/streamdown` engine owns stable block caching, processor
 reuse and word pacing (`realtime`); no Lobe UI theme is imported. Chat effects
 owns the 480ms text fade via Custom Highlights, disabling the engine’s 180ms fade
 so words never receive both effects. Birth times survive span replacement through
-text offsets. Turning the preference off renders plain Markdown. Completion,
+text offsets. Tail-only text mutations reuse a node/offset index; structural Markdown
+changes rebuild it, and range rebinding visits only the still-fading suffix. The
+animated caret caches its mirror styles, text and marker offsets. Mirror changes
+are measured on the following frame; scroll-only updates reuse those offsets.
+`node e2e/chat-effects.mjs` checks these layout phases and a 400K-character append /
+span-replacement replay alongside the light/dark responsive interaction checks.
+Turning the preference off renders plain Markdown. Completion,
 stop and replacement flush authoritative text. A replaced stream starts a new
 queue, and finished/user/history messages use the ordinary static renderer.
 
@@ -156,6 +162,13 @@ The sidebar project tree is a keyboard `tree`: rows move focus with Up/Down/Home
 
 ## Projects pane views
 The Projects header's hover-only `…` menu switches between `grouped` (project rows with nested session families) and `timeline` (all top-level session families sorted by the root session's `modified` time, with each row's project name after the title). The choice persists in `APP_PREF_KEYS.projectViewMode`. Collapse/expand-all remain grouped-view actions; switching modes never rewrites the stored `collapsedProjects` set. The old Recent section is intentionally gone — the timeline replaces it. Desktop uses `showNativeMenu` check items, while the web build renders `ProjectViewMenu` as a DOM popover. In grouped view, "Show more" reveals five additional session rows per click; collapsing and reopening a project clears that page state so it starts from the latest five (`APP_PREF_KEYS.expandedProjects` stores root → extra pages).
+
+Grouped view retains project headings and sorts session trees by their latest
+activity, including descendants. Pinned sessions retain priority. Run start and
+completion both force a session-list refresh, even for an already listed or
+selected session, so continuing an old conversation raises it within its project.
+`node e2e/sidebar-recency.mjs` exercises resumed sessions, completion, fork activity,
+reload and preserved project groups at desktop/mobile widths in both themes.
 
 ## Projects section fold and count
 
@@ -287,7 +300,7 @@ The topbar renders exactly ONE toolbar group (`app-topbar-actions`: history/bran
 进入首页时固定一次随机选择，统计刷新保持不变；范围不足时退回更短作品。
 合集按“套”显示，未确认用量不显示换算。用量包含输入、输出、缓存，文案说明为参考
 版本的篇幅估算，不能解释为新生成正文长度。福尔摩斯全集的单词估算依据记录在数据中，
-与《福尔摩斯冒险史》保持独立条目。
+与《福尔摩斯冒险史》保持独立条目。新增公版书目使用指定 Gutenberg 英文版本，去除 START/END 标记外的许可文本后统计词数（保留版本内的序言和注释），按每词 4/3 Token 四舍五入估算；各条目保存来源和计算方法。《孙子兵法》标为英译注释版，不代表中文原文篇幅。目录按 Token 数升序排列，所有条目必须能被选择。
 
 验证：`node e2e/chat-effects.mjs`、`node e2e/option-controls.mjs`、
 `node --experimental-strip-types --test lib/home-token-books.test.mjs lib/home-usage.test.mjs`。

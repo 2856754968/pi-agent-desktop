@@ -19,6 +19,11 @@ Fork-owned notes moved out of `AGENTS.md` to keep it short. The upstream doc on 
 - `useDesktopConnection` polls `/api/home` only in Tauri to drive the offline banner. Its cleanup must stop in-flight probes from rescheduling, otherwise an unmount leaves a timer nobody owns and it pings forever.
 
 ## Workspace terminals & node-pty staging
+- The desktop server starts with its absolute bundled Node path for native-module
+  compatibility. Its child-command PATH keeps the user's login/system entries
+  first and moves the bundled runtime directory to the end. Local Node/npm and
+  version-manager shims therefore win; machines without Node retain the bundle
+  as a fallback. `server_process_path` / `user_command_path` own this ordering.
 - General's Default terminal picker detects local executables without launching
   a shell. Automatic prefers PowerShell 7, Windows PowerShell, then CMD on Windows;
   macOS/Linux retain the user's executable `$SHELL` and login arguments. The choice

@@ -104,4 +104,86 @@ try {
     await page.close();
     console.log(theme + " " + width + ": effects and persistence passed");
   }
+  // Measure work on real DOM mutations independently of the renderer's pacing.
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1100 } });
+  await page.goto("http://127.0.0.1:" + server.address().port);
+  const input = page.locator(".chat-input-textarea");
+  await input.fill("Measure caret movement");
+  await input.focus();
+  await page.waitForFunction(() => document.querySelector(".chat-input-textarea")?.hasAttribute("data-animated-caret"));
+  const caretWork = await page.evaluate(async () => {
+    const input = document.querySelector(".chat-input-textarea");
+    const mirror = document.querySelector(".composer-caret-mirror");
+    const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+    let frame = 0, lastWrite = -1, writes = 0, reads = 0, sameFrameReads = 0, ticking = true;
+    const tick = () => { frame++; if (ticking) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+    const observer = new MutationObserver(records => { writes += records.length; lastWrite = frame; });
+    observer.observe(mirror, { attributes: true, characterData: true, childList: true, subtree: true });
+    const original = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (...args) {
+      if (this === mirror || mirror.contains(this)) {
+        reads++;
+        if (frame === lastWrite) sameFrameReads++;
+      }
+      return original.apply(this, args);
+    };
+    try {
+      input.setSelectionRange(0, 0);
+      input.dispatchEvent(new Event("select"));
+      for (let i = 0; i < 5; i++) await nextFrame();
+      const changedWrites = writes, changedReads = reads;
+      for (let i = 0; i < 8; i++) {
+        input.dispatchEvent(new Event("scroll"));
+        await nextFrame();
+      }
+      return { changedWrites, changedReads, sameFrameReads, cachedWrites: writes - changedWrites, cachedReads: reads - changedReads };
+    } finally {
+      ticking = false;
+      observer.disconnect();
+      Element.prototype.getBoundingClientRect = original;
+    }
+  });
+  assert.ok(caretWork.changedWrites > 0 && caretWork.changedReads > 0);
+  assert.equal(caretWork.sameFrameReads, 0, "mirror layout is read after its write frame");
+  assert.equal(caretWork.cachedWrites, 0, "scroll-only updates reuse mirror content and styles");
+  assert.equal(caretWork.cachedReads, 0, "scroll-only updates reuse measured marker offsets");
+  const revealWork = await page.locator("#stream .chat-stream-reveal").evaluate(async root => {
+    const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < 2000; i++) {
+      const span = document.createElement("span");
+      span.textContent = "Stable paragraph text. ".repeat(10);
+      fragment.append(span);
+    }
+    root.append(fragment);
+    await nextFrame();
+    const tail = root.lastChild.firstChild;
+    const original = document.createTreeWalker;
+    let walks = 0;
+    document.createTreeWalker = function (node, ...args) {
+      if (node === root) walks++;
+      return original.call(this, node, ...args);
+    };
+    try {
+      for (let i = 0; i < 20; i++) {
+        tail.appendData("append ");
+        await nextFrame();
+      }
+      const appendWalks = walks;
+      const replacement = tail.cloneNode();
+      tail.replaceWith(replacement);
+      await nextFrame();
+      const connectedFade = [...CSS.highlights.entries()]
+        .filter(([name]) => name.startsWith("pi-stream-reveal-"))
+        .some(([, highlight]) => [...highlight].some(range => range.startContainer === replacement && range.toString().includes("append")));
+      return { appendWalks, structuralWalks: walks - appendWalks, connectedFade, length: root.textContent.length };
+    } finally { document.createTreeWalker = original; }
+  });
+  assert.ok(revealWork.length > 400000);
+  assert.equal(revealWork.appendWalks, 0, "tail appends do not rescan the long answer");
+  assert.equal(revealWork.structuralWalks, 1, "span replacement rebuilds the text index");
+  assert.equal(revealWork.connectedFade, true, "span replacement preserves the fading suffix");
+  console.log("PASS caret layout phases/cache and 400K-character reveal append/replacement", { caretWork, revealWork });
+  await page.close();
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

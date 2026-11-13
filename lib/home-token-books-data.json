@@ -18,6 +18,14 @@
     "collection": false
   },
   {
+    "tokens": 24652,
+    "key": "home.reference.macbeth",
+    "title": { "zh": "《麦克白》", "en": "Macbeth" },
+    "collection": false,
+    "estimate": "18,489 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/ebooks/1533.txt.utf-8"
+  },
+  {
     "tokens": 27557,
     "key": "home.reference.homeBookMetamorphosis",
     "title": {
@@ -25,6 +33,14 @@
       "en": "Metamorphosis"
     },
     "collection": false
+  },
+  {
+    "tokens": 34663,
+    "key": "home.reference.romeoAndJuliet",
+    "title": { "zh": "《罗密欧与朱丽叶》", "en": "Romeo and Juliet" },
+    "collection": false,
+    "estimate": "25,997 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/ebooks/1513.txt.utf-8"
   },
   {
     "tokens": 34713,
@@ -72,6 +88,14 @@
     "collection": false
   },
   {
+    "tokens": 42711,
+    "key": "home.reference.hamlet",
+    "title": { "zh": "《哈姆雷特》", "en": "Hamlet" },
+    "collection": false,
+    "estimate": "32,033 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/ebooks/1524.txt.utf-8"
+  },
+  {
     "tokens": 42817,
     "key": "home.reference.homeBookTimeMachine",
     "title": {
@@ -97,6 +121,14 @@
       "en": "Heart of Darkness"
     },
     "collection": false
+  },
+  {
+    "tokens": 52277,
+    "key": "home.reference.siddhartha",
+    "title": { "zh": "《悉达多》", "en": "Siddhartha" },
+    "collection": false,
+    "estimate": "39,208 words × 4/3 tokens per word, rounded; English Gutenberg translation body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/ebooks/2500.txt.utf-8"
   },
   {
     "tokens": 53930,
@@ -162,6 +194,14 @@
     "collection": false
   },
   {
+    "tokens": 73587,
+    "key": "home.reference.artOfWar",
+    "title": { "zh": "《孙子兵法》（英译注释版）", "en": "The Art of War (annotated English edition)" },
+    "collection": false,
+    "estimate": "55,190 words × 4/3 tokens per word, rounded; Lionel Giles English translation with introduction and commentary between Gutenberg START/END markers; approximate, not a tokenizer measurement or a count of the Chinese original.",
+    "source": "https://www.gutenberg.org/cache/epub/132/pg132.txt"
+  },
+  {
     "tokens": 73931,
     "key": "home.reference.homeBookAndersensFairyTales",
     "title": {
@@ -187,6 +227,22 @@
       "en": "Beyond Good and Evil"
     },
     "collection": false
+  },
+  {
+    "tokens": 91587,
+    "key": "home.reference.treasureIsland",
+    "title": { "zh": "《金银岛》", "en": "Treasure Island" },
+    "collection": false,
+    "estimate": "68,690 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/ebooks/120.txt.utf-8"
+  },
+  {
+    "tokens": 95548,
+    "key": "home.reference.tomSawyer",
+    "title": { "zh": "《汤姆·索亚历险记》", "en": "The Adventures of Tom Sawyer" },
+    "collection": false,
+    "estimate": "71,661 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/ebooks/74.txt.utf-8"
   },
   {
     "tokens": 96418,
@@ -234,6 +290,22 @@
     "collection": false
   },
   {
+    "tokens": 108144,
+    "key": "home.reference.secretGarden",
+    "title": { "zh": "《秘密花园》", "en": "The Secret Garden" },
+    "collection": false,
+    "estimate": "81,108 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/ebooks/113.txt.utf-8"
+  },
+  {
+    "tokens": 111200,
+    "key": "home.reference.persuasion",
+    "title": { "zh": "《劝导》", "en": "Persuasion" },
+    "collection": false,
+    "estimate": "83,400 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/cache/epub/105/pg105.txt"
+  },
+  {
     "tokens": 115000,
     "key": "home.reference.homeBookToLive",
     "title": {
@@ -268,6 +340,14 @@
       "en": "Nineteen Eighty-Four"
     },
     "collection": false
+  },
+  {
+    "tokens": 137523,
+    "key": "home.reference.anneOfGreenGables",
+    "title": { "zh": "《绿山墙的安妮》", "en": "Anne of Green Gables" },
+    "collection": false,
+    "estimate": "103,142 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/cache/epub/45/pg45.txt"
   },
   {
     "tokens": 138725,
@@ -315,6 +395,14 @@
     "collection": false
   },
   {
+    "tokens": 155359,
+    "key": "home.reference.wutheringHeights",
+    "title": { "zh": "《呼啸山庄》", "en": "Wuthering Heights" },
+    "collection": false,
+    "estimate": "116,519 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/ebooks/768.txt.utf-8"
+  },
+  {
     "tokens": 157765,
     "key": "home.reference.homeBookDivineComedy",
     "title": {
@@ -331,6 +419,14 @@
       "en": "Madame Bovary"
     },
     "collection": false
+  },
+  {
+    "tokens": 159587,
+    "key": "home.reference.senseAndSensibility",
+    "title": { "zh": "《理智与情感》", "en": "Sense and Sensibility" },
+    "collection": false,
+    "estimate": "119,690 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/cache/epub/161/pg161.txt"
   },
   {
     "tokens": 161488,
@@ -385,6 +481,22 @@
       "en": "Dracula"
     },
     "collection": false
+  },
+  {
+    "tokens": 214055,
+    "key": "home.reference.emma",
+    "title": { "zh": "《爱玛》", "en": "Emma" },
+    "collection": false,
+    "estimate": "160,541 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/cache/epub/158/pg158.txt"
+  },
+  {
+    "tokens": 248365,
+    "key": "home.reference.littleWomen",
+    "title": { "zh": "《小妇人》", "en": "Little Women" },
+    "collection": false,
+    "estimate": "186,274 words × 4/3 tokens per word, rounded; English Gutenberg edition body between START/END markers, including edition notes; approximate, not a tokenizer measurement.",
+    "source": "https://www.gutenberg.org/files/514/514-0.txt"
   },
   {
     "tokens": 252176,

@@ -466,8 +466,19 @@ fn child_process_compatible_path(path: &Path) -> PathBuf {
 #[cfg(feature = "custom-protocol")]
 fn server_process_path(node_path: &Path) -> Option<std::ffi::OsString> {
     let inherited = login_shell_path().unwrap_or_default();
-    let mut paths = vec![node_path.parent()?.to_path_buf()];
-    paths.extend(env::split_paths(&inherited));
+    user_command_path(node_path, &inherited)
+}
+
+#[cfg(feature = "custom-protocol")]
+fn user_command_path(node_path: &Path, inherited: &str) -> Option<std::ffi::OsString> {
+    let bundled_dir = node_path.parent()?;
+    // The server starts with an absolute runtime path. Its child commands
+    // should use the user's Node/npm and version-manager shims first; keep
+    // the bundled runtime only as a fallback for machines without Node.
+    let mut paths: Vec<PathBuf> = env::split_paths(inherited)
+        .filter(|path| dunce::simplified(path) != dunce::simplified(bundled_dir))
+        .collect();
+    paths.push(bundled_dir.to_path_buf());
     env::join_paths(paths).ok()
 }
 
@@ -826,6 +837,24 @@ mod tests {
     use super::{logging::format_utc_millis, native_prefs::is_inline_frame_document};
 
     use std::path::{Path, PathBuf};
+
+    #[test]
+    fn user_node_and_shims_precede_bundled_fallback() {
+        let bundled = PathBuf::from("runtime");
+        let local = PathBuf::from("local-node");
+        let shims = PathBuf::from("version-manager");
+        let inherited = std::env::join_paths([&bundled, &shims, &local]).unwrap();
+        let result = super::user_command_path(&bundled.join("node"), inherited.to_str().unwrap()).unwrap();
+        assert_eq!(std::env::split_paths(&result).collect::<Vec<_>>(), vec![shims, local, bundled]);
+    }
+
+    #[test]
+    fn bundled_node_remains_available_without_local_node() {
+        let bundled = PathBuf::from("runtime");
+        let inherited = std::env::join_paths([&bundled]).unwrap();
+        let result = super::user_command_path(&bundled.join("node"), inherited.to_str().unwrap()).unwrap();
+        assert_eq!(std::env::split_paths(&result).collect::<Vec<_>>(), vec![bundled]);
+    }
 
     #[test]
     fn inline_frame_documents_stay_in_the_app() {
