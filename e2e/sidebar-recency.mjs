@@ -37,6 +37,7 @@ const browser = await chromium.launch({ headless: true, channel: process.env.E2E
 const session = (id, name, modified, cwd = "D:/work/app", parentSessionId) => ({
   id, name, modified, created: "2026-11-01T10:00:00Z", path: cwd + "/" + id + ".jsonl", cwd, projectRoot: cwd,
   workspaceKind: "project", firstMessage: name, messageCount: 2, parentSessionId,
+  ...(parentSessionId ? { relation: { kind: "fork", originSessionId: parentSessionId } } : {}),
 });
 try {
   for (const theme of ["light", "dark"]) for (const width of [1280, 390]) {
@@ -80,18 +81,19 @@ try {
     const finished = page.waitForResponse(r => new URL(r.url()).pathname === "/api/sessions");
     broadcast();
     await finished;
-    // A continued fork raises its containing tree without changing its hierarchy.
+    // A continued fork rises as its own row, as introduced in desktop v0.8.5.
     sessions[1].modified = "2026-11-11T11:00:00Z";
     sessions[3].modified = "2026-11-11T12:00:00Z";
     running = ["fork"];
     const forkStarted = page.waitForResponse(r => new URL(r.url()).pathname === "/api/sessions");
     broadcast();
     await forkStarted;
-    assert.match(await firstTitle(), /Old conversation/);
+    await page.waitForFunction(() => document.querySelector(".sidebar-project-tree-group .session-item")?.textContent.includes("Old fork"));
+    assert.match(await firstTitle(), /Old fork/);
     await page.screenshot({ path: `${out}/${theme}-${width}.png` });
     await page.reload();
     await group.waitFor();
-    assert.match(await firstTitle(), /Old conversation/, "persisted timestamps retain order after reload");
+    assert.match(await firstTitle(), /Old fork/, "persisted timestamps retain order after reload");
     assert.deepEqual(errors, []);
     await page.close();
     console.log(`PASS grouped recency, resumed session, completion, fork, reload: ${theme} ${width}`);
