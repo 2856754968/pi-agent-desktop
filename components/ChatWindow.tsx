@@ -61,6 +61,7 @@ interface Props {
   initialScrollPosition?: ChatScrollPosition | null;
   onScrollPositionChange?: (sessionId: string, position: ChatScrollPosition) => void;
   sessionRunning?: boolean;
+  runningSubagentCount?: number;
   newSessionCwd: string | null;
   newSessionDraftKey: string | null;
   /** A run ended; `aborted` when it was stopped rather than finished. */
@@ -276,7 +277,7 @@ function ProcessDetailsGroup({ messageCount, toolCallCount, defaultExpanded = fa
   );
 }
 
-export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTargetHandled, initialScrollPosition, onScrollPositionChange, sessionRunning, newSessionCwd, newSessionDraftKey, onAgentEnd, onAttentionNeeded, onSessionCreated, onSessionForked, modelsRefreshKey, workspaceUnavailable, onRecheckWorkspace, chatInputRef, onBranchDataChange, onSystemPromptChange, onSystemToolsChange, onSystemInfoLoaderChange, onSessionStatsChange, onSessionStatsPanelOpen, onOpenSettings, onOpenModelsConfig, onContextUsageChange, onOpenFile, onOpenSession, panel = false, onSideSession, onSelectProject, projectOptions, onProjectChange, onProjectFilesImported, quoteSelectionEnabled = true, conversationNavigatorEnabled = true, initialPrompt, onInitialPromptConsumed, soundEnabled = true, playDoneSound = () => {}, unlockAudio }: Props) {
+export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTargetHandled, initialScrollPosition, onScrollPositionChange, sessionRunning, runningSubagentCount, newSessionCwd, newSessionDraftKey, onAgentEnd, onAttentionNeeded, onSessionCreated, onSessionForked, modelsRefreshKey, workspaceUnavailable, onRecheckWorkspace, chatInputRef, onBranchDataChange, onSystemPromptChange, onSystemToolsChange, onSystemInfoLoaderChange, onSessionStatsChange, onSessionStatsPanelOpen, onOpenSettings, onOpenModelsConfig, onContextUsageChange, onOpenFile, onOpenSession, panel = false, onSideSession, onSelectProject, projectOptions, onProjectChange, onProjectFilesImported, quoteSelectionEnabled = true, conversationNavigatorEnabled = true, initialPrompt, onInitialPromptConsumed, soundEnabled = true, playDoneSound = () => {}, unlockAudio }: Props) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
   const chatOnly = workspaceKind === "chat" || session?.workspaceKind === "chat";
@@ -1810,7 +1811,8 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
             }}
           />
         )}
-        <ComposerCompanion key={session?.id ?? newSessionDraftKey} state={extensionDialog || extensionCustomUi ? "attention"
+        <ComposerCompanion key={session?.id ?? newSessionDraftKey} costUsd={sessionStats?.cost} runningSubagentCount={runningSubagentCount}
+          state={extensionDialog || extensionCustomUi ? "attention"
           : error ? "error" : isCompacting ? "compacting"
           : bashRunning || agentPhase?.kind === "running_tools" || agentPhase?.kind === "running_command" ? "working"
           : streamState.isStreaming && hasStreamingContent ? "typing" : sessionBusy ? "thinking" : "idle"} />

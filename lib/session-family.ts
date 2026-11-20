@@ -126,6 +126,20 @@ export function countRunningSubagents(
   return subagents.filter((session) => runningSessionIds.has(session.id)).length;
 }
 
+/** Count live direct subagents separately for each parent, including parents in side chats. */
+export function countRunningSubagentsByParent(
+  sessions: readonly SessionInfo[],
+  runningSessionIds: ReadonlySet<string>,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const { id, relation } of sessions) {
+    if (relation?.kind !== "subagent" || !runningSessionIds.has(id)) continue;
+    const parentId = relation.parentSessionId;
+    counts.set(parentId, (counts.get(parentId) ?? 0) + 1);
+  }
+  return counts;
+}
+
 /** The top bar's Agents badge: how many run while any does, else how many there are. */
 export function getAgentsBadge(
   subagents: readonly SessionInfo[],

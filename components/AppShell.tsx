@@ -109,7 +109,7 @@ import type { AgentEndInfo } from "@/hooks/useAgentSession";
 import type { SessionStatsInfo } from "@/lib/pi-types";
 import type { FileViewerState } from "@/lib/file-viewer-state";
 import type { ToolEntry } from "@/lib/tool-presets";
-import { getSessionFamily, isHiddenRelation, sideChatTitle } from "@/lib/session-family";
+import { countRunningSubagentsByParent, getSessionFamily, isHiddenRelation, sideChatTitle } from "@/lib/session-family";
 import { createSideChat, deleteSideChat } from "@/lib/side-chat-client";
 import { addSideTab, pruneSideTabs, readSideTabs, SIDE_TABS_KEY, writeSideTabs, type SideTab } from "@/lib/side-tabs";
 import { getLastSettingsSection, type SettingsSection } from "@/lib/settings-navigation";
@@ -262,6 +262,10 @@ export function AppShell() {
     [selectedSession?.id, sessionsWithSelection],
   );
   const [runningSessionIds, setRunningSessionIds] = useState<Set<string>>(() => new Set());
+  const runningSubagentsByParent = useMemo(
+    () => countRunningSubagentsByParent(sessionCatalog, runningSessionIds),
+    [sessionCatalog, runningSessionIds],
+  );
   const handleRunningSessionIdsChange = useCallback((ids: Set<string>) => {
     setRunningSessionIds((previous) => {
       if (previous.size === ids.size && [...ids].every((id) => previous.has(id))) return previous;
@@ -3006,6 +3010,7 @@ export function AppShell() {
               initialScrollPosition={selectedSession ? sessionScrollPositionsRef.current.get(selectedSession.id) ?? null : null}
               onScrollPositionChange={handleSessionScrollPositionChange}
               sessionRunning={Boolean(selectedSession && runningSessionIds.has(selectedSession.id))}
+              runningSubagentCount={selectedSession ? runningSubagentsByParent.get(selectedSession.id) : undefined}
               newSessionCwd={effectiveNewSessionCwd}
               newSessionDraftKey={newSessionDraftKey}
               onAgentEnd={handleAgentEnd}
@@ -3346,6 +3351,7 @@ export function AppShell() {
               <SessionChatPanel
                 sessionId={activeSideTab.sessionId}
                 running={runningSessionIds.has(activeSideTab.sessionId)}
+                runningSubagentCount={runningSubagentsByParent.get(activeSideTab.sessionId)}
                 modelsRefreshKey={modelsRefreshKey}
                 onAgentEnd={() => setRefreshKey((key) => key + 1)}
                 onOpenFile={handleOpenLinkedFile}

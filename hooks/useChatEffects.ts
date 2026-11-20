@@ -5,6 +5,7 @@ import { APP_PREF_KEYS, getPref, setPref } from "@/lib/app-prefs";
 const choices = {
   caretMotion: ["on", "off"],
   streamReveal: ["on", "off"],
+  thinkingSteps: ["off", "on"],
   messageMotion: ["flight", "grow", "off"],
   contextDisplay: ["band", "ramp", "pie"],
   contextPercent: ["off", "on"],

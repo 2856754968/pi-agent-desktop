@@ -12,6 +12,7 @@ export const APP_PREF_KEYS = {
   homeDashboard: "pi-home-dashboard",
   caretMotion: "pi-caret-motion",
   streamReveal: "pi-stream-reveal",
+  thinkingSteps: "pi-thinking-steps",
   messageMotion: "pi-message-motion",
   contextDisplay: "pi-context-display",
   contextPercent: "pi-context-percent",

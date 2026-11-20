@@ -1,16 +1,25 @@
 "use client";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { useHomeExperience } from "@/hooks/useHomeExperience";
 import { COMPANION_FRAME_MS, COMPANION_GUTTER, COMPANION_SHEETS, type CompanionAnimation } from "@/lib/companion-sheets";
 
-export type CompanionState = "idle" | "thinking" | "working" | "attention" | "error" | "typing" | "compacting" | "conducting";
+export type CompanionState = "idle" | "thinking" | "working" | "attention" | "error" | "typing" | "compacting";
 const IDLE_EXTRAS = ["idle-look", "idle-wave", "idle-laptop"] as const;
 const nextExtraDelay = () => 20000 + Math.random() * 20000;
 
 /** v0.19.8 crab artwork and reactions, driven by Pi lifecycle signals. */
-export function ComposerCompanion({ state }: { state: CompanionState }) {
+export function ComposerCompanion({ state: sessionState, costUsd = 0, runningSubagentCount = 0 }: {
+  state: CompanionState;
+  costUsd?: number;
+  runningSubagentCount?: number;
+}) {
+  const canShowSubagents = sessionState !== "attention" && sessionState !== "error" && sessionState !== "compacting";
+  const state = canShowSubagents && runningSubagentCount > 0
+    ? (runningSubagentCount === 1 ? "music" : "conducting")
+    : sessionState;
   const { t } = useI18n();
+  const costId = useId();
   const { mascot } = useHomeExperience();
   const previous = useRef(state);
   const strip = useRef<HTMLSpanElement>(null);
@@ -26,7 +35,7 @@ export function ComposerCompanion({ state }: { state: CompanionState }) {
   const [reaction, setReaction] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
   useEffect(() => {
-    const finished = state === "idle" && ["working", "thinking", "typing", "compacting", "conducting"].includes(previous.current);
+    const finished = state === "idle" && ["working", "thinking", "typing", "compacting", "music", "conducting"].includes(previous.current);
     previous.current = state;
     quietSince.current = Date.now();
     setCelebrating(finished);
@@ -129,7 +138,8 @@ export function ComposerCompanion({ state }: { state: CompanionState }) {
     return () => observer.disconnect();
   }, [mascot]);
   if (!mascot) return null;
-  const labelKey = ["typing", "compacting", "conducting"].includes(displayState) ? "working" : displayState;
+  const labelKey = ["typing", "compacting", "music", "conducting"].includes(displayState) ? "working" : displayState;
+  const cost = Number.isFinite(costUsd) && costUsd > 0 ? `$${costUsd.toFixed(4)}` : null;
   const react = (key: CompanionAnimation) => { setExtra(key); setReaction((value) => value + 1); };
   const release = (id: number, cancelled: boolean) => {
     if (drag.current?.id !== id) return;
@@ -139,7 +149,7 @@ export function ComposerCompanion({ state }: { state: CompanionState }) {
   };
   return <div ref={seat} className="composer-companion-seat">
     <button type="button" className="composer-companion" data-state={displayState} data-animation={animation}
-      aria-label={t("home.companion." + labelKey)} title={t("home.companion." + labelKey)}
+      aria-label={t("home.companion." + labelKey)} aria-describedby={cost ? costId : undefined}
       style={{ "--companion-offset": `${offset}px` } as CSSProperties}
       onPointerDown={(event) => {
         if (event.button !== 0 || drag.current) return;
@@ -170,8 +180,9 @@ export function ComposerCompanion({ state }: { state: CompanionState }) {
         if (clicks.current.length >= 4) { clicks.current = []; react("tickle"); }
         else react(event.detail === 0 || event.clientX - box.left < box.width / 2 ? "poke-left" : "poke-right");
       }} />
-    <span className="companion-art" style={{ "--companion-offset": `${offset}px` } as CSSProperties} aria-hidden="true">
-    <span className="companion-sprite-window" style={{ left: x * 2, top: y * 2, width: width * 2, height: height * 2 } as CSSProperties}>
+    <span className="companion-art" style={{ "--companion-offset": `${offset}px` } as CSSProperties}>
+    {cost && <span className="companion-cost" id={costId} role="tooltip" style={{ top: y * 2 }}>{cost}</span>}
+    <span className="companion-sprite-window" aria-hidden="true" style={{ left: x * 2, top: y * 2, width: width * 2, height: height * 2 } as CSSProperties}>
       <span ref={strip} className="companion-sprite" style={{
         width: cellWidth * 16, height: Math.ceil(frames / 8) * cellHeight * 2,
         backgroundImage: `url(/claude-companion/${animation}.png)`,

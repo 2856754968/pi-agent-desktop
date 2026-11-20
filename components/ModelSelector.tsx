@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { isImeComposing } from "@/lib/ime";
@@ -75,12 +75,17 @@ export function ModelSelector({
   const { t, locale } = useI18n();
   const isMobile = useIsMobile();
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const panelId = useId();
   const [open, setOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState<{ top: number; right: number; bottom: number; left: number; width: number } | null>(null);
   const [filter, setFilter] = useState("");
+  const [collapsedProviders, setCollapsedProviders] = useState<ReadonlySet<string>>(() => new Set());
   const locked = disabled || busy;
   const sortedOptions = useMemo(() => [...options].sort(compareModelOptions), [options]);
+  const grouped = sortedOptions.some((option) => option.provider !== sortedOptions[0]?.provider);
+  const searching = Boolean(filter.trim());
   const filteredOptions = filterModelOptions(sortedOptions, filter);
   const showFilter = sortedOptions.length > MODEL_FILTER_THRESHOLD;
   const modelsByProvider: { provider: string; label: string; options: ModelSelectorOption[] }[] = [];
@@ -179,12 +184,15 @@ export function ModelSelector({
         event.stopPropagation();
         setFilter("");
         setOpen(false);
+        triggerRef.current?.focus();
       }}
     >
       <button
+        ref={triggerRef}
         type="button"
         aria-label={ariaLabel ?? buttonTitle}
-        aria-haspopup="listbox"
+        aria-haspopup={grouped ? "dialog" : "listbox"}
+        aria-controls={open ? panelId : undefined}
         aria-expanded={open}
         aria-busy={busy || undefined}
         disabled={locked}
@@ -193,10 +201,9 @@ export function ModelSelector({
         onClick={(event) => {
           const rect = event.currentTarget.getBoundingClientRect();
           setAnchorRect({ top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width });
-          setOpen((current) => {
-            if (current) setFilter("");
-            return !current;
-          });
+          if (open) setFilter("");
+          else setCollapsedProviders(new Set());
+          setOpen(!open);
         }}
         onMouseEnter={(event) => {
           if (locked) return;
@@ -255,8 +262,9 @@ export function ModelSelector({
           <div
             ref={panelRef}
             className="native-popover app-menu"
-            role="listbox"
-            aria-label={ariaLabel}
+            id={panelId}
+            role={grouped ? "dialog" : "listbox"}
+            aria-label={ariaLabel ?? buttonTitle}
             style={{
               position: "fixed",
               ...verticalPosition,
@@ -302,28 +310,41 @@ export function ModelSelector({
               </div>
             )}
             <div className="app-menu-list">
-              {onClear && !filter.trim() && (
-                <SelectorRow active={!value} gutter={Boolean(onSetDefault)} onSelect={() => {
-                  setOpen(false);
-                  setFilter("");
-                  onClear();
-                }}>
-                  <OptionLabel label={emptyLabel ?? "Default"} />
-                </SelectorRow>
+              {onClear && !searching && (
+                <div role={grouped ? "listbox" : undefined} aria-label={grouped ? emptyLabel ?? "Default" : undefined}>
+                  <SelectorRow active={!value} gutter={Boolean(onSetDefault)} onSelect={() => {
+                    setOpen(false);
+                    setFilter("");
+                    onClear();
+                  }}>
+                    <OptionLabel label={emptyLabel ?? "Default"} />
+                  </SelectorRow>
+                </div>
               )}
               {modelsByProvider.length === 0 ? (
                 <div style={{ padding: "8px 12px", color: "var(--text-dim)", fontSize: "var(--fs-caption)", whiteSpace: "nowrap" }}>
-                  {filter.trim() ? t("chat.noMatchingModels") : "No available models"}
+                  {searching ? t("chat.noMatchingModels") : "No available models"}
                 </div>
-              ) : modelsByProvider.map((group, index) => (
-                <div key={group.provider}>
-                  {modelsByProvider.length > 1 && (
-                    <div style={{ padding: "6px 12px 4px", borderTop: index > 0 || onClear ? "1px solid var(--border)" : "none", color: "var(--text-dim)", fontSize: "var(--fs-micro)", fontWeight: "var(--fw-semibold)", letterSpacing: 0 }}>
-                      {group.label}
-                    </div>
+              ) : modelsByProvider.map((group) => {
+                const expanded = searching || !collapsedProviders.has(group.provider);
+                const groupId = `${panelId}-${group.provider}`;
+                return <div key={group.provider}>
+                  {grouped && (
+                    <button type="button" className="model-provider-toggle" aria-expanded={expanded} aria-controls={groupId} disabled={searching}
+                      onClick={() => setCollapsedProviders((current) => {
+                        const next = new Set(current);
+                        if (next.has(group.provider)) next.delete(group.provider);
+                        else next.add(group.provider);
+                        return next;
+                      })}>
+                      <span>{group.label}</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
                   )}
-                  {group.options.map((option) => {
-                    return (
+                  <div id={groupId} role={grouped ? "listbox" : undefined} aria-label={grouped ? group.label : undefined} hidden={!expanded}>
+                    {expanded && group.options.map((option) => (
                       <SelectorRow
                         key={`${option.provider}:${option.modelId}`}
                         active={option.modelId === value?.modelId && option.provider === value?.provider}
@@ -340,10 +361,10 @@ export function ModelSelector({
                           <span className="model-option-description">{modelDescription(option.modelId, option.name, locale) ?? t("effects.customModel")}</span>
                         </span>
                       </SelectorRow>
-                    );
-                  })}
-                </div>
-              ))}
+                    ))}
+                  </div>
+                </div>;
+              })}
             </div>
           </div>
         );

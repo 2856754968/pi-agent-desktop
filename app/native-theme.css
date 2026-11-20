@@ -4981,7 +4981,7 @@ html.dark {
   --composer-border-width: 1px;
   overflow: visible;
   padding: var(--composer-inset);
-  background: var(--surface) !important;
+  background: var(--composer-surface) !important;
   border: var(--composer-border-width) solid var(--border) !important;
   /* The outer bottom-right arc and the send circle share their center. */
   border-radius: calc(var(--composer-send-size) / 2 + var(--composer-inset) + var(--composer-border-width)) !important;
@@ -10507,6 +10507,44 @@ html.dark .terminal-panel {
 .composer-companion { position: absolute; bottom: 0; right: 8px; width: 48px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--text-muted); transform: translateX(var(--companion-offset, 0px)); touch-action: none; pointer-events: auto; cursor: grab; }
 .composer-companion:active { cursor: grabbing; }
 .composer-companion:focus-visible { outline: 2px solid var(--focus-ring); border-radius: 8px; }
+@font-face {
+  font-family: "Claude Style Pixel";
+  src: url("/claude-companion/ClaudeStylePixel.woff2") format("woff2");
+  font-display: swap;
+}
+/* Open corners and a stepped tail, adapted from the reference's MIT mascot bubble. */
+.companion-cost {
+  position: absolute;
+  right: 8px;
+  transform: translateY(calc(-100% - 8px));
+  visibility: hidden;
+  padding: 6px 8px;
+  background: var(--surface-elevated);
+  box-shadow: 0 -2px var(--accent), 0 2px var(--accent), -2px 0 var(--accent), 2px 0 var(--accent);
+  color: var(--text-dim);
+  font: 400 12px / 12px "Claude Style Pixel", var(--font-mono);
+  font-synthesis: none;
+  -webkit-font-smoothing: none;
+  white-space: nowrap;
+  transition: visibility 0s;
+}
+.companion-cost::after {
+  content: "";
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 14px;
+  width: 2px;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: -2px 0 var(--accent), -4px 0 var(--accent), -2px 2px var(--accent);
+}
+.composer-companion:focus-visible + .companion-art .companion-cost { visibility: visible; }
+@media (hover: hover) {
+  .composer-companion:hover:not(:active) + .companion-art .companion-cost {
+    visibility: visible;
+    transition-delay: 250ms;
+  }
+}
 .companion-sprite-window { position: absolute; display: block; overflow: hidden; pointer-events: none; }
 .companion-sprite { position: relative; display: block; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
 .companion-sprite::after { content: ""; position: absolute; inset: 0; background: var(--text-muted); mask: var(--sprite-ink) no-repeat 0 0 / 100% 100%; image-rendering: pixelated; }
@@ -10520,39 +10558,45 @@ html.dark .terminal-panel {
   .composer-companion, .composer-companion * { animation: none !important; }
 }
 
-/* Claude palette and typography, adapted from the reference's tokens.json.
-   Shared menu geometry, font preferences and native window controls remain host-owned. */
+/* Claude preset from dsh-claude-style's tokens.json and resolved STYLE.md table.
+   Pi's smaller metadata and menu indicators use stronger contrast on tinted rows. */
 :root {
-  --bg: #ffffff; --bg-panel: #fafafa; --bg-subtle: #f5f5f5;
-  --bg-hover: #f0f0f0; --bg-selected: #e9e9e9;
-  --surface: #ffffff; --surface-muted: #f5f5f5; --surface-elevated: #ffffff;
-  --text: #181818; --text-muted: #646166; --text-dim: #747078;
-  --border: #dedcde; --separator: #eae8ea;
-  --accent: #d97757; --menu-selection-color: #bf6446;
-  --accent-hover: #c46343; --accent-contrast: #fff;
+  --bg: #ffffff; --bg-panel: #fafafa; --bg-subtle: rgba(6, 6, 6, 0.05);
+  --bg-hover: #f4f4f4; --bg-selected: #ebe9ea;
+  --surface: #ffffff; --surface-muted: #f9f9f9; --surface-elevated: #ffffff;
+  --composer-surface: var(--surface);
+  --text: #161616; --text-muted: #6d6668; --text-dim: #6f676a;
+  --border: #e9e9e9; --separator: rgba(6, 6, 6, 0.06);
+  --accent: #d97757; --menu-selection-color: #a35035;
+  --accent-hover: #c46343; --accent-contrast: #28130c;
   --accent-soft: #d977571a; --accent-border: #d9775761;
-  --sidebar-selected: #eeecec; --workbench-bg: var(--bg);
+  --sidebar-selected: var(--bg-selected); --workbench-bg: var(--bg);
   --text-meta: var(--text-dim);
-  --code-accent: #3f5f8f; --code-warm: #943333; --code-comment: #81787a;
-  --focus-ring: #c66140; --selection: #f2d5ca;
-  --user-bg: #f4f2f3; --tool-bg: #f8f8f8;
-  --claude-link: #184f95; --claude-code: #943333; --data-ink: #426cad;
+  --code-accent: #3f5f8f; --code-warm: #943333; --code-comment: var(--text-dim);
+  --focus-ring: #c46343; --selection: rgba(246, 136, 98, 0.26);
+  --scroll-thumb: rgba(213, 213, 213, 0.9);
+  --user-bg: #f4f2f3; --tool-bg: var(--surface-muted);
+  --claude-link: #184f95; --claude-code: #161616; --data-ink: #426cad;
   --canvas-background: var(--bg-panel);
   --font-prose: Georgia, 'Times New Roman', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 html.dark {
-  --bg: #191919; --bg-panel: #1f1f1f; --bg-subtle: #252525;
-  --bg-hover: #303030; --bg-selected: #393939;
-  --surface: #222222; --surface-muted: #252525; --surface-elevated: #2b2b2b;
-  --text: #eeeeee; --text-muted: #b5afb7; --text-dim: #a49ca6;
-  --border: #414141; --separator: #343434;
+  --bg: #191919; --bg-panel: #1f1f1f; --bg-subtle: rgba(255, 255, 255, 0.05);
+  --bg-hover: #323232; --bg-selected: #393939;
+  --surface: #212121; --surface-muted: #232323; --surface-elevated: #282828;
+  --composer-surface: #141414;
+  --text: #fdfdfd; --text-muted: #beb6b8; --text-dim: #a69da0;
+  --border: rgba(255, 255, 255, 0.09); --separator: rgba(255, 255, 255, 0.07);
   --accent: #d97757; --menu-selection-color: #eaa088;
-  --accent-hover: #eb9170; --accent-soft: #d9775724; --accent-border: #d977576b;
-  --sidebar-selected: #303030;
-  --code-accent: #8fb0dc; --code-warm: #e8a08a; --code-comment: #9c9395;
-  --focus-ring: #e29275; --selection: #644137;
-  --user-bg: rgba(255,255,255,.06); --tool-bg: #202020;
-  --claude-link: #8ab4f8; --claude-code: #e8a08a; --data-ink: #80a5db;
+  --accent-hover: #eb9170; --accent-contrast: #28130c;
+  --accent-soft: #d9775724; --accent-border: #d977576b;
+  --sidebar-selected: var(--bg-selected); --workbench-bg: var(--bg);
+  --text-meta: var(--text-dim);
+  --code-accent: #8fb0dc; --code-warm: #e8a08a; --code-comment: var(--text-dim);
+  --focus-ring: #e29275; --selection: rgba(217, 119, 87, 0.3);
+  --scroll-thumb: rgba(62, 62, 62, 0.9);
+  --user-bg: rgba(255, 255, 255, 0.06); --tool-bg: var(--surface);
+  --claude-link: #8ab4f8; --claude-code: #fdfdfd; --data-ink: #80a5db;
 }
 .app-shell, .app-topbar { background: var(--bg); }
 .app-sidebar { background: var(--bg-panel); }
@@ -10561,10 +10605,7 @@ html.dark {
 .markdown-body { font-family: var(--font-prose); line-height: 1.75; }
 .markdown-body :is(pre, code, kbd) { font-family: var(--font-mono); }
 .markdown-body a { color: var(--claude-link); }
-.markdown-body :not(pre) > code { color: var(--claude-code); background: var(--bg-hover); }
-.chat-composer { background: var(--surface); border-color: var(--border); box-shadow: 0 4px 20px #0000000a; }
-.composer-send-button { background: #d97757; color: #fff; }
-.composer-send-button:hover:not(:disabled) { background: #bf6244; }
+.markdown-body :not(pre) > code { color: var(--claude-code); background: var(--bg-subtle); }
 /* Reference home-ripple glyph field, isolated below home content. */
 .chat-window[data-home-dashboard="true"] { isolation: isolate; }
 .home-ripple-canvas { position: absolute; top: 0; left: 0; z-index: -1; pointer-events: none; color: #91888a; border-top-color: #426cad; font-family: var(--font-mono); }
@@ -10580,7 +10621,7 @@ html.dark .home-ripple-canvas { color: #a49ca6; border-top-color: #8ab4f8; }
    or expanded model lists need scrolling; there is no overlay clearance here. */
 .home-usage { align-self: stretch; min-height: 0; width: min(720px, calc(100% - 48px)); max-height: 100%; margin: 0 auto; padding: 26px 0 36px; border: 0; border-radius: 0; background: transparent; }
 .home-greeting { display: flex; gap: 10px; align-items: center; margin: 0 0 44px; font-size: 20px; font-weight: 500; line-height: 1.5; }
-.home-greeting > span { font-size: 30px; color: #d97757; }
+.home-greeting > span { font-size: 30px; color: var(--accent); }
 .home-usage-panel { width: min(480px, 100%); padding: 12px; border-radius: 14px; background: color-mix(in srgb, var(--text) 5%, var(--bg)); }
 .home-usage-header { margin-bottom: 10px; }
 .home-usage-tabs { background: transparent; gap: 2px; padding: 2px; }
@@ -10670,6 +10711,41 @@ textarea[data-animated-caret="true"] { caret-color: transparent; }
 .context-usage-pie { width: 14px; height: 14px; flex-shrink: 0; border-radius: 50%; }
 .context-usage-percent { font-size: 10px; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .chat-effects-settings .app-select-trigger { width: 180px; flex-shrink: 0; }
+.thinking-step-preview {
+  min-width: 0;
+  max-block-size: 2lh;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  scroll-behavior: smooth;
+}
+.thinking-step-preview > span { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .thinking-step-preview { scroll-behavior: auto; }
+}
+.app-menu .model-provider-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--menu-row-height, 34px);
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  text-align: start;
+  cursor: pointer;
+}
+.app-menu .model-provider-toggle:disabled { cursor: default; }
+.app-menu .model-provider-toggle:focus-visible { outline: 2px solid var(--menu-focus-ring); outline-offset: -2px; }
+.model-provider-toggle svg { flex: none; }
+.model-provider-toggle[aria-expanded="false"] svg { transform: rotate(-90deg); }
+@media (pointer: coarse) {
+  .app-menu .model-provider-toggle { min-height: 44px; }
+}
 .model-option-copy { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
 .model-option-description { color: var(--text-dim); font-size: 11px; line-height: 1.45; white-space: normal; overflow-wrap: anywhere; }
 @media (max-width: 480px) { .chat-effects-settings .settings-option { flex-wrap: wrap; } .chat-effects-settings .app-select-trigger { width: 100%; } }

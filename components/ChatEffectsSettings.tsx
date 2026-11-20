@@ -4,7 +4,7 @@ import { setChatEffect, useChatEffect, type ChatEffectKey } from "@/hooks/useCha
 import { AppSelect } from "./AppSelect";
 import { ConfigSwitch } from "./SettingsUi";
 
-function Toggle({ effect }: { effect: "caretMotion" | "streamReveal" | "contextPercent" }) {
+function Toggle({ effect }: { effect: "caretMotion" | "streamReveal" | "contextPercent" | "thinkingSteps" }) {
   const { t } = useI18n();
   const value = useChatEffect(effect);
   return <div className="settings-option">
@@ -35,6 +35,7 @@ export function ChatEffectsSettings() {
       <Choice effect="messageMotion" values={["flight", "grow", "off"]} />
       <Choice effect="contextDisplay" values={["pie", "ramp", "band"]} />
       <Toggle effect="contextPercent" />
+      <Toggle effect="thinkingSteps" />
     </div>
   </section>;
 }

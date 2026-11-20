@@ -13,8 +13,9 @@ const css = (await Promise.all(["app/globals.css", "app/settings.css", "app/nati
   .map((text) => text.replace(/^@import[^;]*;/gm, "")).join("\n") +
   "\n*{box-sizing:border-box}body{margin:0}main{padding:16px;max-width:900px;margin:auto}.home-fixture-stage{position:relative;display:flex;height:470px;overflow:hidden}.home-fixture-composer{position:relative;margin:40px auto 0;max-width:820px}textarea{width:100%;height:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:16px}";
 const server = createServer(async (req, res) => {
-  if (/^\/claude-companion\/[a-z-]+\.png$/.test(req.url ?? "")) {
-    try { res.setHeader("Content-Type", "image/png"); res.end(await readFile("public" + req.url)); }
+  const pixelFont = req.url === "/claude-companion/ClaudeStylePixel.woff2";
+  if (pixelFont || /^\/claude-companion\/[a-z-]+\.png$/.test(req.url ?? "")) {
+    try { res.setHeader("Content-Type", pixelFont ? "font/woff2" : "image/png"); res.end(await readFile("public" + req.url)); }
     catch { res.statusCode = 404; res.end(); }
     return;
   }
@@ -55,7 +56,36 @@ try {
     assert.equal(requests, 0, "disabled dashboard does not read session history");
     assert.equal(await page.locator(".composer-companion").count(), 0);
     await page.getByRole("switch", { name: "Pixel crab companion" }).click();
-    await page.locator('.composer-companion[data-state="idle"]').waitFor();
+    const companion = page.locator('.composer-companion[data-state="idle"]');
+    await companion.hover();
+    const cost = page.locator(".companion-cost");
+    assert.equal(await cost.count(), 0, "no tooltip without recorded cost");
+    await page.getByRole("button", { name: "Record session cost" }).click();
+    assert.equal(await cost.isVisible(), false, "amount is hidden outside hover and keyboard focus");
+    await companion.hover();
+    await page.getByRole("tooltip").waitFor();
+    assert.equal(await cost.textContent(), "$0.0123");
+    const bubbleStyle = await cost.evaluate(async (element) => {
+      const [font] = await document.fonts.load('12px "Claude Style Pixel"', element.textContent);
+      const { borderRadius, boxShadow } = getComputedStyle(element);
+      const tail = getComputedStyle(element, "::after");
+      return { font: font?.status, borderRadius, outlines: boxShadow.split(/,(?![^()]*\))/).length, tail: tail.width };
+    });
+    assert.deepEqual(bubbleStyle, { font: "loaded", borderRadius: "0px", outlines: 4, tail: "2px" });
+    const bubble = await cost.boundingBox();
+    const crab = await companion.boundingBox();
+    const x = Math.min(bubble.x, crab.x) - 4;
+    const y = bubble.y - 4;
+    await page.screenshot({ path: `${out}/${theme}-crab-cost.png`, clip: {
+      x, y, width: Math.max(bubble.x + bubble.width, crab.x + crab.width) - x + 4, height: crab.y + crab.height - y + 4,
+    } });
+    await page.mouse.move(2, 2);
+    await cost.waitFor({ state: "hidden" });
+    await page.getByRole("textbox", { name: "Composer" }).focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.getByRole("tooltip").waitFor();
+    await page.keyboard.press("Tab");
+    await cost.waitFor({ state: "hidden" });
     const sprite = await page.locator('.companion-sprite').evaluate((el) => getComputedStyle(el).backgroundImage);
     assert.match(sprite, /claude-companion\/idle.png/);
     assert.equal((await page.request.get('http://127.0.0.1:' + server.address().port + '/claude-companion/idle.png')).status(), 200);
@@ -75,7 +105,7 @@ try {
     await page.mouse.up();
     await page.locator('.composer-companion[data-animation="idle"]').waitFor();
     assert.ok((await page.locator('.composer-companion').boundingBox()).x < crabBox.x, 'drag repositions companion');
-    for (const state of ["thinking", "working", "attention", "error", "typing", "compacting", "conducting"]) {
+    for (const state of ["thinking", "working", "attention", "error", "typing", "compacting"]) {
       await page.getByRole("button", { name: state, exact: true }).click();
       await page.locator('.composer-companion[data-state="' + state + '"]').waitFor();
       const animation = state === "working" ? "building" : state === "attention" ? "notification" : state;
@@ -83,6 +113,25 @@ try {
       await page.locator('.companion-art').screenshot({ path: out + '/' + theme + '-crab-' + state + '.png' });
     }
     await page.getByRole("button", { name: "working", exact: true }).click();
+    const selectSubagents = (count) => page.getByRole("button", { name: `Running subagents: ${count}`, exact: true }).click();
+    const waitForAnimation = (animation) => page.locator(`.composer-companion[data-animation="${animation}"]`).waitFor();
+    await selectSubagents(1);
+    await waitForAnimation("music");
+    assert.match(await page.locator(".companion-sprite").evaluate((el) => getComputedStyle(el).backgroundImage), /music\.png/);
+    await page.locator(".companion-art").screenshot({ path: `${out}/${theme}-crab-music.png` });
+    await selectSubagents(2);
+    await waitForAnimation("conducting");
+    await page.locator(".companion-art").screenshot({ path: `${out}/${theme}-crab-conducting.png` });
+    await page.getByRole("button", { name: "attention", exact: true }).click();
+    await waitForAnimation("notification");
+    await page.getByRole("button", { name: "compacting", exact: true }).click();
+    await waitForAnimation("compacting");
+    await page.getByRole("button", { name: "working", exact: true }).click();
+    await waitForAnimation("conducting");
+    await selectSubagents(1);
+    await waitForAnimation("music");
+    await selectSubagents(0);
+    await waitForAnimation("building");
     await page.getByRole("button", { name: "idle", exact: true }).click();
     await page.locator('.composer-companion[data-state="done"]').waitFor();
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -108,6 +157,10 @@ try {
       await page.setViewportSize({ width, height: 1000 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await page.locator(".home-usage").evaluate((el) => el.scrollWidth > el.clientWidth + 1), false);
+      await page.locator(".composer-companion").hover();
+      await cost.waitFor();
+      const costBox = await cost.boundingBox();
+      assert.ok(costBox && costBox.x >= 0 && costBox.x + costBox.width <= width, "tooltip fits in the viewport");
       await page.screenshot({ path: out + "/" + theme + "-" + width + ".png" });
       await page.locator(".home-usage-pricing summary").click();
       await page.getByText("Cache read", { exact: true }).scrollIntoViewIfNeeded();

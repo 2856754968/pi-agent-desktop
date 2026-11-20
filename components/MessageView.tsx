@@ -10,6 +10,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDiffViewMode } from "@/hooks/useDiffViewMode";
 import { useMessageMotion } from "@/hooks/useMessageMotion";
+import { useChatEffect } from "@/hooks/useChatEffects";
 import { parseCompactionSummary } from "@/lib/compaction-summary";
 import { getAssistantErrorMessage, getThinkingPreview, hasAssistantAnswer, isAssistantTruncated, isEmptyThinkingBlock } from "@/lib/message-display";
 import { diffGapLabel, parseNumberedEditDiff, parseUnifiedPatch, type SplitDiffCell, type SplitDiffFile } from "@/lib/patch";
@@ -981,7 +982,7 @@ function BlockView({ block, searchTarget, toolResults, isStreaming, streamingDur
     return <div data-message-text data-search-target={searchTarget || undefined}><TextBlock block={block as TextContent} isStreaming={isStreaming} cwd={cwd} onOpenFile={onOpenFile} /></div>;
   }
   if (block.type === "thinking") {
-    return <ThinkingBlock block={block as ThinkingContent} duration={streamingDuration} sessionId={sessionId} entryId={entryId} blockIndex={blockIndex} />;
+    return <ThinkingBlock block={block as ThinkingContent} isStreaming={isStreaming} duration={streamingDuration} sessionId={sessionId} entryId={entryId} blockIndex={blockIndex} />;
   }
   if (block.type === "toolCall") {
     const tc = block as ToolCallContent;
@@ -999,8 +1000,9 @@ function TextBlock({ block, isStreaming, cwd, onOpenFile }: { block: TextContent
   return <SafeMarkdownBody isStreaming={isStreaming} cwd={cwd} onOpenFile={onOpenFile} artifacts>{block.text}</SafeMarkdownBody>;
 }
 
-export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex }: {
+export function ThinkingBlock({ block, isStreaming, duration, sessionId, entryId, blockIndex }: {
   block: ThinkingContent;
+  isStreaming?: boolean;
   duration?: number;
   sessionId?: string;
   entryId?: string;
@@ -1089,9 +1091,9 @@ export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex 
       >
         <ThinkingIcon active={expanded} />
         {!expanded && (
-          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {preview ? <ReactMarkdown allowedElements={[]} unwrapDisallowed skipHtml>{preview}</ReactMarkdown> : "..."}
-          </span>
+          isStreaming && !block.deferred && preview
+            ? <StreamingThinkingPreview text={block.thinking} preview={preview} />
+            : <ThinkingPreview text={preview} />
         )}
       </button>
       {expanded && (
@@ -1113,6 +1115,50 @@ export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex 
       )}
     </div>
   );
+}
+
+function ThinkingPreview({ text }: { text: string }) {
+  return <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+    {text ? <ReactMarkdown allowedElements={[]} unwrapDisallowed skipHtml>{text}</ReactMarkdown> : "..."}
+  </span>;
+}
+
+function StreamingThinkingPreview({ text, preview }: { text: string; preview: string }) {
+  const stepped = useChatEffect("thinkingSteps") === "on";
+  const windowRef = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!stepped || !windowRef.current || !textRef.current) return;
+    const viewport = windowRef.current;
+    let offset = 0;
+    let timer: number | undefined;
+    const schedule = () => {
+      if (timer === undefined) timer = window.setTimeout(advance, 200);
+    };
+    const advance = () => {
+      timer = undefined;
+      const step = viewport.clientHeight;
+      const end = viewport.scrollHeight - step;
+      if (!step || end === offset) return;
+      const steps = Math.max(1, Math.floor((end - offset) / step));
+      offset = Math.min(end, offset + steps * step);
+      viewport.scrollTo({ top: offset });
+      if (offset < end) schedule();
+    };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(textRef.current);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, [stepped]);
+
+  return stepped ? (
+    <span className="thinking-step-preview" ref={windowRef} aria-hidden="true">
+      <span ref={textRef}>{text.trimStart()}</span>
+    </span>
+  ) : <ThinkingPreview text={preview} />;
 }
 
 function isSubagentToolDetails(value: unknown): value is SubagentToolDetails {
