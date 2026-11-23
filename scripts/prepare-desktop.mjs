@@ -1,6 +1,6 @@
-import { access, chmod, copyFile, cp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { access, chmod, copyFile, cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { constants, existsSync, rmSync } from "node:fs";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,6 +16,8 @@ const tauriTargetDir = join(rootDir, "src-tauri", "target");
 const serverResourcesDir = join(rootDir, "src-tauri", "resources", "server");
 const serverHelperDir = join(rootDir, "src-tauri", "resources", "Pi Agent Server.app");
 const nodeResourcesDir = join(rootDir, "src-tauri", "resources", "node");
+const windowsNodeDir = process.platform === "win32" ? process.env.PI_DESKTOP_NODE_DIR : undefined;
+const bundledNodePath = windowsNodeDir ? join(windowsNodeDir, "node.exe") : process.execPath;
 
 /**
  * CI canary for the payload assertion.
@@ -332,10 +334,8 @@ async function findNpmSource() {
   const npmFromCurrentRun = process.env.npm_execpath
     ? dirname(dirname(process.env.npm_execpath))
     : null;
-  const candidates = [
-    npmFromCurrentRun,
-    join(dirname(process.execPath), "node_modules", "npm"),
-  ].filter(Boolean);
+  const npmBesideNode = join(dirname(bundledNodePath), "node_modules", "npm");
+  const candidates = windowsNodeDir ? [npmBesideNode] : [npmFromCurrentRun, npmBesideNode].filter(Boolean);
 
   for (const candidate of candidates) {
     try {
@@ -373,7 +373,7 @@ async function bundleNodeRuntime() {
     const executableName = process.platform === "win32" ? "node.exe" : "node";
     binaryPath = join(nodeResourcesDir, executableName);
     await mkdir(nodeResourcesDir, { recursive: true });
-    await copyFile(process.execPath, binaryPath);
+    await copyFile(bundledNodePath, binaryPath);
     await chmod(binaryPath, 0o755);
     await cp(
       await findNpmSource(),
@@ -385,8 +385,19 @@ async function bundleNodeRuntime() {
   return { binaryPath, triple };
 }
 
+// Windows may use a separate runtime from the one building Next.js.
+if (process.platform === "win32") {
+  const version = (await readFile(join(rootDir, ".github", "windows-desktop-node-version"), "utf8")).trim();
+  const bundledVersion = windowsNodeDir
+    ? execFileSync(bundledNodePath, ["--version"], { encoding: "utf8" }).trim()
+    : process.version;
+  if (bundledVersion !== `v${version}`) {
+    throw new Error(`The Windows installer requires Node.js ${version} (found ${bundledVersion}). Set PI_DESKTOP_NODE_DIR to the matching Node.js installation.`);
+  }
+}
+
 await clearTracedBuildOutput();
-const canaryPlanted = await plantPayloadCanary();
+await plantPayloadCanary();
 await runNextBuild();
 
 // The tracer is not trusted to have kept this checkout's configuration and

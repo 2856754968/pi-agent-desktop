@@ -248,6 +248,17 @@ test("the Windows debug workflow cannot release or sign anything", async () => {
   assert.match(workflow, /trace-stray-scandir\.cjs/);
 });
 
+test("Windows desktop workflows use the pinned runtime separately from the build Node", async () => {
+  const github = join(root, ".github");
+  const pin = await readText(join(github, "windows-desktop-node-version"), "utf8");
+  assert.match(pin.trim(), /^\d+\.\d+\.\d+$/);
+
+  for (const file of ["release.yml", "desktop-test-build.yml", "windows-build-debug.yml"]) {
+    const workflow = await readText(join(github, "workflows", file), "utf8");
+    assert.match(workflow, /node-version-file: \.github\/windows-desktop-node-version\s*\n[\s\S]*PI_DESKTOP_NODE_DIR=.+\n[\s\S]*node-version: 22\s*\n[\s\S]*npm run desktop:prepare/, file);
+  }
+});
+
 test("desktop staging ships node-pty native prebuilds with executable helpers", async () => {
   const prepareSource = await readText(new URL("./prepare-desktop.mjs", import.meta.url), "utf8");
   // Next's tracer cannot follow node-pty's runtime-computed prebuilds path;

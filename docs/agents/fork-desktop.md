@@ -25,6 +25,7 @@ Fork-owned notes moved out of `AGENTS.md` to keep it short. The upstream doc on 
 - `Bearer ak_` is this project's own MCP key shape, not a general secret scanner; the allowlist only covers npm's documented key-armour examples.
 
 ## Workspace terminals & node-pty staging
+- `.github/windows-desktop-node-version` pins the Node runtime for Windows installers. The signed release, desktop test build, and Windows debug workflows install that version separately and pass its directory as `PI_DESKTOP_NODE_DIR` while building with Node 22. For local Windows builds, set this variable to the pinned Node installation containing `node.exe` and `node_modules/npm`. Without the variable, `desktop:prepare` uses the Node running the script. It checks the runtime version before cleaning build output. A Windows update uses the runtime shipped in its installer.
 - The desktop server starts with its absolute bundled Node path for native-module
   compatibility. Its child-command PATH keeps the user's login/system entries
   first and moves the bundled runtime directory to the end. Local Node/npm and

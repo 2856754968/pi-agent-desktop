@@ -66,7 +66,18 @@ jobs:
           test -n "$UPDATER_PRIVATE_KEY"
           test -n "$UPDATER_PUBLIC_KEY"
 
-      - name: Set up Node.js
+      - name: Set up the bundled Windows Node.js runtime
+        if: runner.os == 'Windows'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .github/windows-desktop-node-version
+
+      - name: Record the Windows runtime directory
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: '"PI_DESKTOP_NODE_DIR=$(Split-Path (Get-Command node.exe).Source)" >> $env:GITHUB_ENV'
+
+      - name: Set up Node.js for the build
         uses: actions/setup-node@v7
         with:
           node-version: 22

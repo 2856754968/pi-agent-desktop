@@ -42,7 +42,16 @@ jobs:
       - name: Check out pi-agent-desktop
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
+      - name: Set up the bundled Windows Node.js runtime
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .github/windows-desktop-node-version
+
+      - name: Record the Windows runtime directory
+        shell: pwsh
+        run: '"PI_DESKTOP_NODE_DIR=$(Split-Path (Get-Command node.exe).Source)" >> $env:GITHUB_ENV'
+
+      - name: Set up Node.js for the build
         uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -82,7 +91,7 @@ jobs:
 
       # desktop:prepare rather than a bare `next build`: it runs the same build
       # and then exercises the Windows-only half of prepare-desktop.mjs — the
-      # node.exe copy and the npm lookup — which a plain build never touches.
+      # separate node.exe and npm staging — which a plain build never touches.
       # Still no Tauri, no signing, no release.
       - name: Stage the desktop server with a stray-scan tracer attached
         shell: bash
