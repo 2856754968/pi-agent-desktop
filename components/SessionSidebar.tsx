@@ -103,7 +103,7 @@ interface Props {
   /** Fired when a session that is not currently selected finishes running.
    *  Lets the app play a cross-workspace completion tone. */
   onBackgroundTaskDone?: () => void;
-  onRunningSessionIdsChange?: (ids: Set<string>) => void;
+  onRunningSessionIdsChange?: (ids: Set<string>, externalSubagents: Record<string, number>) => void;
   onSessionsChange?: (sessions: SessionInfo[]) => void;
   onProjectsChange?: (projectRoots: string[]) => void;
   headerControls?: ReactNode;
@@ -531,6 +531,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   // The chat whose conversation is being copied into a project (the picker is open for it).
   const [continueChat, setContinueChat] = useState<SessionInfo | null>(null);
   const [runningSessionIds, setRunningSessionIds] = useState<Set<string>>(() => new Set());
+  const [externalSubagents, setExternalSubagents] = useState<Record<string, number>>({});
   const [unreadSessionIds, setUnreadSessionIds] = useState<Set<string>>(() => loadUnreadSessionIds());
   const previousRunningSessionIdsRef = useRef<Set<string>>(new Set());
   const previousSuppressedCompletionSessionIdsRef = useRef<Set<string>>(new Set());
@@ -695,10 +696,16 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
       source = new EventSource("/api/agent/running/events");
       source.onmessage = async (e) => {
         try {
-          const data = JSON.parse(e.data) as { type?: string; runningSessionIds?: string[]; sessionListVersion?: number };
+          const data = JSON.parse(e.data) as {
+            type?: string;
+            runningSessionIds?: string[];
+            sessionListVersion?: number;
+            externalSubagents?: Record<string, number>;
+          };
           if (data.type === "running") {
             sseAuthoritativeRef.current = true;
             setRunningSessionIds(new Set(data.runningSessionIds ?? []));
+            setExternalSubagents(data.externalSubagents ?? {});
           }
           if (typeof data.sessionListVersion === "number"
             && data.sessionListVersion !== sessionListVersionRef.current) {
@@ -809,8 +816,8 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   }, [chatsMenuOpen, chatsMenuPos]);
 
   useEffect(() => {
-    onRunningSessionIdsChange?.(runningSessionIds);
-  }, [onRunningSessionIdsChange, runningSessionIds]);
+    onRunningSessionIdsChange?.(runningSessionIds, externalSubagents);
+  }, [onRunningSessionIdsChange, runningSessionIds, externalSubagents]);
 
   useEffect(() => {
     onSessionsChange?.(allSessions);

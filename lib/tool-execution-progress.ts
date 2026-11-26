@@ -4,6 +4,19 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** The pi-subagents tool reports running children in its live result details. */
+export function getRunningPiSubagents(partialResult: unknown): number | undefined {
+  if (!isObject(partialResult) || !isObject(partialResult.details)) return undefined;
+  const { progress, workflowChildren } = partialResult.details;
+  if (isObject(workflowChildren) && Array.isArray(workflowChildren.children)) {
+    return workflowChildren.children.filter((child) => isObject(child) && child.state === "running").length;
+  }
+  if (Array.isArray(progress)) {
+    return progress.filter((child) => isObject(child) && child.status === "running").length;
+  }
+  return undefined;
+}
+
 export function getToolExecutionProgress(partialResult: unknown): string | null {
   if (!isObject(partialResult)) return null;
 

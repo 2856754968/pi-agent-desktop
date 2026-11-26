@@ -264,11 +264,16 @@ export function AppShell() {
     [selectedSession?.id, sessionsWithSelection],
   );
   const [runningSessionIds, setRunningSessionIds] = useState<Set<string>>(() => new Set());
-  const runningSubagentsByParent = useMemo(
-    () => countRunningSubagentsByParent(sessionCatalog, runningSessionIds),
-    [sessionCatalog, runningSessionIds],
-  );
-  const handleRunningSessionIdsChange = useCallback((ids: Set<string>) => {
+  const [externalSubagents, setExternalSubagents] = useState<Record<string, number>>({});
+  const runningSubagentsByParent = useMemo(() => {
+    const counts = countRunningSubagentsByParent(sessionCatalog, runningSessionIds);
+    for (const [id, count] of Object.entries(externalSubagents)) {
+      counts.set(id, (counts.get(id) ?? 0) + count);
+    }
+    return counts;
+  }, [sessionCatalog, runningSessionIds, externalSubagents]);
+  const handleRunningSessionIdsChange = useCallback((ids: Set<string>, subagents: Record<string, number>) => {
+    setExternalSubagents(subagents);
     setRunningSessionIds((previous) => {
       if (previous.size === ids.size && [...ids].every((id) => previous.has(id))) return previous;
       return ids;

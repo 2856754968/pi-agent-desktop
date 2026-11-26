@@ -16,6 +16,7 @@ export const APP_PREF_KEYS = {
   messageMotion: "pi-message-motion",
   contextDisplay: "pi-context-display",
   contextPercent: "pi-context-percent",
+  contextPalette: "pi-context-palette",
   locale: "pi-locale",
   soundEnabled: "pi-sound-enabled",
   quoteSelectionEnabled: "pi-quote-selection-enabled",

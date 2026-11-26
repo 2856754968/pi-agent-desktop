@@ -1,5 +1,6 @@
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
-import { createAgentSessionFromServices, createAgentSessionServices, getAgentDir, initTheme, SessionManager, SettingsManager, Theme, type ModelRuntime } from "@earendil-works/pi-coding-agent";
+import { createAgentSessionFromServices, createAgentSessionServices, createEventBus, getAgentDir, initTheme, SessionManager, SettingsManager, Theme, type EventBus, type ModelRuntime } from "@earendil-works/pi-coding-agent";
+import { subscribePiSubagentActivity } from "./pi-subagent-activity";
 import { KeybindingsManager as TuiKeybindingsManager, TUI_KEYBINDINGS } from "@earendil-works/pi-tui";
 import { randomUUID } from "crypto";
 import { existsSync, realpathSync, statSync, writeFileSync } from "fs";
@@ -240,6 +241,7 @@ type ExtensionUiRequestBody = Record<string, unknown> & {
 type WrapperMcpHost = Pick<McpHost, "prepareForPrompt" | "dispose"> & Partial<Pick<McpHost, "debugSnapshot">>;
 
 type AgentSessionWrapperOptions = {
+  extensionEvents?: EventBus;
   exactSystemPrompt?: () => string;
   chatOnly?: boolean;
   /** A non-project chat. Chats reject tool commands, and shell commands unless unlocked. */
@@ -425,6 +427,12 @@ export class AgentSessionWrapper {
   // closes on session_shutdown, and splicing an array mid-iteration made the
   // next stream miss that same event.
   private listeners = new Set<EventListener>();
+  private unsubscribePiSubagentActivity?: () => void;
+  private runningPiSubagents = 0;
+
+  get runningExternalSubagents(): number {
+    return this.runningPiSubagents;
+  }
   private activeToolEvents = new Map<string, AgentEvent>();
   private pendingUiResponses = new Map<string, PendingUiResponse>();
   private pendingUiRequests = new Map<string, AgentEvent>();
@@ -505,6 +513,13 @@ export class AgentSessionWrapper {
     options: AgentSessionWrapperOptions = {},
   ) {
     this.exactSystemPrompt = options.exactSystemPrompt;
+    if (options.extensionEvents) {
+      this.unsubscribePiSubagentActivity = subscribePiSubagentActivity(options.extensionEvents, (count) => {
+        if (count === this.runningPiSubagents) return;
+        this.runningPiSubagents = count;
+        notifyRunningChange();
+      });
+    }
     this.policy = deriveSessionPolicy({
       chatOnly: options.chatOnly,
       chatWorkspace: options.chatWorkspace,
@@ -2133,6 +2148,8 @@ export class AgentSessionWrapper {
     if (!this._alive) return;
     this._alive = false;
     this.composerQueue.dispose();
+    this.unsubscribePiSubagentActivity?.();
+    this.runningPiSubagents = 0;
     this.closingAt ??= Date.now();
     this.disposeMcpHost();
     // Tell attached SSE listeners to drop this instance so the browser
@@ -3451,7 +3468,10 @@ export function notifyRunningChange(): void {
   const ids = getRunningRpcSessionIds();
   // List changes (including an unpersisted prompt appearing/disappearing)
   // must reach every window even when the running id set stays unchanged.
-  const snapshot = JSON.stringify({ ids: [...ids].sort(), version: getSessionListVersion() });
+  const snapshot = JSON.stringify({
+    ids: [...ids].sort(), version: getSessionListVersion(),
+    externalSubagents: getRunningExternalSubagentsByParent(),
+  });
   if (snapshot === lastRunningSnapshot) return;
   lastRunningSnapshot = snapshot;
   for (const listener of listeners) {
@@ -3465,6 +3485,16 @@ export function getRunningRpcSessionIds(): string[] {
     if (session.isRunning()) ids.add(session.sessionId || sessionId);
   }
   return [...ids];
+}
+
+export function getRunningExternalSubagentsByParent(): Record<string, number> {
+  const counts: [string, number][] = [];
+  for (const [id, session] of getRegistry()) {
+    if (session.runningExternalSubagents > 0) {
+      counts.push([session.sessionId || id, session.runningExternalSubagents]);
+    }
+  }
+  return Object.fromEntries(counts);
 }
 
 /** Live sessions for the Tasks page; sub-agent runs are reported by their parent. */
@@ -3807,11 +3837,12 @@ export async function startRpcSession(
         : []),
       ...(skillsBinding?.loaderOptions.extensionFactories ?? []),
     ];
+    const extensionEvents = createEventBus();
     const services = await createAgentSessionServices({
       cwd: sessionCwd,
       agentDir,
       settingsManager,
-      resourceLoaderOptions: subagentResources
+      resourceLoaderOptions: { eventBus: extensionEvents, ...(subagentResources
         ? {
             ...subagentExtensionLoaderOptions(subagentResources),
             ...skillsBinding!.loaderOptions,
@@ -3877,7 +3908,7 @@ export async function startRpcSession(
               ),
             ],
             extensionsOverride: (base) => preferUserBashExtension(preferPiWebSubagentExtension(base)),
-          },
+          }) },
       ...(trustReloadOptions ? { resourceLoaderReloadOptions: trustReloadOptions } : {}),
     });
     if (subagentResources?.codemode
@@ -4021,6 +4052,7 @@ export async function startRpcSession(
     exactSystemPromptRef.current = exactSystemPrompt;
     const mcpHost = builtins?.mcpHost ?? subagentMcp?.mcpHost;
     const wrapper = new AgentSessionWrapper(inner, {
+      extensionEvents,
       exactSystemPrompt,
       chatOnly,
       chatWorkspace,

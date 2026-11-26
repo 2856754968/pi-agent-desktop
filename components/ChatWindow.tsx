@@ -1875,7 +1875,10 @@ export function ChatWindow({ session, workspaceKind, searchTarget, onSearchTarge
             }}
           />
         )}
-        <ComposerCompanion key={session?.id ?? newSessionDraftKey} costUsd={sessionStats?.cost} runningSubagentCount={runningSubagentCount}
+        <ComposerCompanion key={session?.id ?? newSessionDraftKey} costUsd={sessionStats?.cost}
+          runningSubagentCount={(runningSubagentCount ?? 0) + (agentPhase?.kind === "running_tools"
+            ? agentPhase.tools.reduce((count, tool) => count + (tool.runningSubagents ?? 0), 0)
+            : 0)}
           state={extensionDialog || extensionCustomUi ? "attention"
           : error ? "error" : isCompacting ? "compacting"
           : bashRunning || agentPhase?.kind === "running_tools" || agentPhase?.kind === "running_command" ? "working"

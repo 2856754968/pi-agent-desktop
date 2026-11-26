@@ -32,7 +32,7 @@ import { mergeSessionStats, type SessionFileStats } from "@/lib/session-stats";
 import { userMessageKey } from "@/lib/prompt-recovery";
 import { AgentEventConnection } from "@/lib/agent-event-connection";
 import { isNestedToolExecutionEvent, isSystemMessageEvent } from "@/lib/agent-event-wire";
-import { getToolExecutionProgress } from "@/lib/tool-execution-progress";
+import { getRunningPiSubagents, getToolExecutionProgress } from "@/lib/tool-execution-progress";
 import { CODEMODE_TOOL_NAME, getCodemodeProgress } from "@/lib/codemode-view";
 import { updateExtensionWidgets } from "@/lib/extension-widgets";
 import { bareMcpOpensSettings } from "@/lib/mcp-command";
@@ -165,7 +165,7 @@ type NoticeAction =
 export type AgentPhase =
   | { kind: "waiting_model" }
   | { kind: "running_command" }
-  | { kind: "running_tools"; tools: { id: string; name: string; progress?: string }[] }
+  | { kind: "running_tools"; tools: { id: string; name: string; progress?: string; runningSubagents?: number }[] }
   | null;
 
 export interface CompactResultInfo {
@@ -1834,6 +1834,9 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
             id,
             name: name || existing?.name || "tool",
             progress: progress ?? existing?.progress,
+            runningSubagents: name === "subagent"
+              ? getRunningPiSubagents(event.partialResult) ?? existing?.runningSubagents
+              : undefined,
           };
           return {
             kind: "running_tools",

@@ -69,8 +69,8 @@ test("archived projects sit in a folded Archive group and need a restore before 
 });
 
 test("exposes the polled running-session set to the shell", () => {
-  assert.match(source, /onRunningSessionIdsChange\?: \(ids: Set<string>\) => void/);
-  assert.match(source, /onRunningSessionIdsChange\?\.\(runningSessionIds\)/);
+  assert.match(source, /onRunningSessionIdsChange\?: \(ids: Set<string>, externalSubagents: Record<string, number>\) => void/);
+  assert.match(source, /onRunningSessionIdsChange\?\.\(runningSessionIds, externalSubagents\)/);
 });
 
 test("exposes the loaded session catalog to the shell", () => {

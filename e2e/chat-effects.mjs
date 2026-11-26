@@ -28,11 +28,20 @@ try {
     await page.getByRole("switch", { name: "显示上下文百分比", exact: true }).click();
     assert.equal(await page.locator("#context .context-usage-percent").textContent(), "72%");
     assert.equal(await page.locator("#unknown-context .context-usage-percent").textContent(), "—");
-    for (const name of ["圆环 · 绿到红", "圆环 · 蓝黄红"]) {
+    const preview = page.getByRole("img", { name: "上下文占用预览，25%、65% 和 95%" });
+    assert.deepEqual(await preview.locator(".context-usage-percent").allTextContents(), ["25%", "65%", "95%"]);
+    assert.equal(await preview.locator(".context-usage-pie").count(), 3);
+    for (const name of ["圆环 · 渐变", "圆环 · 分段"]) {
       await page.getByRole("combobox", { name: "上下文占用图示", exact: true }).click();
       await page.getByRole("option", { name, exact: true }).click();
       assert.equal(await page.locator("#context svg circle").count(), 2);
     }
+    const lowStroke = preview.locator(".context-usage-ring").first().locator("circle").last();
+    const lowBefore = await lowStroke.evaluate((node) => getComputedStyle(node).stroke);
+    await page.getByRole("combobox", { name: "上下文配色", exact: true }).click();
+    await page.getByRole("option", { name: "绿、橙、红", exact: true }).click();
+    assert.notEqual(await lowStroke.evaluate((node) => getComputedStyle(node).stroke), lowBefore);
+    assert.equal(await page.locator("#unknown-context svg circle").count(), 1);
     await page.locator(".model-selector > button").click();
     const modelMenu = page.locator(".model-selector .app-menu");
     const relay = modelMenu.getByRole("button", { name: "relay", exact: true });
@@ -130,7 +139,8 @@ try {
     assert.equal(await page.locator(".message-flight-ghost").count(), 0);
     assert.equal(await input.getAttribute("data-animated-caret"), null);
     await page.reload();
-    assert.equal(await page.getByRole("combobox", { name: "上下文占用图示", exact: true }).textContent(), "圆环 · 蓝黄红");
+    assert.equal(await page.getByRole("combobox", { name: "上下文占用图示", exact: true }).textContent(), "圆环 · 分段");
+    assert.equal(await page.getByRole("combobox", { name: "上下文配色", exact: true }).textContent(), "绿、橙、红");
     assert.equal(await thinkingSwitch.getAttribute("aria-checked"), "true");
     assert.deepEqual(errors, []);
     await page.close();

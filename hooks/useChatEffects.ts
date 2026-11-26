@@ -9,6 +9,7 @@ const choices = {
   messageMotion: ["flight", "grow", "off"],
   contextDisplay: ["band", "ramp", "pie"],
   contextPercent: ["off", "on"],
+  contextPalette: ["auto", "warm", "cool"],
 } as const;
 export type ChatEffectKey = keyof typeof choices;
 export type ChatEffectValue<K extends ChatEffectKey> = (typeof choices)[K][number];
