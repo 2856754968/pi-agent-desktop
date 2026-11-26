@@ -15,6 +15,8 @@ import { copyText } from "@/lib/clipboard";
 import { ImagePreview } from "./ImagePreview";
 import { MermaidBlock, CodeBlock } from "./MermaidBlock";
 import { HtmlPreviewBlock } from "./HtmlPreviewBlock";
+import { ChartBlock } from "./ChartBlock";
+import { CHART_FENCE_LANGS } from "@/lib/chart-spec";
 import { htmlPreviewKind } from "@/lib/html-preview";
 import { ArtifactCard } from "./ArtifactCard";
 import { ARTIFACT_FENCE_LANG, decodeArtifactFence, encodeArtifactsForMarkdown } from "@/lib/artifacts";
@@ -206,6 +208,7 @@ function buildComponents(
   onOpenFile: ((filePath: string, page?: number, line?: number) => void) | undefined,
   fenceFiles: Map<number, string>,
   onNavigateLink?: (href: string) => void,
+  assistantText?: boolean,
 ): Components {
   return {
     code({ className, children, node, ...props }) {
@@ -223,8 +226,12 @@ function buildComponents(
               code={raw.replace(/\n$/, "")}
               isStreaming={isStreaming}
               defaultPreview
+              fixable={assistantText}
             />
           );
+        }
+        if (CHART_FENCE_LANGS.has(lang)) {
+          return <ChartBlock code={raw.replace(/\n$/, "")} isStreaming={isStreaming} fixable={assistantText} />;
         }
         const previewKind = htmlPreviewKind(lang, raw);
         if (previewKind) {
@@ -334,8 +341,8 @@ export const MarkdownBody = memo(function MarkdownBody({ children, className, is
     [normalizedMarkdown, cwd, trackFences],
   );
   const components = useMemo(
-    () => buildComponents(isStreaming, cwd, onOpenFile, fenceFiles, onNavigateLink),
-    [isStreaming, cwd, onOpenFile, fenceFiles, onNavigateLink],
+    () => buildComponents(isStreaming, cwd, onOpenFile, fenceFiles, onNavigateLink, artifacts),
+    [isStreaming, cwd, onOpenFile, fenceFiles, onNavigateLink, artifacts],
   );
   // Reuse the element when a new network delta has not published a snapshot.
   const body = useMemo(() => (
