@@ -38,8 +38,8 @@ function readInitialLocale(): Locale {
  * @returns 包含语言上下文的 React 节点
  */
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale);
-  const [hydrated, setHydrated] = useState(false);
+  const [savedLocale, setLocaleState] = useState<Locale | null>(null);
+  const locale = savedLocale ?? defaultLocale;
   const supportedLocales = useMemo(
     () => getSupportedLocales().map((id) => getLocalePlugin(id)).filter((plugin): plugin is LocalePlugin => Boolean(plugin)),
     [],
@@ -50,7 +50,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     const next = readInitialLocale();
     setLocaleState(next);
     document.documentElement.lang = next;
-    setHydrated(true);
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
@@ -61,9 +60,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback((key: string, params?: TranslationParams) => translateMessage(locale, key, messages, params), [locale, messages]);
-  const value = useMemo(() => ({ locale: hydrated ? locale : defaultLocale, setLocale, t, supportedLocales }), [hydrated, locale, setLocale, t, supportedLocales]);
+  const value = useMemo(() => ({ locale, setLocale, t, supportedLocales }), [locale, setLocale, t, supportedLocales]);
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  // The saved locale is browser-local. Mount translated content once it is known.
+  return savedLocale === null ? null : <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 /**

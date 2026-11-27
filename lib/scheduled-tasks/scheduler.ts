@@ -1,6 +1,6 @@
 import { existsSync, statSync } from "fs";
 import { randomUUID } from "crypto";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { getAgentDir } from "../pi-agent-dir";
 import { decideSlot } from "./catch-up";
 import { emitScheduledTaskEvent } from "./events";
 import { acquireLease, isPidAlive, readLeaseInfo, releaseLease, type LeaseInfo } from "./lease";

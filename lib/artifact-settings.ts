@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { getAgentDir } from "./pi-agent-dir";
 import { writePrivateFileAtomicSync } from "./atomic-file";
 
 // Pi Web's own preferences, kept out of pi's settings.json because the pi CLI

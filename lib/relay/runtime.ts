@@ -1,4 +1,4 @@
-import { getAgentDir } from "../session-reader";
+import { getAgentDir } from "../pi-agent-dir";
 import { RelayConnector } from "./connector";
 import { loadOrCreateIdentity, readDevices, readRelayConfig, relayDir } from "./store";
 

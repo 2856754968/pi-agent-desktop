@@ -42,11 +42,9 @@ export function registerNodeInstrumentation(): void {
   process.on("SIGINT", shutdownStreams);
   process.on("SIGTERM", shutdownStreams);
 
-  // Next evaluates a route's code on its first request, so the first
-  // /api/sessions used to pay for importing the whole pi SDK, seconds on
-  // Windows (#964). Start that import now, unawaited so register() stays fast:
-  // the launcher opens the browser only once the first page is served, after
-  // it (bin/browser-opener.js), and the routes reuse Node's cached module.
-  // A failure is left for the routes' own import to report.
-  import("@earendil-works/pi-coding-agent").catch(() => {});
+  // The web launcher can warm the first session request (#964). In the packaged
+  // desktop server, loading the SDK here can block the Rust shell's readiness probe.
+  if (!process.env.PI_DESKTOP_INSTANCE_ID) {
+    void import("@earendil-works/pi-coding-agent").catch(() => {});
+  }
 }

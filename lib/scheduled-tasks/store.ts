@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from "fs";
 import { join } from "path";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { getAgentDir } from "../pi-agent-dir";
 import { writePrivateFileAtomicSync } from "../atomic-file";
 import {
   MAX_RUNS_PER_TASK,

@@ -57,6 +57,8 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
+    // Let the desktop readiness probe and UI load before unrelated routes.
+    ...(isDesktopBuild ? { preloadEntriesOnStart: false } : {}),
     ...(isDesktopBuild
       ? { webpackBuildWorker: true, webpackMemoryOptimizations: true }
       : {}),
