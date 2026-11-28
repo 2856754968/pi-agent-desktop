@@ -16,14 +16,20 @@ async function match(baseUrl, modelId = "") {
   return response.json();
 }
 
-test("Aliyun Token Plan's Beijing endpoint is pi's qwen-token-plan-cn, with GLM-5.3's settings", async () => {
-  const result = await match("https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/", "glm-5.3");
-  assert.ok(result.providers.some((p) => p.id === "qwen-token-plan-cn"));
-  assert.ok(result.model, "glm-5.3 is in the built-in catalog");
-  assert.equal(result.model.reasoning, true);
-  assert.equal(result.model.thinkingLevelMap.medium, null);
-  assert.equal(result.model.thinkingLevelMap.max, "max");
-  assert.equal(result.model.compat.supportsDeveloperRole, false);
+test("Aliyun Token Plan's current and previous endpoints both match GLM-5.3", async () => {
+  const current = await match("https://token-plan.maas.qianwenaiapi.com/compatible-mode/v1", "glm-5.3");
+  const previous = await match("https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/", "glm-5.3");
+  assert.deepEqual(previous.providers.map((provider) => provider.id), ["qwen-token-plan-cn"]);
+  assert.ok(current.providers.some((p) => p.id === "qwen-token-plan-cn"));
+  assert.deepEqual(previous.model, {
+    ...current.model,
+    providers: current.model?.providers.filter((provider) => provider.id === "qwen-token-plan-cn"),
+  });
+  assert.ok(current.model, "glm-5.3 is in the built-in catalog");
+  assert.equal(current.model.reasoning, true);
+  assert.equal(current.model.thinkingLevelMap.medium, null);
+  assert.equal(current.model.thinkingLevelMap.max, "max");
+  assert.equal(current.model.compat.thinkingFormat, "qwen");
 });
 
 test("An unknown model at a built-in endpoint still names the provider", async () => {
@@ -34,5 +40,6 @@ test("An unknown model at a built-in endpoint still names the provider", async (
 
 test("An endpoint pi does not ship matches nothing", async () => {
   assert.deepEqual(await match("https://example.test/v1", "glm-5.3"), { providers: [], model: null });
+  assert.deepEqual(await match("https://token-plan.cn-beijing.maas.aliyuncs.com/v1", "glm-5.3"), { providers: [], model: null });
   assert.deepEqual(await match("not a url", "glm-5.3"), { providers: [], model: null });
 });

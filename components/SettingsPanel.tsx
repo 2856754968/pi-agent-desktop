@@ -45,6 +45,7 @@ import { NetworkProxySection } from "./NetworkProxySection";
 import { ChatsSettingsSection } from "./ChatsSettingsSection";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { TerminalSettingsSection } from "./TerminalSettingsSection";
+import { TranscriptNoticeSettings } from "./TranscriptNoticeSettings";
 
 interface Props {
   cwd: string | null;
@@ -378,6 +379,8 @@ function GeneralSettings({
           <DesktopAppSection />
 
           <ChatsSettingsSection />
+
+          <TranscriptNoticeSettings onSaved={onSessionReloaded} />
         </div>
       </div>
 

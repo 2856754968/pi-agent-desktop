@@ -1,7 +1,6 @@
-// Client-safe: the transcript notices pi's TUI shows under `showCacheMissNotices`
-// (#1265). The server derives them from the session entries
-// (lib/transcript-notices-server.ts) and hangs them on the chat message they
-// follow; the chat renders them as one line each.
+// Client-safe: the transcript notices pi's TUI shows under `notices.*`.
+// The server derives them from the session entries and attaches them to the
+// chat message they follow.
 
 export type TranscriptNotice =
   /** An assistant response re-billed prompt tokens a cache should have served. */
@@ -12,6 +11,29 @@ export type TranscriptNotice =
   | { kind: "summary_cost"; source: "compaction" | "branch_summary"; tokens: number; cost: number }
   /** Anthropic dropped thinking blocks from the request (pi's `thinking_dropped` input transformation). */
   | { kind: "thinking_dropped"; count: number };
+
+/** pi's notice settings in the same order as its settings UI. */
+export const NOTICE_SETTING_KEYS = ["cacheMisses", "cacheWarming", "compactionCosts", "reasoningDrops"] as const;
+export type NoticeSettingKey = typeof NOTICE_SETTING_KEYS[number];
+export type NoticeSettings = Record<NoticeSettingKey, boolean>;
+
+export const DEFAULT_NOTICE_SETTINGS: Readonly<NoticeSettings> = {
+  cacheMisses: false,
+  cacheWarming: false,
+  compactionCosts: false,
+  reasoningDrops: false,
+};
+
+export const NOTICE_SETTING_OF_KIND: Readonly<Record<TranscriptNotice["kind"], NoticeSettingKey>> = {
+  cache_miss: "cacheMisses",
+  cache_warm: "cacheWarming",
+  summary_cost: "compactionCosts",
+  thinking_dropped: "reasoningDrops",
+};
+
+export function isNoticeSettingKey(value: unknown): value is NoticeSettingKey {
+  return typeof value === "string" && NOTICE_SETTING_KEYS.some((key) => key === value);
+}
 
 /** The property a chat message carries its notices in; never part of pi's message. */
 export const TRANSCRIPT_NOTICES_KEY = "transcriptNotices";

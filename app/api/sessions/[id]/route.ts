@@ -30,6 +30,8 @@ import { samePath } from "@/lib/paths";
 import { moveFolderToTrash } from "@/lib/trash";
 import { replaceFileAtomicSync } from "@/lib/atomic-file";
 import { forgetSessionUiState } from "@/lib/session-ui-state";
+import { DEFAULT_NOTICE_SETTINGS, NOTICE_SETTING_KEYS } from "@/lib/transcript-notices";
+import { attachTranscriptNotices, readNoticeSettings, readSessionTranscriptNotices } from "@/lib/transcript-notices-server";
 
 export async function GET(
   req: Request,
@@ -76,27 +78,41 @@ export async function GET(
     const tail = Number.isFinite(rawTail) && rawTail > 0 ? Math.min(rawTail, 1000) : 50;
     // Chat-view loads ask for whole turns; the default keeps `tail` an exact cap.
     const wholeTurns = searchParams.has("wholeTurns");
-    const context = buildSessionContext(entries as never, leafId, {
+    const header = sm.getHeader();
+    const cwd = header?.cwd ?? "";
+    const noticeSettings = cwd ? readNoticeSettings(cwd) : DEFAULT_NOTICE_SETTINGS;
+    // SAFETY: The transcript and usage readers use this app's structural view of the SDK entries.
+    const sessionEntries = entries as unknown as SessionEntry[];
+    const transcriptNotices = readSessionTranscriptNotices({
+      entries: sessionEntries,
+      cwd,
+      leafId,
+      models: liveRpc?.inner.modelRuntime,
+      settings: noticeSettings,
+    });
+    const context = attachTranscriptNotices(buildSessionContext(entries as never, leafId, {
       deferThinking,
       deferToolResultImages,
       tail,
       wholeTurns,
       sessionId: id, // local: lazy URLs for historical tool-result images
-    });
+    }), transcriptNotices);
     perf?.span("context");
     const totalActiveMs = computeSessionTotalActiveMs(entries);
     // Cumulative usage over ALL entries, including history compacted away —
     // the same aggregation the SDK's getSessionStats() uses. Lets the client
     // keep monotonic token/cost counters across compaction and page reloads.
-    const stats = computeSessionStats(entries as unknown as SessionEntry[]);
+    const stats = computeSessionStats(sessionEntries);
     perf?.span("stats");
     // Opaque freshness token for the session view cache. Derived from the
     // disk fingerprint and the actual read source; null tells the client the
     // snapshot is unstable and must not be cached as fresh.
     const latestEntry = entries[entries.length - 1] as { id?: string } | undefined;
+    const sourceId = liveRpc ? `runtime:${String(liveRpc.inner.sessionId)}` : "disk";
+    const enabledNotices = NOTICE_SETTING_KEYS.filter((key) => noticeSettings[key]);
     const snapshotRevision = computeSessionRevision({
       filePath,
-      sourceId: liveRpc ? `runtime:${String(liveRpc.inner.sessionId)}` : "disk",
+      sourceId: `${sourceId}:notices:${enabledNotices.join(",")}`,
       entryCount: entries.length,
       latestEntryId: typeof latestEntry?.id === "string" ? latestEntry.id : null,
       leafId: leafId ?? null,
@@ -105,7 +121,6 @@ export async function GET(
     const firstUserEntry = entries.find((entry) => entry.type === "message" && entry.message.role === "user");
     const firstUserMessage = firstUserEntry?.type === "message" ? firstUserEntry.message : undefined;
 
-    const header = sm.getHeader();
     let modified = header?.timestamp ?? new Date().toISOString();
     try { modified = statSync(filePath).mtime.toISOString(); } catch { /* use header timestamp */ }
     const parentSessionId = header?.parentSession

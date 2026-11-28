@@ -8,7 +8,8 @@
  * only). Settings › Models uses this to point at the built-in provider and to offer
  * the built-in entry's settings for the same endpoint and model id.
  *
- * Only an exact endpoint match counts: the same model id behind another region or
+ * Only an exact endpoint match or the known Qwen Token Plan migration counts.
+ * The same model id behind another region or
  * gateway may accept other values.
  */
 
@@ -69,6 +70,9 @@ export function normalizeEndpoint(value: string | undefined): string | undefined
   }
 }
 
+const QWEN_TOKEN_PLAN_PREVIOUS_ENDPOINT = "token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
+const QWEN_TOKEN_PLAN_ENDPOINT = "token-plan.maas.qianwenaiapi.com/compatible-mode/v1";
+
 function modelEndpoint(provider: CatalogProvider, model: CatalogModel): string | undefined {
   return normalizeEndpoint(model.baseUrl ?? provider.baseUrl);
 }
@@ -94,13 +98,15 @@ export function findBuiltinMatch(
   let model: BuiltinModelSettings | null = null;
   for (const provider of catalog) {
     const models = safeModels(provider);
-    const servesEndpoint = normalizeEndpoint(provider.baseUrl) === endpoint
-      || models.some((entry) => modelEndpoint(provider, entry) === endpoint);
+    const matchesEndpoint = (candidate: string | undefined) => candidate === endpoint
+      || (provider.id === "qwen-token-plan-cn" && endpoint === QWEN_TOKEN_PLAN_PREVIOUS_ENDPOINT && candidate === QWEN_TOKEN_PLAN_ENDPOINT);
+    const servesEndpoint = matchesEndpoint(normalizeEndpoint(provider.baseUrl))
+      || models.some((entry) => matchesEndpoint(modelEndpoint(provider, entry)));
     if (!servesEndpoint) continue;
     const ref = { id: provider.id, name: provider.name };
     providers.push(ref);
     if (!id) continue;
-    const entry = models.find((candidate) => candidate.id === id && modelEndpoint(provider, candidate) === endpoint);
+    const entry = models.find((candidate) => candidate.id === id && matchesEndpoint(modelEndpoint(provider, candidate)));
     if (!entry) continue;
     if (model) {
       model.providers.push(ref);
